@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    networks:
+      - squash-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:rw
+      - ./uploads:/app/uploads:rw
+    environment:
+      - ENVIRONMENT=development
+      - UPLOAD_FOLDER=/app/uploads
+      - EXPORT_FOLDER=/app/data/exports
+      # Video processing settings
+      - FFMPEG_NUM_THREADS=2
+      - VIDEO_ENCODE_CODEC=libx264
+      - VIDEO_ENCODE_CRF=23
+      - VIDEO_ENCODE_FPS=30
+      - VIDEO_ENCODE_MAX_WIDTH=1280
+      - VIDEO_ENCODE_MAX_HEIGHT=720
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - squash-net
+
+networks:
+  squash-net:
+    driver: bridge
