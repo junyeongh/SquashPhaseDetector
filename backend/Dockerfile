@@ -22,12 +22,12 @@ WORKDIR ${APP_ROOT}
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Install Python dependencies
-# COPY requirements.txt .
-# RUN pip install --upgrade pip setuptools
-# RUN pip install -r requirements.txt
-COPY pyproject.toml .
-COPY uv.lock .
-RUN uv sync --frozen --no-cache
+COPY requirements.txt .
+RUN pip install --upgrade pip setuptools
+RUN pip install -r requirements.txt
+# COPY pyproject.toml .
+# COPY uv.lock .
+# RUN uv sync --frozen --no-cache
 
 # Fix ffmpeg path for compatibility
 RUN [ -f /opt/conda/bin/ffmpeg ] && rm /opt/conda/bin/ffmpeg; ln -s /bin/ffmpeg /opt/conda/bin/ffmpeg
