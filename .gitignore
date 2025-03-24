@@ -43,9 +43,6 @@ Thumbs.db
 !/data/.gitkeep
 /checkpoints/
 
-# Docker
-.dockerignore
-
 # Environment variables
 .env
 .env.local

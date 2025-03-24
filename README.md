@@ -31,7 +31,7 @@ A system for analyzing squash match videos, automatically detecting game phases 
 2. Start the containers:
 
 ```bash
-docker-compose up -d
+docker-compose up --build
 ```
 
 3. Access the frontend at http://localhost:3000

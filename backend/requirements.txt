@@ -1,26 +1,26 @@
-# Core dependencies
-fastapi==0.110.0
-uvicorn==0.28.0
-python-multipart==0.0.9
+# FastAPI Backend Core
+fastapi>=0.115.0
+uvicorn>=0.34.0
+python-multipart==0.0.20
 pydantic==2.7.1
 pydantic-settings==2.2.1
 
-# Video processing
+# Video Processing
 opencv-python-headless==4.9.0.80
 ffmpeg-python==0.2.0
 numpy==1.26.4
 imageio==2.34.2
-moviepy==1.0.3
+moviepy==2.1.2
 
-# ML Models
-torch==2.2.2
-torchvision==0.17.2
-ultralytics==8.1.23  # For YOLO-Pose
-scikit-learn==1.4.1.post1
-scipy==1.13.0
-
-# Utils
-python-jose==3.3.0
-aiofiles==23.2.1
+# SAM2 Segmentation Model
+torch==2.5.1
+torchvision==0.21.0
+timm>=0.9.5
 pycocotools==2.0.7
-uuid==1.30
+
+# YOLO-Pose Detection Model
+ultralytics==8.1.23
+
+# Data Analysis
+scikit-learn==1.6.1
+scipy==1.13.0
