@@ -3,30 +3,32 @@ FROM node:22.14.0-alpine AS build
 
 WORKDIR /app
 
-# # Copy package files
-# COPY package.json ./
-# COPY package-lock.json ./
+RUN corepack enable pnpm && pnpm -v
 
-# # Install dependencies
-# RUN npm ci
+# Copy package files
+COPY package.json ./
+COPY pnpm-lock.yaml ./
 
-# # Copy source code
-# COPY . .
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-# # Build the application
-# RUN npm run build
+# Copy source code
+COPY . .
 
-# # Stage 2: Production Stage
-# FROM nginx:alpine
+# Build the application
+RUN pnpm run build
 
-# # Copy nginx configuration
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Stage 2: Production Stage
+FROM nginx:latest
 
-# # Copy built files from the build stage to the production image
-# COPY --from=build /app/dist /usr/share/nginx/html
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# # Expose port
-# EXPOSE 80
+# Copy built files from the build stage to the production image
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# # Container startup command for the web server (nginx in this case)
-# CMD ["nginx", "-g", "daemon off;"]
+# Expose port
+EXPOSE 80
+
+# Container startup command for the web server (nginx in this case)
+CMD ["nginx", "-g", "daemon off;"]
