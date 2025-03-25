@@ -26,59 +26,67 @@ async def upload_video(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File must be a video")
 
     original_video_filename = file.filename
-    # Generate a unique filename
     video_file_id = str(uuid.uuid4())
-    # while True: # UUID collision check
-    #     video_file_id = str(uuid.uuid4())
-
-    #     # Check if a file with this UUID already exists
-    #     if not os.path.exists(os.path.join(UPLOAD_FOLDER, f"{video_file_id}.json")):
-    #         break
     video_file_extension = Path(file.filename).suffix
+
+    # Create subdirectory for this upload
+    upload_dir = os.path.join(UPLOAD_FOLDER, video_file_id)
+    os.makedirs(upload_dir, exist_ok=True)
+
     video_filename = f"{video_file_id}{video_file_extension}"
-    video_file_path = os.path.join(UPLOAD_FOLDER, video_filename)
-    data = {
-        "UUID": video_file_id,
-        "original_filename": original_video_filename,
-        "filename": video_filename,
-        "content_type": file.content_type,
-    }
+    video_file_path = os.path.join(upload_dir, video_filename)
 
     # Save the uploaded file
     with open(video_file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     # Save the metadata
-    video_metadata_path = os.path.join(UPLOAD_FOLDER, f"{video_file_id}.json")
+    video_metadata_path = os.path.join(upload_dir, "metadata.json")
     with open(video_metadata_path, "w", encoding="UTF-8") as f:
-        json.dump(data, f, indent=4)
+        json.dump(
+            {
+                "UUID": video_file_id,
+                "original_filename": original_video_filename,
+                "filename": video_filename,
+                "content_type": file.content_type,
+            },
+            f,
+            indent=2,
+        )
 
-    return data
+    return {
+        "UUID": video_file_id,
+        "original_filename": original_video_filename,
+        "filename": video_filename,
+        "content_type": file.content_type,
+    }
 
 
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
 
 
-@router.get("/uploads")
+@router.get("/upload")
 async def list_uploads():
     """
     List all video files in the upload folder
     """
+    files = []
     try:
-        files = []
         for filename in os.listdir(UPLOAD_FOLDER):
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            if os.path.isfile(file_path):
-                ext = os.path.splitext(filename)[1].lower()
-                if ext in VIDEO_EXTENSIONS:  # Filter only video files
-                    files.append(
-                        {
-                            "filename": filename,
-                            "path": file_path,
-                            "size": os.path.getsize(file_path),
-                            "created": os.path.getctime(file_path),
+            full_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isdir(full_path):
+                metadata_path = os.path.join(full_path, "metadata.json")
+                if os.path.exists(metadata_path):
+                    with open(metadata_path, "r", encoding="UTF-8") as f:
+                        metadata = json.load(f)
+                        video_file_path = os.path.join(full_path, metadata["filename"])
+                        data = {
+                            "filename": metadata["filename"],
+                            "path": video_file_path,
+                            "size": os.path.getsize(video_file_path),
+                            "created": os.path.getctime(video_file_path),
                         }
-                    )
+                        files.append(data)
         return {"files": files}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")

@@ -35,7 +35,7 @@ export interface FileInfo {
 
 export const getUploadedFiles = async (): Promise<FileInfo[]> => {
   try {
-    const response = await axios.get(`${API_URL}/uploads`);
+    const response = await axios.get(`${API_URL}/upload`);
     return response.data.files || [];
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
