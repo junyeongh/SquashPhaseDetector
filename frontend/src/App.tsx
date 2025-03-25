@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { fetchRootMessage } from './services/api';
-import { uploadVideo, getUploadedFiles, getGalleryFiles, FileInfo } from './services/api/video';
-import AppLayout from './components/layout/AppLayout';
-import { PipelineStep } from './components/layout/Sidebar';
-import ProcessingPage from './pages/ProcessingPage';
+import { fetchRootMessage } from '@/services/api';
+import { uploadVideo, getUploadedFiles, getGalleryFiles, FileInfo } from '@/services/api/video';
+import AppLayout from '@/layout/AppLayout';
+import { PipelineStep } from '@/layout/Sidebar';
+import ProcessingPage from '@/pages/ProcessingPage';
 import './App.css';
 
 function App() {
@@ -117,23 +117,23 @@ function App() {
   const handleProcessVideo = () => {
     setIsProcessing(true);
     setProcessingStatus('Preprocessing video...');
-    
+
     // Simulate processing with timeout
     setTimeout(() => {
       setProcessingStatus('Detecting main camera angle...');
-      
+
       setTimeout(() => {
         setProcessingStatus('Filtering frames...');
-        
+
         setTimeout(() => {
           setIsProcessing(false);
           setProcessedVideoUrl('/api/video/file/' + uploadedVideo?.filename);
-          
+
           // Mark preprocess step as completed
           const updatedCompletedSteps = new Set(completedSteps);
           updatedCompletedSteps.add('preprocess');
           setCompletedSteps(updatedCompletedSteps);
-          
+
         }, 2000);
       }, 2000);
     }, 2000);
@@ -155,12 +155,12 @@ function App() {
     return (
       <div className="h-full flex flex-col">
         <h1 className="text-2xl font-bold mb-4">Upload Squash Video</h1>
-        
+
         <div className="flex-1 bg-white rounded-lg shadow-md p-6">
           <div className="flex flex-col items-center justify-center h-full">
             <div className="w-full max-w-md">
-              <label 
-                htmlFor="fileInput" 
+              <label
+                htmlFor="fileInput"
                 className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 transition-colors"
               >
                 <div className="space-y-2">
@@ -177,20 +177,20 @@ function App() {
                   className="hidden"
                 />
               </label>
-              
+
               {isUploading && (
                 <div className="mt-4 text-center">
                   <p className="text-blue-600">Uploading video...</p>
                 </div>
               )}
-              
+
               {uploadError && (
                 <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
                   <p>{uploadError}</p>
                 </div>
               )}
             </div>
-            
+
             {uploadedFiles.length > 0 && (
               <div className="mt-8 w-full">
                 <h3 className="text-lg font-semibold mb-2">Recent Uploads</h3>
@@ -211,7 +211,7 @@ function App() {
                           <td className="px-4 py-2 text-left text-sm">{formatFileSize(file.size)}</td>
                           <td className="px-4 py-2 text-left text-sm">{file.created}</td>
                           <td className="px-4 py-2 text-left text-sm">
-                            <button 
+                            <button
                               onClick={() => {
                                 // Set as selected video
                                 setUploadedVideo({
@@ -219,7 +219,7 @@ function App() {
                                   original_filename: file.filename,
                                   content_type: file.type
                                 });
-                                
+
                                 // Mark upload step as completed and move to next step
                                 const updatedCompletedSteps = new Set(completedSteps);
                                 updatedCompletedSteps.add('upload');
