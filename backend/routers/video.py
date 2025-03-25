@@ -1,11 +1,10 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, File, UploadFile, HTTPException
 import os
 import uuid
 import shutil
 from pathlib import Path
-from typing import Dict, List, Optional
 import time
+import json
 
 router = APIRouter(
     prefix="/video",
@@ -26,25 +25,39 @@ async def upload_video(file: UploadFile = File(...)):
     if not file.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="File must be a video")
 
+    original_video_filename = file.filename
     # Generate a unique filename
-    file_id = str(uuid.uuid4())
-    file_extension = Path(file.filename).suffix
-    new_filename = f"{file_id}{file_extension}"
-    file_path = os.path.join(UPLOAD_FOLDER, new_filename)
+    video_file_id = str(uuid.uuid4())
+    # while True: # UUID collision check
+    #     video_file_id = str(uuid.uuid4())
 
-    # Save the uploaded file
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return {
-        "filename": new_filename,
-        "original_filename": file.filename,
-        "path": file_path,
+    #     # Check if a file with this UUID already exists
+    #     if not os.path.exists(os.path.join(UPLOAD_FOLDER, f"{video_file_id}.json")):
+    #         break
+    video_file_extension = Path(file.filename).suffix
+    video_filename = f"{video_file_id}{video_file_extension}"
+    video_file_path = os.path.join(UPLOAD_FOLDER, video_filename)
+    data = {
+        "UUID": video_file_id,
+        "original_filename": original_video_filename,
+        "filename": video_filename,
         "content_type": file.content_type,
     }
 
+    # Save the uploaded file
+    with open(video_file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Save the metadata
+    video_metadata_path = os.path.join(UPLOAD_FOLDER, f"{video_file_id}.json")
+    with open(video_metadata_path, "w", encoding="UTF-8") as f:
+        json.dump(data, f, indent=4)
+
+    return data
+
 
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
+
 
 @router.get("/uploads")
 async def list_uploads():
@@ -69,7 +82,6 @@ async def list_uploads():
         return {"files": files}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
-
 
 
 @router.get("/gallery")
