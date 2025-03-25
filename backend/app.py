@@ -1,10 +1,7 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import uuid
-import shutil
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 # Import routers
 from routers import video, segmentation, pose, analysis

@@ -7,7 +7,7 @@ Utility functions for video processing.
 import cv2
 import os
 import numpy as np
-from typing import Tuple, List, Dict, Any
+from typing import Dict, Any
 
 
 def extract_frame(video_path: str, frame_idx: int) -> np.ndarray:

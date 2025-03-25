@@ -5,8 +5,7 @@ This module integrates YOLO-Pose for pose estimation.
 """
 
 import os
-import numpy as np
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 
 class YOLOPosePredictor:

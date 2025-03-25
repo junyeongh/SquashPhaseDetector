@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 router = APIRouter(
     prefix="/pose",

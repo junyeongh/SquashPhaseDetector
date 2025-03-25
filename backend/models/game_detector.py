@@ -6,7 +6,6 @@ to identify rally and rest phases in squash matches.
 """
 
 from typing import Dict, List, Any
-import numpy as np
 
 
 class GameStateDetector:

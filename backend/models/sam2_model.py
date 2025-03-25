@@ -6,7 +6,6 @@ This module integrates SAM2 (Segment Anything Model 2) for player segmentation.
 
 import os
 import torch
-import numpy as np
 from typing import List, Dict, Any, Tuple
 
 

@@ -7,7 +7,6 @@ Utility functions for exporting analysis results.
 import os
 import json
 import csv
-import numpy as np
 from typing import Dict, List, Any
 
 

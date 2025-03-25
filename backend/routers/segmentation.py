@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Dict, Any
-import numpy as np
 
 router = APIRouter(
     prefix="/segmentation",
