@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
+import { Link } from 'react-router-dom';
 
 export type PipelineStep =
   | 'upload'
@@ -41,13 +42,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     setCollapsed(!collapsed);
   };
 
-  const steps: { id: PipelineStep; label: string; icon: string }[] = [
-    { id: 'upload', label: 'Upload Video', icon: '📤' },
-    { id: 'preprocess', label: 'Preprocessing', icon: '🔍' },
-    { id: 'segmentation', label: 'Player Segmentation', icon: '👥' },
-    { id: 'pose', label: 'Pose Detection', icon: '🏃' },
-    { id: 'game_state', label: 'Game State Analysis', icon: '🎮' },
-    { id: 'export', label: 'Export Results', icon: '📊' },
+  const steps: { id: PipelineStep; label: string; icon: string; path: string }[] = [
+    { id: 'upload', label: 'Upload Video', icon: '📤', path: '/' },
+    { id: 'preprocess', label: 'Preprocessing', icon: '🔍', path: '/preprocess' },
+    { id: 'segmentation', label: 'Player Segmentation', icon: '👥', path: '/segmentation' },
+    { id: 'pose', label: 'Pose Detection', icon: '🏃', path: '/pose' },
+    { id: 'game_state', label: 'Game State Analysis', icon: '🎮', path: '/game_state' },
+    { id: 'export', label: 'Export Results', icon: '📊', path: '/export' },
   ];
 
   return (
@@ -86,11 +87,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                     );
 
                 return (
-                  <button
+                  <Link
                     key={step.id}
-                    onClick={() => canBeActive && onStepChange(step.id)}
-                    disabled={!canBeActive}
-                    className={`flex w-full items-center gap-3 p-4 text-left transition-colors ${
+                    to={canBeActive ? step.path : '#'}
+                    onClick={(e) => {
+                      if (!canBeActive) {
+                        e.preventDefault();
+                        return;
+                      }
+                      onStepChange(step.id);
+                    }}
+                    className={`flex w-full items-center gap-3 p-4 text-left transition-colors no-underline text-white ${
                       isActive
                         ? 'bg-blue-600'
                         : isCompleted
@@ -99,6 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             ? 'cursor-not-allowed opacity-50'
                             : 'hover:bg-gray-700'
                     }`}
+                    style={{ textDecoration: 'none' }}
                   >
                     <span className='flex-shrink-0 text-xl'>{step.icon}</span>
                     {!collapsed && (
@@ -111,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         )}
                       </div>
                     )}
-                  </button>
+                  </Link>
                 );
               })}
             </div>

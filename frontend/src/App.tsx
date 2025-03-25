@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { fetchRootMessage } from '@/services/api';
 import {
   uploadVideo,
@@ -12,6 +13,10 @@ import ProcessingPage from '@/pages/ProcessingPage';
 import './App.css';
 
 function App() {
+  // Router hooks
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // API connection state
   const [message, setMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -22,6 +27,26 @@ function App() {
   const [completedSteps, setCompletedSteps] = useState<Set<PipelineStep>>(
     new Set()
   );
+
+  // Map paths to steps
+  const pathToStep: Record<string, PipelineStep> = {
+    '/': 'upload',
+    '/preprocess': 'preprocess',
+    '/segmentation': 'segmentation',
+    '/pose': 'pose',
+    '/game_state': 'game_state',
+    '/export': 'export',
+  };
+
+  // Map steps to paths
+  const stepToPath: Record<PipelineStep, string> = {
+    'upload': '/',
+    'preprocess': '/preprocess',
+    'segmentation': '/segmentation',
+    'pose': '/pose',
+    'game_state': '/game_state',
+    'export': '/export',
+  };
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -40,6 +65,16 @@ function App() {
   const [processedVideoUrl, setProcessedVideoUrl] = useState<
     string | undefined
   >(undefined);
+
+  // Sync URL with active step
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const step = pathToStep[currentPath];
+
+    if (step && step !== activeStep) {
+      setActiveStep(step);
+    }
+  }, [location, pathToStep, activeStep]);
 
   useEffect(() => {
     const getApiMessage = async () => {
@@ -112,7 +147,7 @@ function App() {
       const updatedCompletedSteps = new Set(completedSteps);
       updatedCompletedSteps.add('upload');
       setCompletedSteps(updatedCompletedSteps);
-      setActiveStep('preprocess');
+      handleStepChange('preprocess');
 
       // Refresh file lists after successful upload
       fetchAllFiles();
@@ -126,6 +161,7 @@ function App() {
   // Function to handle step changes
   const handleStepChange = (step: PipelineStep) => {
     setActiveStep(step);
+    navigate(stepToPath[step]);
   };
 
   // Mock function for processing video (simulate API call)
@@ -144,10 +180,11 @@ function App() {
           setIsProcessing(false);
           setProcessedVideoUrl('/api/video/file/' + uploadedVideo?.filename);
 
-          // Mark preprocess step as completed
+          // Mark preprocess step as completed and move to next step
           const updatedCompletedSteps = new Set(completedSteps);
           updatedCompletedSteps.add('preprocess');
           setCompletedSteps(updatedCompletedSteps);
+          handleStepChange('segmentation');
         }, 2000);
       }, 2000);
     }, 2000);
@@ -249,7 +286,7 @@ function App() {
                                 setUploadedVideo({
                                   filename: file.filename,
                                   original_filename: file.filename,
-                                  content_type: file.type,
+                                  content_type: 'video/mp4', // Default to video/mp4 since FileInfo doesn't have type
                                 });
 
                                 // Mark upload step as completed and move to next step
@@ -258,7 +295,7 @@ function App() {
                                 );
                                 updatedCompletedSteps.add('upload');
                                 setCompletedSteps(updatedCompletedSteps);
-                                setActiveStep('preprocess');
+                                handleStepChange('preprocess');
                               }}
                               className='text-blue-600 hover:text-blue-800'
                             >
@@ -362,13 +399,80 @@ function App() {
   }
 
   return (
-    <AppLayout
-      activeStep={activeStep}
-      onStepChange={handleStepChange}
-      completedSteps={completedSteps}
-    >
-      {renderContent()}
-    </AppLayout>
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/preprocess"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/segmentation"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/pose"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/game_state"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+      <Route
+        path="/export"
+        element={
+          <AppLayout
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            completedSteps={completedSteps}
+          >
+            {renderContent()}
+          </AppLayout>
+        }
+      />
+    </Routes>
   );
 }
 
