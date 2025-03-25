@@ -15,7 +15,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   completedSteps
 }) => {
   return (
-    <div className="flex w-full h-screen overflow-hidden">
+    <div className="flex flex-row w-full h-screen overflow-hidden">
       <Sidebar
         activeStep={activeStep}
         onStepChange={onStepChange}
