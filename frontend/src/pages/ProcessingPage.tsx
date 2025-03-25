@@ -15,7 +15,7 @@ const ProcessingPage: React.FC<ProcessingPageProps> = ({
   processedVideoUrl,
   isProcessing,
   onProcess,
-  processingStatus
+  processingStatus,
 }) => {
   const [showProcessed, setShowProcessed] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
@@ -34,10 +34,10 @@ const ProcessingPage: React.FC<ProcessingPageProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <h1 className="text-2xl font-bold mb-3">Video Preprocessing</h1>
+    <div className='flex h-full flex-col'>
+      <h1 className='mb-3 text-2xl font-bold'>Video Preprocessing</h1>
 
-      <div className="flex-1 flex flex-col bg-white rounded-lg shadow-md overflow-hidden">
+      <div className='flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-md'>
         {/* Video Toggle */}
         <VideoToggle
           isProcessed={showProcessed}
@@ -46,30 +46,36 @@ const ProcessingPage: React.FC<ProcessingPageProps> = ({
         />
 
         {/* Video Player */}
-        <div className="flex-1 p-4 flex items-center justify-center bg-gray-50">
+        <div className='flex flex-1 items-center justify-center bg-gray-50 p-4'>
           <VideoPlayer
-            src={showProcessed && processedVideoUrl ? processedVideoUrl : originalVideoUrl}
+            src={
+              showProcessed && processedVideoUrl
+                ? processedVideoUrl
+                : originalVideoUrl
+            }
             onFrameChange={setCurrentFrame}
           />
         </div>
 
         {/* Processing Controls */}
-        <div className="p-4 border-t bg-white">
-          <div className="flex justify-between items-center">
+        <div className='border-t bg-white p-4'>
+          <div className='flex items-center justify-between'>
             <div>
-              <p className="text-sm text-gray-600">Current Frame: {currentFrame}</p>
+              <p className='text-sm text-gray-600'>
+                Current Frame: {currentFrame}
+              </p>
               {isProcessing && (
-                <p className="text-sm text-blue-600">{processingStatus}</p>
+                <p className='text-sm text-blue-600'>{processingStatus}</p>
               )}
             </div>
 
             <button
               onClick={onProcess}
               disabled={isProcessing}
-              className={`px-5 py-2 rounded-md font-medium transition-colors ${
+              className={`rounded-md px-5 py-2 font-medium transition-colors ${
                 isProcessing
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  ? 'cursor-not-allowed bg-gray-300 text-gray-500'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
               {isProcessing ? 'Processing...' : 'Process Video'}

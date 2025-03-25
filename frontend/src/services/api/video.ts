@@ -30,7 +30,7 @@ export interface FileInfo {
   filename: string;
   path: string;
   size: number;
-  created: number;  // Unix timestamp
+  created: number; // Unix timestamp
 }
 
 export const getUploadedFiles = async (): Promise<FileInfo[]> => {
@@ -40,7 +40,9 @@ export const getUploadedFiles = async (): Promise<FileInfo[]> => {
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error fetching uploaded files:', error.response.data);
-      throw new Error(error.response.data.detail || 'Failed to fetch uploaded files');
+      throw new Error(
+        error.response.data.detail || 'Failed to fetch uploaded files'
+      );
     } else {
       console.error('Error fetching uploaded files:', error);
       throw error;
@@ -55,7 +57,9 @@ export const getGalleryFiles = async (): Promise<FileInfo[]> => {
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error fetching gallery files:', error.response.data);
-      throw new Error(error.response.data.detail || 'Failed to fetch gallery files');
+      throw new Error(
+        error.response.data.detail || 'Failed to fetch gallery files'
+      );
     } else {
       console.error('Error fetching gallery files:', error);
       throw error;

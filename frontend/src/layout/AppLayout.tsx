@@ -12,18 +12,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   children,
   activeStep,
   onStepChange,
-  completedSteps
+  completedSteps,
 }) => {
   return (
-    <div className="flex flex-row w-full h-screen overflow-hidden">
+    <div className='flex h-screen w-full flex-row overflow-hidden'>
       <Sidebar
         activeStep={activeStep}
         onStepChange={onStepChange}
         completedSteps={completedSteps}
       />
-      <MainContent>
-        {children}
-      </MainContent>
+      <MainContent>{children}</MainContent>
     </div>
   );
 };
