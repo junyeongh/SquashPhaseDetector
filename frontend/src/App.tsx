@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { fetchRootMessage } from './services/api';
 import { uploadVideo, getUploadedFiles, getGalleryFiles, FileInfo } from './services/api/video';
+import AppLayout from './components/layout/AppLayout';
+import { PipelineStep } from './components/layout/Sidebar';
+import ProcessingPage from './pages/ProcessingPage';
 import './App.css';
 
 function App() {
+  // API connection state
   const [message, setMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pipeline state
+  const [activeStep, setActiveStep] = useState<PipelineStep>('upload');
+  const [completedSteps, setCompletedSteps] = useState<Set<PipelineStep>>(new Set());
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -18,6 +26,11 @@ function App() {
   const [galleryFiles, setGalleryFiles] = useState<FileInfo[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
   const [fileListError, setFileListError] = useState<string | null>(null);
+
+  // Processing state
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const getApiMessage = async () => {
@@ -80,6 +93,12 @@ function App() {
       setUploadedVideo(response);
       console.log('Upload successful:', response);
 
+      // Mark upload step as completed and move to next step
+      const updatedCompletedSteps = new Set(completedSteps);
+      updatedCompletedSteps.add('upload');
+      setCompletedSteps(updatedCompletedSteps);
+      setActiveStep('preprocess');
+
       // Refresh file lists after successful upload
       fetchAllFiles();
     } catch (error) {
@@ -87,6 +106,37 @@ function App() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // Function to handle step changes
+  const handleStepChange = (step: PipelineStep) => {
+    setActiveStep(step);
+  };
+
+  // Mock function for processing video (simulate API call)
+  const handleProcessVideo = () => {
+    setIsProcessing(true);
+    setProcessingStatus('Preprocessing video...');
+    
+    // Simulate processing with timeout
+    setTimeout(() => {
+      setProcessingStatus('Detecting main camera angle...');
+      
+      setTimeout(() => {
+        setProcessingStatus('Filtering frames...');
+        
+        setTimeout(() => {
+          setIsProcessing(false);
+          setProcessedVideoUrl('/api/video/file/' + uploadedVideo?.filename);
+          
+          // Mark preprocess step as completed
+          const updatedCompletedSteps = new Set(completedSteps);
+          updatedCompletedSteps.add('preprocess');
+          setCompletedSteps(updatedCompletedSteps);
+          
+        }, 2000);
+      }, 2000);
+    }, 2000);
   };
 
   // Helper function to format file size
@@ -100,146 +150,181 @@ function App() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Function to render file list
-  const renderFileList = (files: FileInfo[], title: string) => {
+  // Function to render upload page
+  const renderUploadPage = () => {
     return (
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
-
-        {files.length === 0 ? (
-          <p className="text-gray-500 italic">No files available</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {files.map((file, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm">{file.filename}</td>
-                    <td className="px-4 py-2 text-sm">{formatFileSize(file.size)}</td>
-                    <td className="px-4 py-2 text-sm">{file.created}</td>
-                    <td className="px-4 py-2 text-sm">
-                      <a
-                        href={`/api/video/file/${file.filename}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        View
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="h-full flex flex-col">
+        <h1 className="text-2xl font-bold mb-4">Upload Squash Video</h1>
+        
+        <div className="flex-1 bg-white rounded-lg shadow-md p-6">
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="w-full max-w-md">
+              <label 
+                htmlFor="fileInput" 
+                className="block w-full border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 transition-colors"
+              >
+                <div className="space-y-2">
+                  <div className="text-4xl">📤</div>
+                  <div className="text-lg font-medium">Drag & drop your video here</div>
+                  <div className="text-sm text-gray-500">or click to browse</div>
+                </div>
+                <input
+                  type="file"
+                  id="fileInput"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
+              
+              {isUploading && (
+                <div className="mt-4 text-center">
+                  <p className="text-blue-600">Uploading video...</p>
+                </div>
+              )}
+              
+              {uploadError && (
+                <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+                  <p>{uploadError}</p>
+                </div>
+              )}
+            </div>
+            
+            {uploadedFiles.length > 0 && (
+              <div className="mt-8 w-full">
+                <h3 className="text-lg font-semibold mb-2">Recent Uploads</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {uploadedFiles.slice(0, 5).map((file, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-left text-sm">{file.filename}</td>
+                          <td className="px-4 py-2 text-left text-sm">{formatFileSize(file.size)}</td>
+                          <td className="px-4 py-2 text-left text-sm">{file.created}</td>
+                          <td className="px-4 py-2 text-left text-sm">
+                            <button 
+                              onClick={() => {
+                                // Set as selected video
+                                setUploadedVideo({
+                                  filename: file.filename,
+                                  original_filename: file.filename,
+                                  content_type: file.type
+                                });
+                                
+                                // Mark upload step as completed and move to next step
+                                const updatedCompletedSteps = new Set(completedSteps);
+                                updatedCompletedSteps.add('upload');
+                                setCompletedSteps(updatedCompletedSteps);
+                                setActiveStep('preprocess');
+                              }}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              Select
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
 
-  return (
-    <div className="container mx-auto p-4">
-      <div className="p-8 bg-white shadow-lg rounded-lg">
-        <h1 className="text-3xl font-bold mb-6 text-center">Squash Game Phase Detector</h1>
-
-        {loading ? (
-          <div className="text-center py-4">
-            <p className="text-gray-600">Loading message from backend...</p>
+  // Render content based on active step
+  const renderContent = () => {
+    switch (activeStep) {
+      case 'upload':
+        return renderUploadPage();
+      case 'preprocess':
+        return (
+          <ProcessingPage
+            originalVideoUrl={`/api/video/file/${uploadedVideo?.filename}`}
+            processedVideoUrl={processedVideoUrl}
+            isProcessing={isProcessing}
+            onProcess={handleProcessVideo}
+            processingStatus={processingStatus}
+          />
+        );
+      case 'segmentation':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-gray-500">Segmentation page - Under development</p>
           </div>
-        ) : error ? (
-          <div className="text-center py-4 bg-red-100 text-red-700 px-4 rounded">
-            <p>{error}</p>
+        );
+      case 'pose':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-gray-500">Pose detection page - Under development</p>
           </div>
-        ) : (
-          <div className="text-center py-4 bg-green-100 text-green-700 px-4 rounded">
-            <p className="text-lg font-medium">Backend message: "{message}"</p>
+        );
+      case 'gamestate':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-gray-500">Game state analysis page - Under development</p>
           </div>
-        )}
-
-        {/* Upload Section */}
-        <div className="mt-8 border-t pt-6">
-          <h2 className="text-xl font-semibold mb-4">Upload Squash Video</h2>
-
-          <div className="flex flex-col items-center">
-            <label htmlFor="fileInput" className="block mb-2 text-sm font-medium text-gray-700">
-              Select Video File:
-            </label>
-            <input
-              type="file"
-              id="fileInput"
-              accept="video/*"
-              onChange={handleFileChange}
-              disabled={isUploading}
-              className="block w-full text-sm text-gray-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
-            />
+        );
+      case 'export':
+        return (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-gray-500">Export page - Under development</p>
           </div>
+        );
+      default:
+        return <div>Unknown step</div>;
+    }
+  };
 
-          {isUploading && (
-            <div className="mt-4 text-center">
-              <p className="text-blue-600">Uploading video...</p>
-            </div>
-          )}
-
-          {uploadError && (
-            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
-              <p>{uploadError}</p>
-            </div>
-          )}
-
-          {uploadedVideo && (
-            <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md">
-              <p className="font-medium">Upload successful!</p>
-              <p className="text-sm mt-1">Original filename: {uploadedVideo.original_filename}</p>
-              <p className="text-sm">Stored as: {uploadedVideo.filename}</p>
-            </div>
-          )}
-        </div>
-
-        {/* File Lists Section */}
-        <div className="mt-8 border-t pt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Video Files</h2>
-            <button
-              onClick={fetchAllFiles}
-              disabled={isLoadingFiles}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
-            >
-              {isLoadingFiles ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-
-          {fileListError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-              <p>{fileListError}</p>
-            </div>
-          )}
-
-          {isLoadingFiles ? (
-            <div className="text-center py-4">
-              <p className="text-gray-600">Loading files...</p>
-            </div>
-          ) : (
-            <>
-              {renderFileList(uploadedFiles, "Uploaded Files")}
-              {renderFileList(galleryFiles, "Gallery Files")}
-            </>
-          )}
+  // Show loading screen if checking API connection
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
+          <p className="text-gray-800 text-xl">Connecting to backend server...</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  // Show error screen if API connection failed
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-100">
+        <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Connection Error</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout
+      activeStep={activeStep}
+      onStepChange={handleStepChange}
+      completedSteps={completedSteps}
+    >
+      {renderContent()}
+    </AppLayout>
   );
 }
 
