@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export type PipelineStep =
   | 'upload'
@@ -16,7 +17,7 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
-  toggleCollapsed: () => {},
+  toggleCollapsed: () => { },
 });
 
 export const useSidebar = () => useContext(SidebarContext);
@@ -27,8 +28,6 @@ interface SidebarProps {
   completedSteps: Set<PipelineStep>;
 }
 
-const SIDEBAR_WIDTH = '240px';
-const SIDEBAR_COLLAPSED_WIDTH = '60px';
 
 const Sidebar: React.FC<SidebarProps> = ({
   activeStep,
@@ -42,31 +41,51 @@ const Sidebar: React.FC<SidebarProps> = ({
     setCollapsed(!collapsed);
   };
 
-  const steps: { id: PipelineStep; label: string; icon: string; path: string }[] = [
-    { id: 'upload', label: 'Upload Video', icon: '📤', path: '/' },
-    { id: 'preprocess', label: 'Preprocessing', icon: '🔍', path: '/preprocess' },
-    { id: 'segmentation', label: 'Player Segmentation', icon: '👥', path: '/segmentation' },
-    { id: 'pose', label: 'Pose Detection', icon: '🏃', path: '/pose' },
-    { id: 'game_state', label: 'Game State Analysis', icon: '🎮', path: '/game_state' },
-    { id: 'export', label: 'Export Results', icon: '📊', path: '/export' },
-  ];
+  const steps: {
+    id: PipelineStep;
+    label: string;
+    icon: string;
+    path: string;
+  }[] = [
+      { id: 'upload', label: 'Upload Video', icon: '📤', path: '/' },
+      {
+        id: 'preprocess',
+        label: 'Preprocessing',
+        icon: '🔍',
+        path: '/preprocess',
+      },
+      {
+        id: 'segmentation',
+        label: 'Player Segmentation',
+        icon: '👥',
+        path: '/segmentation',
+      },
+      { id: 'pose', label: 'Pose Detection', icon: '🏃', path: '/pose' },
+      {
+        id: 'game_state',
+        label: 'Game State Analysis',
+        icon: '🎮',
+        path: '/game_state',
+      },
+      { id: 'export', label: 'Export Results', icon: '📊', path: '/export' },
+    ];
 
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
       <div
         className='h-screen flex-shrink-0 transition-all duration-300 ease-in-out'
         style={{
-          width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
+          width: collapsed ? 'var(--spacing-sidebar-collasped)' : 'var(--spacing-sidebar)',
         }}
       >
-        <div className='flex h-full flex-col bg-gray-800 text-white'>
+        <div className='flex h-full flex-col bg-gray-800 text-black'>
           <div className='flex items-center justify-between border-b border-gray-700 p-4'>
             {/* {!collapsed && <h1 className="font-bold text-lg">Squash Analyzer</h1>} */}
             <button
               onClick={toggleCollapsed}
-              className='rounded p-2 text-gray-400 hover:bg-gray-700 hover:text-white'
+              className='text-black-400 rounded p-2 hover:bg-gray-700'
             >
-              {collapsed ? '→' : '←'}
+              {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
             </button>
           </div>
 
@@ -81,10 +100,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                   isCompleted ||
                   isActive ||
                   steps.findIndex((s) => s.id === step.id) ===
-                    Math.min(
-                      steps.findIndex((s) => s.id === activeStep) + 1,
-                      steps.length - 1
-                    );
+                  Math.min(
+                    steps.findIndex((s) => s.id === activeStep) + 1,
+                    steps.length - 1
+                  );
 
                 return (
                   <Link
@@ -97,18 +116,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                       }
                       onStepChange(step.id);
                     }}
-                    className={`flex w-full items-center gap-3 p-4 text-left transition-colors no-underline text-white ${
-                      isActive
-                        ? 'bg-blue-600'
-                        : isCompleted
-                          ? 'bg-opacity-20 hover:bg-opacity-30 bg-green-700 hover:bg-green-700'
-                          : !canBeActive
-                            ? 'cursor-not-allowed opacity-50'
-                            : 'hover:bg-gray-700'
-                    }`}
+                    className={`flex w-full items-center gap-3 p-4 text-left text-white no-underline transition-colors ${isActive
+                      ? 'bg-blue-600'
+                      : isCompleted
+                        ? 'bg-opacity-20 hover:bg-opacity-30 bg-green-700 hover:bg-green-700'
+                        : !canBeActive
+                          ? 'cursor-not-allowed opacity-50'
+                          : 'hover:bg-gray-700'
+                      }`}
                     style={{ textDecoration: 'none' }}
                   >
-                    <span className='flex-shrink-0 text-xl'>{step.icon}</span>
+                    <span className={`text-xl ${collapsed ? 'flex w-full justify-center' : 'flex-shrink-0'}`}>
+                      {step.icon}
+                    </span>
                     {!collapsed && (
                       <div className='flex items-center gap-2 overflow-hidden'>
                         <span className='truncate'>{step.label}</span>

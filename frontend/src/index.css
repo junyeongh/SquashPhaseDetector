@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+@theme {
+  --spacing-sidebar-collasped: 120px;
+  --spacing-sidebar: 240px;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

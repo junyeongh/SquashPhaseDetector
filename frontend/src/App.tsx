@@ -40,12 +40,12 @@ function App() {
 
   // Map steps to paths
   const stepToPath: Record<PipelineStep, string> = {
-    'upload': '/',
-    'preprocess': '/preprocess',
-    'segmentation': '/segmentation',
-    'pose': '/pose',
-    'game_state': '/game_state',
-    'export': '/export',
+    upload: '/',
+    preprocess: '/preprocess',
+    segmentation: '/segmentation',
+    pose: '/pose',
+    game_state: '/game_state',
+    export: '/export',
   };
 
   // File upload states
@@ -401,7 +401,7 @@ function App() {
   return (
     <Routes>
       <Route
-        path="/"
+        path='/'
         element={
           <AppLayout
             activeStep={activeStep}
@@ -413,7 +413,7 @@ function App() {
         }
       />
       <Route
-        path="/preprocess"
+        path='/preprocess'
         element={
           <AppLayout
             activeStep={activeStep}
@@ -425,7 +425,7 @@ function App() {
         }
       />
       <Route
-        path="/segmentation"
+        path='/segmentation'
         element={
           <AppLayout
             activeStep={activeStep}
@@ -437,7 +437,7 @@ function App() {
         }
       />
       <Route
-        path="/pose"
+        path='/pose'
         element={
           <AppLayout
             activeStep={activeStep}
@@ -449,7 +449,7 @@ function App() {
         }
       />
       <Route
-        path="/game_state"
+        path='/game_state'
         element={
           <AppLayout
             activeStep={activeStep}
@@ -461,7 +461,7 @@ function App() {
         }
       />
       <Route
-        path="/export"
+        path='/export'
         element={
           <AppLayout
             activeStep={activeStep}
