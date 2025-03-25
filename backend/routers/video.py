@@ -13,7 +13,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "./uploads")
+UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
+GALLERY_FOLDER = os.environ.get("GALLERY_FOLDER", "/data/gallery")
 
 
 @router.post("/upload")
@@ -41,6 +42,59 @@ async def upload_video(file: UploadFile = File(...)):
         "path": file_path,
         "content_type": file.content_type,
     }
+
+
+VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
+
+@router.get("/uploads")
+async def list_uploads():
+    """
+    List all video files in the upload folder
+    """
+    try:
+        files = []
+        for filename in os.listdir(UPLOAD_FOLDER):
+            file_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isfile(file_path):
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in VIDEO_EXTENSIONS:  # Filter only video files
+                    files.append(
+                        {
+                            "filename": filename,
+                            "path": file_path,
+                            "size": os.path.getsize(file_path),
+                            "created": os.path.getctime(file_path),
+                        }
+                    )
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
+
+
+
+@router.get("/gallery")
+async def list_gallery():
+    """
+    List all files in the gallery folder
+    """
+    try:
+        files = []
+        for filename in os.listdir(GALLERY_FOLDER):
+            file_path = os.path.join(GALLERY_FOLDER, filename)
+            if os.path.isfile(file_path):
+                ext = os.path.splitext(filename)[1].lower()
+                if ext in VIDEO_EXTENSIONS:  # Filter only video files
+                    files.append(
+                        {
+                            "filename": filename,
+                            "path": file_path,
+                            "size": os.path.getsize(file_path),
+                            "created": os.path.getctime(file_path),
+                        }
+                    )
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing gallery: {str(e)}")
 
 
 @router.post("/session/start")
