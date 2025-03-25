@@ -51,7 +51,7 @@ async def upload_video(file: UploadFile = File(...)):
                 "original_filename": original_video_filename,
                 "filename": video_filename,
                 "content_type": file.content_type,
-            }, # TODO information needed
+            },  # TODO information needed
             f,
             indent=2,
         )
@@ -59,7 +59,18 @@ async def upload_video(file: UploadFile = File(...)):
     # Create subdirectory for each frames for future use
     frame_dir = os.path.join(upload_dir, "frames/")
     os.makedirs(frame_dir, exist_ok=True)
-    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "2", "-start_number", "0", f"{frame_dir}/%06d.jpg"])
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-i",
+            video_file_path,
+            "-q:v",
+            "2",
+            "-start_number",
+            "0",
+            f"{frame_dir}/%06d.jpg",
+        ]
+    )
 
     return {
         "UUID": video_file_id,

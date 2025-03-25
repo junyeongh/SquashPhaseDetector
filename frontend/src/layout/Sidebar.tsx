@@ -17,7 +17,7 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
-  toggleCollapsed: () => { },
+  toggleCollapsed: () => {},
 });
 
 export const useSidebar = () => useContext(SidebarContext);
@@ -27,7 +27,6 @@ interface SidebarProps {
   onStepChange: (step: PipelineStep) => void;
   completedSteps: Set<PipelineStep>;
 }
-
 
 const Sidebar: React.FC<SidebarProps> = ({
   activeStep,
@@ -47,35 +46,37 @@ const Sidebar: React.FC<SidebarProps> = ({
     icon: string;
     path: string;
   }[] = [
-      { id: 'upload', label: 'Upload Video', icon: '📤', path: '/' },
-      {
-        id: 'preprocess',
-        label: 'Preprocessing',
-        icon: '🔍',
-        path: '/preprocess',
-      },
-      {
-        id: 'segmentation',
-        label: 'Player Segmentation',
-        icon: '👥',
-        path: '/segmentation',
-      },
-      { id: 'pose', label: 'Pose Detection', icon: '🏃', path: '/pose' },
-      {
-        id: 'game_state',
-        label: 'Game State Analysis',
-        icon: '🎮',
-        path: '/game_state',
-      },
-      { id: 'export', label: 'Export Results', icon: '📊', path: '/export' },
-    ];
+    { id: 'upload', label: 'Upload Video', icon: '📤', path: '/' },
+    {
+      id: 'preprocess',
+      label: 'Preprocessing',
+      icon: '🔍',
+      path: '/preprocess',
+    },
+    {
+      id: 'segmentation',
+      label: 'Player Segmentation',
+      icon: '👥',
+      path: '/segmentation',
+    },
+    { id: 'pose', label: 'Pose Detection', icon: '🏃', path: '/pose' },
+    {
+      id: 'game_state',
+      label: 'Game State Analysis',
+      icon: '🎮',
+      path: '/game_state',
+    },
+    { id: 'export', label: 'Export Results', icon: '📊', path: '/export' },
+  ];
 
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
       <div
         className='h-screen flex-shrink-0 transition-all duration-300 ease-in-out'
         style={{
-          width: collapsed ? 'var(--spacing-sidebar-collasped)' : 'var(--spacing-sidebar)',
+          width: collapsed
+            ? 'var(--spacing-sidebar-collasped)'
+            : 'var(--spacing-sidebar)',
         }}
       >
         <div className='flex h-full flex-col bg-gray-800 text-black'>
@@ -100,10 +101,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                   isCompleted ||
                   isActive ||
                   steps.findIndex((s) => s.id === step.id) ===
-                  Math.min(
-                    steps.findIndex((s) => s.id === activeStep) + 1,
-                    steps.length - 1
-                  );
+                    Math.min(
+                      steps.findIndex((s) => s.id === activeStep) + 1,
+                      steps.length - 1
+                    );
 
                 return (
                   <Link
@@ -116,17 +117,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                       }
                       onStepChange(step.id);
                     }}
-                    className={`flex w-full items-center gap-3 p-4 text-left text-white no-underline transition-colors ${isActive
-                      ? 'bg-blue-600'
-                      : isCompleted
-                        ? 'bg-opacity-20 hover:bg-opacity-30 bg-green-700 hover:bg-green-700'
-                        : !canBeActive
-                          ? 'cursor-not-allowed opacity-50'
-                          : 'hover:bg-gray-700'
-                      }`}
+                    className={`flex w-full items-center gap-3 p-4 text-left text-white no-underline transition-colors ${
+                      isActive
+                        ? 'bg-blue-600'
+                        : isCompleted
+                          ? 'bg-opacity-20 hover:bg-opacity-30 bg-green-700 hover:bg-green-700'
+                          : !canBeActive
+                            ? 'cursor-not-allowed opacity-50'
+                            : 'hover:bg-gray-700'
+                    }`}
                     style={{ textDecoration: 'none' }}
                   >
-                    <span className={`text-xl ${collapsed ? 'flex w-full justify-center' : 'flex-shrink-0'}`}>
+                    <span
+                      className={`text-xl ${collapsed ? 'flex w-full justify-center' : 'flex-shrink-0'}`}
+                    >
                       {step.icon}
                     </span>
                     {!collapsed && (

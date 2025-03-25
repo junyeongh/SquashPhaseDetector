@@ -11,11 +11,13 @@ from moviepy import concatenate_videoclips, VideoFileClip
 input_folder_path = None
 output_folder_path = None
 
+
 def __init__(input_folder_path, output_folder_path):
     input_folder_path = Path() / input_folder_path
     input_folder_path.mkdir(exist_ok=True)
     output_folder_path = Path() / output_folder_path
     output_folder_path.mkdir(exist_ok=True)
+
 
 # MARK: Helper
 def extract_frames(video_path, every_n_frame=5, crop_ratio=0.33):
@@ -49,18 +51,22 @@ def extract_frames(video_path, every_n_frame=5, crop_ratio=0.33):
     print(f"Extracted {len(frames)} frames")
     return frames
 
+
 def calculate_phash(frame):
     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     return imagehash.phash(pil_image)
+
 
 def calculate_phash_similarity(frame1, frame2):
     phash1 = calculate_phash(frame1)
     phash2 = calculate_phash(frame2)
     return phash1 - phash2
 
+
 def is_similar_phash(frame1, frame2, max_distance=5):
     phash_similarity = calculate_phash_similarity(frame1, frame2)
     return phash_similarity <= max_distance
+
 
 def find_typical_frame(frames):
     phashes = [calculate_phash(f) for f in frames]
@@ -81,6 +87,7 @@ def find_typical_frame(frames):
             return frames[i]
 
     return None
+
 
 # MARK: Video Processing
 def find_main_view_timestamps_phash(
@@ -127,6 +134,7 @@ def find_main_view_timestamps_phash(
     cap.release()
     return timestamps
 
+
 # MARK: Process
 def generate_timestamp(input_file_path):
     print(f"Processing file: {input_file_path}")
@@ -158,4 +166,3 @@ def generate_timestamp(input_file_path):
     print(f"Timestamps saved to: {timestamps_file_path}")
 
     return timestamps_file_path
-
