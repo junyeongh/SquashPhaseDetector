@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { fetchRootMessage } from '@/services/api';
 import {
   uploadVideo,
   getUploadedFiles,
@@ -9,7 +8,7 @@ import {
 } from '@/services/api/video';
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
-import ProcessingPage from '@/pages/ProcessingPage';
+import PreprocessingPage from '@/pages/PreprocessingPage';
 import './App.css';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
   const location = useLocation();
 
   // API connection state
-  const [message, setMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +53,6 @@ function App() {
 
   // File listing states
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
-  const [galleryFiles, setGalleryFiles] = useState<FileInfo[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
   const [fileListError, setFileListError] = useState<string | null>(null);
 
@@ -80,8 +77,6 @@ function App() {
     const getApiMessage = async () => {
       try {
         setLoading(true);
-        const data = await fetchRootMessage();
-        setMessage(data.message);
         setError(null);
       } catch (err) {
         setError(
@@ -94,22 +89,18 @@ function App() {
     };
 
     getApiMessage();
-    fetchAllFiles();
+    fetchUploadedFiles();
   }, []);
 
   // Function to fetch both uploaded and gallery files
-  const fetchAllFiles = async () => {
+  const fetchUploadedFiles = async () => {
     setIsLoadingFiles(true);
     setFileListError(null);
 
     try {
-      const [uploads, gallery] = await Promise.all([
-        getUploadedFiles(),
-        getGalleryFiles(),
-      ]);
+      const uploads = await getUploadedFiles();
 
       setUploadedFiles(uploads);
-      setGalleryFiles(gallery);
     } catch (error) {
       setFileListError(
         error instanceof Error ? error.message : 'Failed to load files'
@@ -150,7 +141,7 @@ function App() {
       handleStepChange('preprocess');
 
       // Refresh file lists after successful upload
-      fetchAllFiles();
+      fetchUploadedFiles();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed');
     } finally {
@@ -322,7 +313,7 @@ function App() {
         return renderUploadPage();
       case 'preprocess':
         return (
-          <ProcessingPage
+          <PreprocessingPage
             originalVideoUrl={`/api/video/file/${uploadedVideo?.filename}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}

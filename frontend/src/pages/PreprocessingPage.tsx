@@ -10,7 +10,7 @@ interface ProcessingPageProps {
   processingStatus: string;
 }
 
-const ProcessingPage: React.FC<ProcessingPageProps> = ({
+const PreprocessingPage: React.FC<ProcessingPageProps> = ({
   originalVideoUrl,
   processedVideoUrl,
   isProcessing,
@@ -87,4 +87,4 @@ const ProcessingPage: React.FC<ProcessingPageProps> = ({
   );
 };
 
-export default ProcessingPage;
+export default PreprocessingPage;

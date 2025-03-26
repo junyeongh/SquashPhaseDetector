@@ -49,20 +49,3 @@ export const getUploadedFiles = async (): Promise<FileInfo[]> => {
     }
   }
 };
-
-export const getGalleryFiles = async (): Promise<FileInfo[]> => {
-  try {
-    const response = await axios.get(`${API_URL}/gallery`);
-    return response.data.files || [];
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      console.error('Error fetching gallery files:', error.response.data);
-      throw new Error(
-        error.response.data.detail || 'Failed to fetch gallery files'
-      );
-    } else {
-      console.error('Error fetching gallery files:', error);
-      throw error;
-    }
-  }
-};
