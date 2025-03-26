@@ -203,7 +203,7 @@ function App() {
             <div className='w-full max-w-md'>
               <label
                 htmlFor='fileInput'
-                className='block w-full cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-12 text-center transition-colors hover:border-blue-500'
+                className='block w-full cursor-pointer rounded border-2 border-dashed border-gray-300 p-12 text-center'
               >
                 <div className='space-y-2'>
                   <div className='text-4xl'>📤</div>
@@ -226,12 +226,12 @@ function App() {
 
               {isUploading && (
                 <div className='mt-4 text-center'>
-                  <p className='text-blue-600'>Uploading video...</p>
+                  <p className='text-gray-600'>Uploading video...</p>
                 </div>
               )}
 
               {uploadError && (
-                <div className='mt-4 rounded-md bg-red-100 p-3 text-red-700'>
+                <div className='mt-4 rounded-md bg-gray-200 p-3 text-gray-700'>
                   <p>{uploadError}</p>
                 </div>
               )}
@@ -288,7 +288,7 @@ function App() {
                                 setCompletedSteps(updatedCompletedSteps);
                                 handleStepChange('preprocess');
                               }}
-                              className='text-blue-600 hover:text-blue-800'
+                              className='text-gray-600'
                             >
                               Select
                             </button>
@@ -359,9 +359,9 @@ function App() {
   // Show loading screen if checking API connection
   if (loading) {
     return (
-      <div className='flex h-screen items-center justify-center bg-gray-100'>
-        <div className='rounded-lg bg-white p-8 text-center shadow-lg'>
-          <p className='text-xl text-gray-800'>
+      <div className='flex h-screen items-center justify-center bg-gray-200'>
+        <div className='rounded bg-gray-100 p-8 text-center'>
+          <p className='text-xl text-gray-600'>
             Connecting to backend server...
           </p>
         </div>
@@ -372,15 +372,15 @@ function App() {
   // Show error screen if API connection failed
   if (error) {
     return (
-      <div className='flex h-screen items-center justify-center bg-gray-100'>
-        <div className='max-w-2xl rounded-lg bg-white p-8 shadow-lg'>
-          <h1 className='mb-4 text-2xl font-bold text-red-600'>
+      <div className='flex h-screen items-center justify-center bg-gray-200'>
+        <div className='max-w-2xl rounded bg-gray-100 p-8'>
+          <h1 className='mb-4 text-2xl font-bold text-gray-700'>
             Connection Error
           </h1>
-          <p className='mb-4 text-gray-700'>{error}</p>
+          <p className='mb-4 text-gray-600'>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className='rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600'
+            className='rounded bg-gray-500 px-4 py-2 text-gray-200'
           >
             Retry Connection
           </button>

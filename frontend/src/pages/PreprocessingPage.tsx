@@ -65,17 +65,17 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
                 Current Frame: {currentFrame}
               </p>
               {isProcessing && (
-                <p className='text-sm text-blue-600'>{processingStatus}</p>
+                <p className='text-sm text-gray-600'>{processingStatus}</p>
               )}
             </div>
 
             <button
               onClick={onProcess}
               disabled={isProcessing}
-              className={`rounded-md px-5 py-2 font-medium transition-colors ${
+              className={`rounded px-5 py-2 font-medium ${
                 isProcessing
                   ? 'cursor-not-allowed bg-gray-300 text-gray-500'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gray-500 text-gray-200'
               }`}
             >
               {isProcessing ? 'Processing...' : 'Process Video'}

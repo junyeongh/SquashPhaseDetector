@@ -72,19 +72,19 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
       <div
-        className='h-screen flex-shrink-0 transition-all duration-300 ease-in-out'
+        className='h-screen flex-shrink-0'
         style={{
           width: collapsed
             ? 'var(--spacing-sidebar-collasped)'
             : 'var(--spacing-sidebar)',
         }}
       >
-        <div className='flex h-full flex-col bg-gray-800 text-black'>
-          <div className='flex items-center justify-between border-b border-gray-700 p-4'>
+        <div className='flex h-full flex-col bg-gray-700 text-gray-300'>
+          <div className='flex items-center justify-between border-b border-gray-600 p-4'>
             {/* {!collapsed && <h1 className="font-bold text-lg">Squash Analyzer</h1>} */}
             <button
               onClick={toggleCollapsed}
-              className='text-black-400 rounded p-2 hover:bg-gray-700'
+              className='text-gray-400 rounded p-2'
             >
               {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
             </button>
@@ -117,14 +117,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                       }
                       onStepChange(step.id);
                     }}
-                    className={`flex w-full items-center gap-3 p-4 text-left text-white no-underline transition-colors ${
+                    className={`flex w-full items-center gap-3 p-4 text-left text-gray-300 no-underline ${
                       isActive
-                        ? 'bg-blue-600'
+                        ? 'bg-gray-500'
                         : isCompleted
-                          ? 'bg-opacity-20 hover:bg-opacity-30 bg-green-700 hover:bg-green-700'
+                          ? 'bg-gray-600'
                           : !canBeActive
                             ? 'cursor-not-allowed opacity-50'
-                            : 'hover:bg-gray-700'
+                            : ''
                     }`}
                     style={{ textDecoration: 'none' }}
                   >
@@ -137,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <div className='flex items-center gap-2 overflow-hidden'>
                         <span className='truncate'>{step.label}</span>
                         {isCompleted && (
-                          <span className='flex-shrink-0 text-green-400'>
+                          <span className='flex-shrink-0 text-gray-400'>
                             ✓
                           </span>
                         )}
