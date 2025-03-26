@@ -3,7 +3,6 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import {
   uploadVideo,
   getUploadedFiles,
-  getGalleryFiles,
   FileInfo,
 } from '@/services/api/video';
 import AppLayout from '@/layout/AppLayout';
@@ -134,13 +133,9 @@ function App() {
       setUploadedVideo(response);
       console.log('Upload successful:', response);
 
-      // Mark upload step as completed and move to next step
-      const updatedCompletedSteps = new Set(completedSteps);
-      updatedCompletedSteps.add('upload');
-      setCompletedSteps(updatedCompletedSteps);
-      handleStepChange('preprocess');
-
       // Refresh file lists after successful upload
+      // Note: We don't automatically redirect to preprocess page anymore
+      // so the user can select from the uploaded videos
       fetchUploadedFiles();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed');

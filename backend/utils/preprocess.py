@@ -1,30 +1,18 @@
-# import time
 from collections import Counter
-from pathlib import Path
-
+import os
 import cv2
 import imagehash
 from PIL import Image
-from moviepy import concatenate_videoclips, VideoFileClip
 
 
-input_folder_path = None
-output_folder_path = None
+def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
+    # extract frames
+    every_n_frame = 5
+    crop_ratio = 0.33
 
-
-def __init__(input_folder_path, output_folder_path):
-    input_folder_path = Path() / input_folder_path
-    input_folder_path.mkdir(exist_ok=True)
-    output_folder_path = Path() / output_folder_path
-    output_folder_path.mkdir(exist_ok=True)
-
-
-# MARK: Helper
-def extract_frames(video_path, every_n_frame=5, crop_ratio=0.33):
-    cap = cv2.VideoCapture(video_path)
-
+    cap = cv2.VideoCapture(video_file_path)
     if not cap.isOpened():
-        print(f"Cannot open video file: {video_path}")
+        print(f"Cannot open video file: {video_file_path}")
         return []
 
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -49,26 +37,32 @@ def extract_frames(video_path, every_n_frame=5, crop_ratio=0.33):
 
     cap.release()
     print(f"Extracted {len(frames)} frames")
-    return frames
+
+    if not frames:
+        print("Failed to extract frames!")
+        return None
+
+    typical_frame = find_typical_frame(frames)
+    if typical_frame is None:
+        print("Failed to find typical frame!")
+        return None
+    else:
+        timestamps = find_main_view_timestamps_phash(video_file_path, typical_frame)
+
+    mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.csv")
+    with open(mainview_file_path, "w") as f:
+        f.write("StartFrame,EndFrame\n")
+        for start, end, start_frame, end_frame in timestamps:
+            f.write(f"{start:.2f},{end:.2f},{start_frame},{end_frame}\n")
 
 
-def calculate_phash(frame):
+# find_typical_frame
+def calculate_phash(self, frame):
     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     return imagehash.phash(pil_image)
 
 
-def calculate_phash_similarity(frame1, frame2):
-    phash1 = calculate_phash(frame1)
-    phash2 = calculate_phash(frame2)
-    return phash1 - phash2
-
-
-def is_similar_phash(frame1, frame2, max_distance=5):
-    phash_similarity = calculate_phash_similarity(frame1, frame2)
-    return phash_similarity <= max_distance
-
-
-def find_typical_frame(frames):
+def find_typical_frame(self, frames):
     phashes = [calculate_phash(f) for f in frames]
     if not phashes:
         print("Failed to compute pHash values!")
@@ -89,7 +83,18 @@ def find_typical_frame(frames):
     return None
 
 
-# MARK: Video Processing
+# find_main_view_timestamps_phash
+def calculate_phash_similarity(self, frame1, frame2):
+    phash1 = calculate_phash(frame1)
+    phash2 = calculate_phash(frame2)
+    return phash1 - phash2
+
+
+def is_similar_phash(self, frame1, frame2, max_distance=5):
+    phash_similarity = calculate_phash_similarity(frame1, frame2)
+    return phash_similarity <= max_distance
+
+
 def find_main_view_timestamps_phash(
     self,
     video_path,
@@ -133,36 +138,3 @@ def find_main_view_timestamps_phash(
 
     cap.release()
     return timestamps
-
-
-# MARK: Process
-def generate_timestamp(input_file_path):
-    print(f"Processing file: {input_file_path}")
-    frames = extract_frames(input_file_path)
-
-    if not frames:
-        print("Failed to extract frames!")
-        return None
-
-    typical_frame = find_typical_frame(frames)
-    if typical_frame is None:
-        print("Failed to find typical frame!")
-        return None
-    else:
-        timestamps = find_main_view_timestamps_phash(input_file_path, typical_frame)
-
-    print(f"Main view timestamps: {timestamps}")
-
-    # Save output
-    file_name = Path(input_file_path).stem
-
-    # Save output - timestamps to CSV file
-    timestamps_file_path = Path(output_folder_path) / f"{file_name}_timestamps.csv"
-    # https://github.com/Zulko/moviepy/blob/db19920764b5cb1d8aa6863019544fd8ae0d3cce/moviepy/video/io/ffmpeg_reader.py#L169
-    with open(timestamps_file_path, "w") as f:
-        f.write("Start,End,StartFrame,EndFrame\n")
-        for start, end, start_frame, end_frame in timestamps:
-            f.write(f"{start:.2f},{end:.2f},{start_frame},{end_frame}\n")
-    print(f"Timestamps saved to: {timestamps_file_path}")
-
-    return timestamps_file_path

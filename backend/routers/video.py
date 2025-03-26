@@ -1,12 +1,12 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
 import os
 import uuid
 import shutil
 from pathlib import Path
 import time
 import json
-import subprocess
 
+from utils.video import extract_frames
 
 router = APIRouter(
     prefix="/video",
@@ -19,7 +19,7 @@ GALLERY_FOLDER = os.environ.get("GALLERY_FOLDER", "/data/gallery")
 
 
 @router.post("/upload")
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """
     Upload a video file for processing
     """
@@ -32,18 +32,18 @@ async def upload_video(file: UploadFile = File(...)):
     video_file_extension = Path(file.filename).suffix
 
     # Create subdirectory for this upload
-    upload_dir = os.path.join(UPLOAD_FOLDER, video_file_id)
-    os.makedirs(upload_dir, exist_ok=True)
+    video_file_dir = os.path.join(UPLOAD_FOLDER, video_file_id)
+    os.makedirs(video_file_dir, exist_ok=True)
 
     video_filename = f"{video_file_id}{video_file_extension}"
-    video_file_path = os.path.join(upload_dir, video_filename)
+    video_file_path = os.path.join(video_file_dir, video_filename)
 
     # Save the uploaded file
     with open(video_file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     # Save the metadata
-    video_metadata_path = os.path.join(upload_dir, "metadata.json")
+    video_metadata_path = os.path.join(video_file_dir, "metadata.json")
     with open(video_metadata_path, "w", encoding="UTF-8") as f:
         json.dump(
             {
@@ -57,20 +57,11 @@ async def upload_video(file: UploadFile = File(...)):
         )
 
     # Create subdirectory for each frames for future use
-    frame_dir = os.path.join(upload_dir, "frames/")
+    frame_dir = os.path.join(video_file_dir, "frames/")
     os.makedirs(frame_dir, exist_ok=True)
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-i",
-            video_file_path,
-            "-q:v",
-            "2",
-            "-start_number",
-            "0",
-            f"{frame_dir}/%06d.jpg",
-        ]
-    )
+
+    # Add frame extraction as a background task
+    background_tasks.add_task(extract_frames, video_file_path, frame_dir)
 
     return {
         "UUID": video_file_id,
