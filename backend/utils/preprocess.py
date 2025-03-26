@@ -49,20 +49,26 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
     else:
         timestamps = find_main_view_timestamps_phash(video_file_path, typical_frame)
 
+    print(f"Main view timestamps: {timestamps}")
+
     mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.csv")
     with open(mainview_file_path, "w") as f:
-        f.write("StartFrame,EndFrame\n")
+        f.write("Start,End,StartFrame,EndFrame\n")
         for start, end, start_frame, end_frame in timestamps:
             f.write(f"{start:.2f},{end:.2f},{start_frame},{end_frame}\n")
 
+    print(f"Timestamps saved to: {mainview_file_path}")
+    return mainview_file_path
 
-# find_typical_frame
-def calculate_phash(self, frame):
+
+# calculate phash
+def calculate_phash(frame):
     pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
     return imagehash.phash(pil_image)
 
 
-def find_typical_frame(self, frames):
+# find_typical_frame
+def find_typical_frame(frames):
     phashes = [calculate_phash(f) for f in frames]
     if not phashes:
         print("Failed to compute pHash values!")
@@ -84,19 +90,18 @@ def find_typical_frame(self, frames):
 
 
 # find_main_view_timestamps_phash
-def calculate_phash_similarity(self, frame1, frame2):
+def calculate_phash_similarity(frame1, frame2):
     phash1 = calculate_phash(frame1)
     phash2 = calculate_phash(frame2)
     return phash1 - phash2
 
 
-def is_similar_phash(self, frame1, frame2, max_distance=5):
+def is_similar_phash(frame1, frame2, max_distance=5):
     phash_similarity = calculate_phash_similarity(frame1, frame2)
     return phash_similarity <= max_distance
 
 
 def find_main_view_timestamps_phash(
-    self,
     video_path,
     typical_frame,
     max_distance=10,
