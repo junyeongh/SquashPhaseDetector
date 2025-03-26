@@ -1,10 +1,7 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-import uuid
-import shutil
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 # Import routers
 from routers import video, segmentation, pose, analysis
@@ -13,7 +10,7 @@ from routers import video, segmentation, pose, analysis
 app = FastAPI(
     title="Squash Game Phase Detection API",
     description="API for analyzing squash videos and detecting game phases",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # Configure CORS
@@ -38,14 +35,18 @@ app.include_router(segmentation.router)
 app.include_router(pose.router)
 app.include_router(analysis.router)
 
+
 @app.get("/")
 async def root():
     return {"message": "Squash Game Phase Detection API"}
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

@@ -19,19 +19,18 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data:rw
-      - ./uploads:/app/uploads:rw
+      - ./backend:/opt/app:rw
+      - ./data:/data:rw
+      - model-checkpoints:/opt/app/checkpoints
+      - pip-cache:/root/.cache/pip
     environment:
       - ENVIRONMENT=development
-      - UPLOAD_FOLDER=/app/uploads
-      - EXPORT_FOLDER=/app/data/exports
-      # Video processing settings
-      - FFMPEG_NUM_THREADS=2
-      - VIDEO_ENCODE_CODEC=libx264
-      - VIDEO_ENCODE_CRF=23
-      - VIDEO_ENCODE_FPS=30
-      - VIDEO_ENCODE_MAX_WIDTH=1280
-      - VIDEO_ENCODE_MAX_HEIGHT=720
+      - EXPORT_FOLDER=/data/exports
+      - GALLERY_FOLDER=/data/gallery
+      - THUMBNAILS_FOLDER=/data/thumbnails
+      - UPLOAD_FOLDER=/data/uploads
+      - WATCHFILES_FORCE_POLLING=true
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     deploy:
       resources:
         reservations:
@@ -45,3 +44,7 @@ services:
 networks:
   squash-net:
     driver: bridge
+
+volumes:
+  model-checkpoints:
+  pip-cache:

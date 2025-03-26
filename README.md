@@ -14,6 +14,10 @@ A system for analyzing squash match videos, automatically detecting game phases 
 │   └── Dockerfile           # Frontend container definition
 ├── docker-compose.yml       # Docker configuration
 ├── data/                    # Data output directory
+│   ├── uploads/
+│       ├── [uuid]/
+│           └── frames/
+│   └── exports/
 └── uploads/                 # Video upload directory
 ```
 
@@ -31,11 +35,11 @@ A system for analyzing squash match videos, automatically detecting game phases 
 2. Start the containers:
 
 ```bash
-docker-compose up -d
+docker-compose up --build
 ```
 
-3. Access the frontend at http://localhost:3000
-4. API documentation is available at http://localhost:8000/docs
+3. Access the frontend at <http://localhost:3000>
+4. API documentation is available at <http://localhost:8000/docs>
 
 ## Processing Pipeline
 
@@ -45,13 +49,3 @@ docker-compose up -d
 4. Apply YOLO-Pose to detect body landmarks
 5. Analyze pose data to detect game states (rally vs rest)
 6. Export results for further analysis
-
-## API Endpoints
-
-- `POST /video/upload`: Upload a video file
-- `POST /session/start`: Initialize processing session
-- `POST /segmentation/mark-players`: Define player positions
-- `POST /segmentation/process`: Generate player masks
-- `POST /pose/detect`: Extract body landmarks
-- `POST /analysis/detect-phases`: Detect game phases
-- `GET /analysis/export/{session_id}`: Download results
