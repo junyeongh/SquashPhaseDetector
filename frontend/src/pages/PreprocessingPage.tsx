@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactPlayerWrapper from '@/components/video/VideoPlayer';
 import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
+import { Play, Loader } from 'lucide-react';
 
 interface ProcessingPageProps {
   originalVideoUrl: string;
@@ -37,11 +38,17 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
 
   return (
     <div className='flex h-full flex-col'>
-      <h1 className='mb-3 text-2xl font-bold'>Video Preprocessing</h1>
+      <h1 className='mb-2 text-lg font-medium text-gray-800'>
+        Video Preprocessing
+      </h1>
+      <p className='mb-4 text-xs text-gray-500'>
+        Analyze the video to detect main view angles and prepare it for player
+        segmentation.
+      </p>
 
-      <div className='flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-md'>
-        {/* Video Player */}
-        <div className='flex flex-1 items-center justify-center bg-gray-50 p-4'>
+      <div className='flex flex-1 flex-col overflow-hidden'>
+        {/* Video Player Container */}
+        <div className='overflow-hidden rounded-md border border-gray-200 bg-white'>
           <ReactPlayerWrapper
             src={originalVideoUrl}
             onFrameChange={setCurrentFrame}
@@ -50,27 +57,53 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
         </div>
 
         {/* Processing Controls */}
-        <div className='border-t bg-white p-4'>
+        <div className='mt-4 rounded-md border border-gray-200 bg-white p-3'>
           <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm text-gray-600'>
-                Current Frame: {currentFrame}
-              </p>
+            <div className='space-y-1'>
+              <div className='flex items-center space-x-2'>
+                <div className='text-xs text-gray-500'>Current Frame:</div>
+                <div className='rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700'>
+                  {currentFrame}
+                </div>
+              </div>
+
               {isProcessing && (
-                <p className='text-sm text-gray-600'>{processingStatus}</p>
+                <div className='flex items-center space-x-2 text-xs text-gray-500'>
+                  <Loader className='h-3 w-3 animate-spin text-gray-500' />
+                  <span>{processingStatus}</span>
+                </div>
+              )}
+
+              {mainviewTimestamps.length > 0 && (
+                <div className='text-xs text-gray-500'>
+                  <span className='font-medium'>
+                    {mainviewTimestamps.length}
+                  </span>{' '}
+                  main view segments detected
+                </div>
               )}
             </div>
 
             <button
               onClick={onProcess}
               disabled={isProcessing}
-              className={`rounded px-5 py-2 font-medium ${
+              className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
                 isProcessing
-                  ? 'cursor-not-allowed bg-gray-300 text-gray-500'
-                  : 'bg-gray-500 text-gray-200'
+                  ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                  : 'border border-gray-300 bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {isProcessing ? 'Processing...' : 'Process Video'}
+              {isProcessing ? (
+                <>
+                  <Loader className='h-3 w-3 animate-spin' />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Play className='h-3 w-3' />
+                  Process Video
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1,10 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Routes,
-  Route,
-  useNavigate,
-  useLocation,
-} from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
 import { BASE_API_URL } from '@/services/api/config';
@@ -52,7 +47,12 @@ function App() {
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadedVideo, setUploadedVideo] = useState<any | null>(null);
+  const [uploadedVideo, setUploadedVideo] = useState<{
+    uuid: string;
+    filename: string;
+    original_filename: string;
+    content_type: string;
+  } | null>(null);
 
   // File listing states
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
@@ -197,21 +197,21 @@ function App() {
   const renderUploadPage = () => {
     return (
       <div className='flex h-full flex-col'>
-        <h1 className='mb-4 text-2xl font-bold'>Upload Squash Video</h1>
+        <h1 className='mb-3 text-lg font-medium'>Upload Squash Video</h1>
 
-        <div className='flex-1 rounded-lg bg-white p-6 shadow-md'>
+        <div className='flex-1 rounded-lg border border-gray-200 bg-white p-5'>
           <div className='flex h-full flex-col items-center justify-center'>
             <div className='w-full max-w-md'>
               <label
                 htmlFor='fileInput'
-                className='block w-full cursor-pointer rounded border-2 border-dashed border-gray-300 p-12 text-center'
+                className='block w-full cursor-pointer rounded border-2 border-dashed border-gray-200 p-10 text-center'
               >
                 <div className='space-y-2'>
-                  <div className='text-4xl'>📤</div>
-                  <div className='text-lg font-medium'>
+                  <div className='text-gray-400'>📤</div>
+                  <div className='text-sm font-medium text-gray-700'>
                     Drag & drop your video here
                   </div>
-                  <div className='text-sm text-gray-500'>
+                  <div className='text-xs text-gray-500'>
                     or click to browse
                   </div>
                 </div>
@@ -226,35 +226,37 @@ function App() {
               </label>
 
               {isUploading && (
-                <div className='mt-4 text-center'>
-                  <p className='text-gray-600'>Uploading video...</p>
+                <div className='mt-3 text-center'>
+                  <p className='text-xs text-gray-600'>Uploading video...</p>
                 </div>
               )}
 
               {uploadError && (
-                <div className='mt-4 rounded-md bg-gray-200 p-3 text-gray-700'>
+                <div className='mt-3 rounded-md bg-gray-100 p-2 text-xs text-gray-700'>
                   <p>{uploadError}</p>
                 </div>
               )}
             </div>
 
             {uploadedFiles.length > 0 && (
-              <div className='mt-8 w-full'>
-                <h3 className='mb-2 text-lg font-semibold'>Recent Uploads</h3>
+              <div className='mt-6 w-full'>
+                <h3 className='mb-2 text-sm font-medium text-gray-700'>
+                  Recent Uploads
+                </h3>
                 <div className='overflow-x-auto'>
                   <table className='min-w-full border border-gray-200 bg-white'>
                     <thead className='bg-gray-50'>
                       <tr>
-                        <th className='px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase'>
+                        <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
                           Filename
                         </th>
-                        <th className='px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase'>
+                        <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
                           Size
                         </th>
-                        <th className='px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase'>
+                        <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
                           Created
                         </th>
-                        <th className='px-4 py-2 text-left text-xs font-medium tracking-wider text-gray-500 uppercase'>
+                        <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
                           Actions
                         </th>
                       </tr>
@@ -262,18 +264,18 @@ function App() {
                     <tbody className='divide-y divide-gray-200'>
                       {uploadedFiles.slice(0, 5).map((file, index) => (
                         <tr key={index} className='hover:bg-gray-50'>
-                          <td className='px-4 py-2 text-left text-sm'>
+                          <td className='px-3 py-2 text-left text-xs text-gray-700'>
                             {file.filename}
                           </td>
-                          <td className='px-4 py-2 text-left text-sm'>
+                          <td className='px-3 py-2 text-left text-xs text-gray-700'>
                             {formatFileSize(file.size)}
                           </td>
-                          <td className='px-4 py-2 text-left text-sm'>
+                          <td className='px-3 py-2 text-left text-xs text-gray-700'>
                             {dayjs(file.created * 1000).format(
                               'YYYY-MM-DD HH:mm'
                             )}
                           </td>
-                          <td className='px-4 py-2 text-left text-sm'>
+                          <td className='px-3 py-2 text-left text-xs'>
                             <button
                               onClick={() => {
                                 // Set as selected video
@@ -294,7 +296,7 @@ function App() {
                                 // Navigate to the video detail page with UUID
                                 navigate(`/${file.uuid}`);
                               }}
-                              className='text-gray-600'
+                              className='rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50'
                             >
                               Select
                             </button>
@@ -329,7 +331,7 @@ function App() {
       case 'segmentation':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Segmentation page - Under development
             </p>
           </div>
@@ -337,7 +339,7 @@ function App() {
       case 'pose':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Pose detection page - Under development
             </p>
           </div>
@@ -345,7 +347,7 @@ function App() {
       case 'game_state':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Game state analysis page - Under development
             </p>
           </div>
@@ -353,7 +355,9 @@ function App() {
       case 'export':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>Export page - Under development</p>
+            <p className='text-xs text-gray-500'>
+              Export page - Under development
+            </p>
           </div>
         );
       default:
