@@ -4,7 +4,6 @@ import {
   Route,
   useNavigate,
   useLocation,
-  Navigate,
 } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
@@ -322,7 +321,6 @@ function App() {
         return (
           <PreprocessingPage
             originalVideoUrl={`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}`}
-            processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
             processingStatus={processingStatus}
