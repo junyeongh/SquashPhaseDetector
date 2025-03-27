@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import VideoPlayer from '@/components/video/VideoPlayer';
+import ReactPlayerWrapper from '@/components/video/VideoPlayer';
 import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
 
 interface ProcessingPageProps {
@@ -18,16 +18,18 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
 }) => {
   const { uuid } = useParams<{ uuid: string }>();
   const [currentFrame, setCurrentFrame] = useState(0);
-  const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
+  const [mainviewTimestamps, setMainviewTimestamps] = useState<
+    MainviewTimestamp[]
+  >([]);
 
   // Fetch mainview timestamps when component mounts
   useEffect(() => {
     if (uuid) {
       getMainviewTimestamps(uuid)
-        .then(timestamps => {
+        .then((timestamps) => {
           setMainviewTimestamps(timestamps);
         })
-        .catch(error => {
+        .catch((error) => {
           console.error('Failed to fetch mainview timestamps:', error);
         });
     }
@@ -40,7 +42,7 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
       <div className='flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-md'>
         {/* Video Player */}
         <div className='flex flex-1 items-center justify-center bg-gray-50 p-4'>
-          <VideoPlayer
+          <ReactPlayerWrapper
             src={originalVideoUrl}
             onFrameChange={setCurrentFrame}
             mainviewTimestamps={mainviewTimestamps}

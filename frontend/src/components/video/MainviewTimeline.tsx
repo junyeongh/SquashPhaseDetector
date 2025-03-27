@@ -17,7 +17,7 @@ const MainviewTimeline: React.FC<MainviewTimelineProps> = ({
   const playheadPosition = (currentTime / duration) * 100;
 
   return (
-    <div className="relative w-full h-8 bg-gray-200 rounded overflow-hidden">
+    <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
       {/* Timeline segments */}
       {timestamps.map((segment, index) => {
         const startPercent = (segment.start / duration) * 100;
@@ -26,7 +26,7 @@ const MainviewTimeline: React.FC<MainviewTimelineProps> = ({
         return (
           <div
             key={index}
-            className="absolute h-full bg-blue-200"
+            className='absolute h-full bg-blue-200'
             style={{
               left: `${startPercent}%`,
               width: `${widthPercent}%`,
@@ -38,7 +38,7 @@ const MainviewTimeline: React.FC<MainviewTimelineProps> = ({
 
       {/* Playhead */}
       <div
-        className="absolute top-0 h-full w-1 bg-gray-600"
+        className='absolute top-0 h-full w-1 bg-gray-600'
         style={{ left: `${playheadPosition}%` }}
       />
     </div>

@@ -10,7 +10,9 @@ export interface MainviewTimestamp {
   end_frame: number;
 }
 
-export const getMainviewTimestamps = async (videoUuid: string): Promise<MainviewTimestamp[]> => {
+export const getMainviewTimestamps = async (
+  videoUuid: string
+): Promise<MainviewTimestamp[]> => {
   try {
     const response = await axios.get(`${API_URL}/mainview/${videoUuid}`);
     return response.data.timestamps || [];

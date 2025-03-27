@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import PreprocessingPage from './PreprocessingPage';
 import { BASE_API_URL } from '@/services/api/config';

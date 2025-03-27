@@ -1,8 +1,9 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
+import ReactPlayer from 'react-player';
 import MainviewTimeline from './MainviewTimeline';
 import { MainviewTimestamp } from '@/services/api/video';
 
-interface VideoPlayerProps {
+interface ReactPlayerWrapperProps {
   src: string;
   onFrameChange?: (frameNumber: number) => void;
   fps?: number;
@@ -10,210 +11,141 @@ interface VideoPlayerProps {
   mainviewTimestamps?: MainviewTimestamp[];
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({
+const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
   src,
   onFrameChange,
   fps = 30,
   overlay,
   mainviewTimestamps = [],
 }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(0.5);
+  const playerRef = useRef<ReactPlayer>(null);
 
-  // Flag to ignore timeupdate events during manual seeking
-  const isSeekingRef = useRef(false);
-  const seekTimeoutRef = useRef<number | null>(null);
+  const [state, setState] = useState({
+    playing: false,
+    played: 0,
+    loaded: 0,
+    seeking: false,
+    duration: 0,
+    volume: 0.5,
+    playbackRate: 1.0,
+  });
 
-  // Convert time to frame number based on FPS
-  const timeToFrame = (timeInSeconds: number) =>
-    Math.round(timeInSeconds * fps);
+  // Extract state variables for convenience
+  const { playing, played, loaded, duration, volume, playbackRate } = state;
 
-  // Update current time and notify about frame changes
-  useEffect(() => {
-    if (videoRef.current) {
-      const updateTime = () => {
-        // Skip updates if we're manually seeking
-        if (isSeekingRef.current) return;
-
-        setCurrentTime(videoRef.current?.currentTime || 0);
-        if (onFrameChange) {
-          onFrameChange(timeToFrame(videoRef.current?.currentTime || 0));
-        }
-      };
-
-      videoRef.current.addEventListener('timeupdate', updateTime);
-      return () => {
-        videoRef.current?.removeEventListener('timeupdate', updateTime);
-      };
-    }
-  }, [videoRef, onFrameChange, fps, timeToFrame]);
-
-  // Update duration when metadata is loaded
-  useEffect(() => {
-    if (videoRef.current) {
-      const updateDuration = () => {
-        setDuration(videoRef.current?.duration || 0);
-      };
-
-      videoRef.current.addEventListener('loadedmetadata', updateDuration);
-      return () => {
-        videoRef.current?.removeEventListener('loadedmetadata', updateDuration);
-      };
-    }
-  }, [videoRef]);
-
-  // Play/pause function
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
+  // Calculate current frame based on played percentage and duration
+  const currentFrame = Math.round(played * duration * fps);
 
   // Format time for display (mm:ss)
-  const formatTime = (timeInSeconds: number) => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Helper function to update video time using the browser's seeked event
-  const updateVideoTime = useCallback(
-    (newTime: number) => {
-      if (!videoRef.current) return;
+  // Callbacks for ReactPlayer
+  const handleDuration = (duration: number) => {
+    setState((prev) => ({ ...prev, duration }));
+  };
 
-      // Remember if the video was playing
-      const wasPlaying = isPlaying;
-
-      // Pause the video first to ensure consistent behavior
-      if (wasPlaying) {
-        videoRef.current.pause();
-      }
-
-      // Set the flag to ignore timeupdate events
-      isSeekingRef.current = true;
-
-      // Clear any existing timeout
-      if (seekTimeoutRef.current) {
-        window.clearTimeout(seekTimeoutRef.current);
-      }
-
-      // Set the current time
-      videoRef.current.currentTime = newTime;
-
-      // Update state immediately for UI responsiveness
-      setCurrentTime(newTime);
-
+  const handleProgress = (progress: { played: number; loaded: number }) => {
+    if (!state.seeking) {
+      setState((prev) => ({ ...prev, ...progress }));
       if (onFrameChange) {
-        onFrameChange(timeToFrame(newTime));
+        onFrameChange(currentFrame);
       }
+    }
+  };
 
-      // Use a timeout to ensure the seeking has completed
-      seekTimeoutRef.current = window.setTimeout(() => {
-        // Reset the flag after seeking is complete
-        isSeekingRef.current = false;
+  // Seeking handlers
+  const handleSeekMouseDown = () => {
+    setState((prev) => ({ ...prev, seeking: true }));
+  };
 
-        // Resume playback if it was playing before
-        if (wasPlaying && videoRef.current) {
-          videoRef.current.play()
-            .then(() => setIsPlaying(true))
-            .catch(err => console.error("Error resuming playback:", err));
-        }
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setState((prev) => ({ ...prev, played: parseFloat(e.target.value) }));
+  };
 
-        seekTimeoutRef.current = null;
-      }, 50); // 50ms should be enough time for the browser to process the seek
-    },
-    [isPlaying, onFrameChange, timeToFrame]
-  );
+  const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    setState((prev) => ({ ...prev, seeking: false }));
+    const value = (e.target as HTMLInputElement).value;
+    playerRef.current?.seekTo(parseFloat(value));
+  };
 
-  // Don't forget to clean up the timeout when component unmounts
-  useEffect(() => {
-    return () => {
-      if (seekTimeoutRef.current) {
-        window.clearTimeout(seekTimeoutRef.current);
-      }
-    };
-  }, []);
+  // Frame navigation
+  const seekByFrame = (frameOffset: number) => {
+    const frameTime = 1 / fps;
+    const newTime = Math.max(
+      0,
+      Math.min(duration, (currentFrame + frameOffset) * frameTime)
+    );
 
-  // Handle seeking
-  const handleSeek = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newTime = parseFloat(e.target.value);
-      if (videoRef.current) {
-        updateVideoTime(newTime);
-      }
-    },
-    [updateVideoTime]
-  );
+    // Calculate new played value
+    const newPlayed = newTime / duration;
+
+    // Update state and seek to new position
+    setState((prev) => ({ ...prev, played: newPlayed, playing: false }));
+    playerRef.current?.seekTo(newPlayed);
+  };
+
+  // Seek by time (seconds)
+  const seekByTime = (secondsOffset: number) => {
+    const newTime = Math.max(
+      0,
+      Math.min(duration, played * duration + secondsOffset)
+    );
+
+    // Calculate new played value
+    const newPlayed = newTime / duration;
+
+    // Update state and seek to new position
+    setState((prev) => ({ ...prev, played: newPlayed }));
+    playerRef.current?.seekTo(newPlayed);
+  };
+
+  // Toggle play/pause
+  const togglePlay = () => {
+    setState((prev) => ({ ...prev, playing: !prev.playing }));
+  };
 
   // Handle volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
-      setVolume(newVolume);
-    }
+    setState((prev) => ({ ...prev, volume: newVolume }));
   };
 
-  // Seek by frame (forward or backward)
-  const seekByFrame = useCallback(
-    (frameOffset: number) => {
-      if (videoRef.current) {
-        const frameTime = 1 / fps;
-        const newTime = Math.max(
-          0,
-          Math.min(duration, currentTime + frameOffset * frameTime)
-        );
-
-        // Ensure video is paused when navigating frame by frame
-        // This is now handled in updateVideoTime, but we still need to update the state
-        if (isPlaying) {
-          setIsPlaying(false);
-        }
-
-        // Update the video time with our improved function
-        updateVideoTime(newTime);
-      }
-    },
-    [currentTime, duration, fps, isPlaying, updateVideoTime]
-  );
-
-  // Seek by time (seconds)
-  const seekByTime = useCallback(
-    (secondsOffset: number) => {
-      if (videoRef.current) {
-        const newTime = Math.max(
-          0,
-          Math.min(duration, currentTime + secondsOffset)
-        );
-
-        // Update the video time with our improved function
-        updateVideoTime(newTime);
-      }
-    },
-    [currentTime, duration, updateVideoTime]
-  );
+  // Handle playback rate change
+  const handleSetPlaybackRate = (rate: number) => {
+    setState((prev) => ({ ...prev, playbackRate: rate }));
+  };
 
   return (
     <div className='flex w-full flex-col'>
       {/* Video container */}
       <div className='relative aspect-video max-h-[calc(100vh-250px)] w-full overflow-hidden rounded-t bg-gray-900'>
-        {/* Video element */}
-        <video
-          ref={videoRef}
-          src={src}
+        {/* Debug info */}
+        {/* <div className="absolute top-0 left-0 bg-black bg-opacity-50 text-white p-2 z-10 text-xs">
+          Video URL: {src}
+        </div> */}
+
+        {/* ReactPlayer */}
+        <ReactPlayer
+          ref={playerRef}
+          url={src}
+          width='100%'
+          height='100%'
+          playing={playing}
+          volume={volume}
+          playbackRate={playbackRate}
+          onDuration={handleDuration}
+          onProgress={handleProgress}
+          onPlay={() => setState((prev) => ({ ...prev, playing: true }))}
+          onPause={() => setState((prev) => ({ ...prev, playing: false }))}
+          progressInterval={100} // Update progress more frequently
           className='h-full w-full object-contain'
-          onClick={togglePlay}
         />
 
-        {/* Overlay content (e.g., masks, pose skeletons) */}
+        {/* Overlay content */}
         {overlay && (
           <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>
             {overlay}
@@ -221,32 +153,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
       </div>
 
-      {/* Controls section - now outside the video */}
+      {/* Controls section */}
       <div className='rounded-b bg-gray-800 p-3 text-gray-300'>
-        {/* Progress bar */}
-        <div className='mb-2 flex items-center'>
-          <input
-            type='range'
-            min={0}
-            max={duration || 100}
-            value={currentTime}
-            onChange={handleSeek}
-            className='h-2 w-full cursor-pointer appearance-none rounded bg-gray-600'
-          />
-        </div>
-
-        {/* Mainview timeline */}
-        {mainviewTimestamps.length > 0 && (
-          <div className='mb-2'>
-            <MainviewTimeline
-              timestamps={mainviewTimestamps}
-              currentTime={currentTime}
-              duration={duration}
-              onSeek={updateVideoTime}
-            />
-          </div>
-        )}
-
         {/* Control buttons */}
         <div className='flex items-center justify-between'>
           <div className='flex items-center space-x-3'>
@@ -299,7 +207,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             {/* Play/Pause button */}
             <button onClick={togglePlay} className='rounded p-1.5'>
-              {isPlaying ? (
+              {playing ? (
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
                   width='24'
@@ -380,42 +288,136 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
             {/* Time display */}
             <span className='text-sm'>
-              {formatTime(currentTime)} / {formatTime(duration)}
+              {formatTime(played * duration)} / {formatTime(duration)}
             </span>
 
             {/* Frame number display */}
-            <span className='ml-2 text-sm'>
-              Frame: {timeToFrame(currentTime)}
-            </span>
+            <span className='ml-2 text-sm'>Frame: {currentFrame}</span>
           </div>
 
-          {/* Volume control */}
-          <div className='flex items-center space-x-1'>
-            <svg
-              xmlns='http://www.w3.org/2000/svg'
-              width='18'
-              height='18'
-              viewBox='0 0 24 24'
-              fill='none'
-              stroke='currentColor'
-              strokeWidth='2'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-            >
-              <polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'></polygon>
-              <path d='M15.54 8.46a5 5 0 0 1 0 7.07'></path>
-              <path d='M19.07 4.93a10 10 0 0 1 0 14.14'></path>
-            </svg>
-            <span className='w-8 text-xs'>{Math.round(volume * 100)}%</span>
+          <div className='flex items-center space-x-3'>
+            {/* Playback Rate */}
+            <div className='flex items-center space-x-1'>
+              <span className='text-xs'>Speed:</span>
+              <button
+                onClick={() => handleSetPlaybackRate(1.0)}
+                className={`rounded px-1 py-0.5 text-xs ${playbackRate === 1.0 ? 'bg-blue-500' : 'bg-gray-600'}`}
+              >
+                1x
+              </button>
+              <button
+                onClick={() => handleSetPlaybackRate(1.5)}
+                className={`rounded px-1 py-0.5 text-xs ${playbackRate === 1.5 ? 'bg-blue-500' : 'bg-gray-600'}`}
+              >
+                1.5x
+              </button>
+              <button
+                onClick={() => handleSetPlaybackRate(2.0)}
+                className={`rounded px-1 py-0.5 text-xs ${playbackRate === 2.0 ? 'bg-blue-500' : 'bg-gray-600'}`}
+              >
+                2x
+              </button>
+            </div>
+
+            {/* Volume control */}
+            <div className='flex items-center space-x-1'>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                width='18'
+                height='18'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'></polygon>
+                <path d='M15.54 8.46a5 5 0 0 1 0 7.07'></path>
+                <path d='M19.07 4.93a10 10 0 0 1 0 14.14'></path>
+              </svg>
+              <span className='w-8 text-xs'>{Math.round(volume * 100)}%</span>
+              <input
+                type='range'
+                min={0}
+                max={1}
+                step={0.1}
+                value={volume}
+                onChange={handleVolumeChange}
+                className='h-1.5 w-20 cursor-pointer appearance-none rounded-lg bg-gray-600'
+              />
+            </div>
+          </div>
+        </div>
+        {/* Progress bar with played and loaded indicators */}
+        <div className='mb-2 flex items-center'>
+          <div className='relative h-2 w-full'>
+            {/* Background */}
+            <div className='absolute h-2 w-full rounded bg-gray-600'></div>
+
+            {/* Loaded progress */}
+            <div
+              className='absolute h-2 rounded bg-gray-400'
+              style={{ width: `${loaded * 100}%` }}
+            />
+
+            {/* Played progress */}
+            <div
+              className='absolute h-2 rounded bg-blue-500'
+              style={{ width: `${played * 100}%` }}
+            />
+
+            {/* Seek control */}
             <input
               type='range'
               min={0}
-              max={1}
-              step={0.1}
-              value={volume}
-              onChange={handleVolumeChange}
-              className='h-1.5 w-20 cursor-pointer appearance-none rounded-lg bg-gray-600'
+              max={0.999999}
+              step='any'
+              value={played}
+              onMouseDown={handleSeekMouseDown}
+              onChange={handleSeekChange}
+              onMouseUp={handleSeekMouseUp}
+              className='absolute h-2 w-full cursor-pointer opacity-0'
             />
+          </div>
+        </div>
+
+        {/* Mainview timeline */}
+        {mainviewTimestamps.length > 0 && (
+          <div className='mb-2'>
+            <MainviewTimeline
+              timestamps={mainviewTimestamps}
+              currentTime={played * duration}
+              duration={duration}
+              onSeek={(time) => {
+                const newPlayed = time / duration;
+                setState((prev) => ({ ...prev, played: newPlayed }));
+                playerRef.current?.seekTo(newPlayed);
+              }}
+            />
+          </div>
+        )}
+        {/* Progress display */}
+        <div className='mt-2 flex items-center space-x-4 text-xs'>
+          <div className='flex items-center'>
+            <span className='mr-2'>Played:</span>
+            <div className='h-2 w-24 rounded bg-gray-600'>
+              <div
+                className='h-full rounded bg-blue-500'
+                style={{ width: `${played * 100}%` }}
+              />
+            </div>
+            <span className='ml-1'>{(played * 100).toFixed(1)}%</span>
+          </div>
+          <div className='flex items-center'>
+            <span className='mr-2'>Loaded:</span>
+            <div className='h-2 w-24 rounded bg-gray-600'>
+              <div
+                className='h-full rounded bg-gray-400'
+                style={{ width: `${loaded * 100}%` }}
+              />
+            </div>
+            <span className='ml-1'>{(loaded * 100).toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -423,4 +425,4 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   );
 };
 
-export default VideoPlayer;
+export default ReactPlayerWrapper;

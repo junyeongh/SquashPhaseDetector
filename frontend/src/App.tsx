@@ -270,7 +270,9 @@ function App() {
                             {formatFileSize(file.size)}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
-                            {dayjs(file.created * 1000).format('YYYY-MM-DD HH:mm')}
+                            {dayjs(file.created * 1000).format(
+                              'YYYY-MM-DD HH:mm'
+                            )}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
                             <button
