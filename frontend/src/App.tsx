@@ -5,6 +5,7 @@ import {
   getUploadedFiles,
   FileInfo,
 } from '@/services/api/video';
+import { BASE_API_URL } from '@/services/api/config';
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
 import PreprocessingPage from '@/pages/PreprocessingPage';
@@ -165,7 +166,7 @@ function App() {
 
         setTimeout(() => {
           setIsProcessing(false);
-          setProcessedVideoUrl(`/api/video/uuid/${uploadedVideo?.uuid}/processed`);
+          setProcessedVideoUrl(`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}/processed`);
 
           // Mark preprocess step as completed and move to next step
           const updatedCompletedSteps = new Set(completedSteps);
@@ -313,7 +314,7 @@ function App() {
       case 'preprocess':
         return (
           <PreprocessingPage
-            originalVideoUrl={`/api/video/uuid/${uploadedVideo?.uuid}`}
+            originalVideoUrl={`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}

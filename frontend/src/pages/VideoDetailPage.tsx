@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import PreprocessingPage from './PreprocessingPage';
+import { BASE_API_URL } from '@/services/api/config';
 
 // Define the types of processing stages
 type ProcessingStage = 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';
@@ -33,7 +34,7 @@ const VideoDetailPage: React.FC = () => {
         setTimeout(() => {
           setIsProcessing(false);
           // Use the uuid parameter for API calls
-          setProcessedVideoUrl(`/api/video/uuid/${uuid}/processed`);
+          setProcessedVideoUrl(`${BASE_API_URL}/video/stream/${uuid}/processed`);
 
           // Mark preprocess stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -53,7 +54,7 @@ const VideoDetailPage: React.FC = () => {
       case 'preprocess':
         return (
           <PreprocessingPage
-            originalVideoUrl={`/api/video/uuid/${uuid}`}
+            originalVideoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
