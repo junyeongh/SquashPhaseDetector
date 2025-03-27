@@ -1,6 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, createContext, useContext } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, Upload, Home } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Upload } from 'lucide-react';
 import { FileInfo } from '@/services/api/video';
 
 export type PipelineStep =

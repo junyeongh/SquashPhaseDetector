@@ -3,6 +3,32 @@ import { BASE_API_URL } from './config';
 
 const API_URL = `${BASE_API_URL}/video`;
 
+export interface MainviewTimestamp {
+  start: number;
+  end: number;
+  start_frame: number;
+  end_frame: number;
+}
+
+export const getMainviewTimestamps = async (
+  videoUuid: string
+): Promise<MainviewTimestamp[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/mainview/${videoUuid}`);
+    return response.data.timestamps || [];
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Error fetching mainview timestamps:', error.response.data);
+      throw new Error(
+        error.response.data.detail || 'Failed to fetch mainview timestamps'
+      );
+    } else {
+      console.error('Error fetching mainview timestamps:', error);
+      throw error;
+    }
+  }
+};
+
 export async function uploadVideo(file: File): Promise<any> {
   const formData = new FormData();
   formData.append('file', file);

@@ -4,7 +4,6 @@ import {
   Route,
   useNavigate,
   useLocation,
-  Navigate,
 } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
@@ -270,7 +269,9 @@ function App() {
                             {formatFileSize(file.size)}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
-                            {dayjs(file.created * 1000).format('YYYY-MM-DD HH:mm')}
+                            {dayjs(file.created * 1000).format(
+                              'YYYY-MM-DD HH:mm'
+                            )}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
                             <button
@@ -320,7 +321,6 @@ function App() {
         return (
           <PreprocessingPage
             originalVideoUrl={`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}`}
-            processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
             processingStatus={processingStatus}
@@ -409,7 +409,6 @@ function App() {
           </AppLayout>
         }
       />
-      {/* New route for video detail page with UUID */}
       <Route
         path='/:uuid'
         element={
@@ -421,57 +420,6 @@ function App() {
           >
             <VideoDetailPage />
           </AppLayout>
-        }
-      />
-      {/* Legacy routes - redirect to the new UUID-based route if a video is selected */}
-      <Route
-        path='/preprocess'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/segmentation'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/pose'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/game_state'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/export'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
         }
       />
     </Routes>
