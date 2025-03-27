@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
-  uploadVideo,
-  getUploadedFiles,
-  FileInfo,
-} from '@/services/api/video';
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  Navigate,
+} from 'react-router-dom';
+import dayjs from 'dayjs';
+import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
+import { BASE_API_URL } from '@/services/api/config';
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
 import PreprocessingPage from '@/pages/PreprocessingPage';
@@ -165,7 +169,9 @@ function App() {
 
         setTimeout(() => {
           setIsProcessing(false);
-          setProcessedVideoUrl(`/api/video/uuid/${uploadedVideo?.uuid}/processed`);
+          setProcessedVideoUrl(
+            `${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}/processed`
+          );
 
           // Mark preprocess step as completed and move to next step
           const updatedCompletedSteps = new Set(completedSteps);
@@ -264,7 +270,7 @@ function App() {
                             {formatFileSize(file.size)}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
-                            {file.created}
+                            {dayjs(file.created * 1000).format('YYYY-MM-DD HH:mm')}
                           </td>
                           <td className='px-4 py-2 text-left text-sm'>
                             <button
@@ -313,7 +319,7 @@ function App() {
       case 'preprocess':
         return (
           <PreprocessingPage
-            originalVideoUrl={`/api/video/uuid/${uploadedVideo?.uuid}`}
+            originalVideoUrl={`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
@@ -424,7 +430,7 @@ function App() {
           uploadedVideo ? (
             <Navigate to={`/${uploadedVideo.uuid}`} replace />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to='/' replace />
           )
         }
       />
@@ -434,7 +440,7 @@ function App() {
           uploadedVideo ? (
             <Navigate to={`/${uploadedVideo.uuid}`} replace />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to='/' replace />
           )
         }
       />
@@ -444,7 +450,7 @@ function App() {
           uploadedVideo ? (
             <Navigate to={`/${uploadedVideo.uuid}`} replace />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to='/' replace />
           )
         }
       />
@@ -454,7 +460,7 @@ function App() {
           uploadedVideo ? (
             <Navigate to={`/${uploadedVideo.uuid}`} replace />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to='/' replace />
           )
         }
       />
@@ -464,7 +470,7 @@ function App() {
           uploadedVideo ? (
             <Navigate to={`/${uploadedVideo.uuid}`} replace />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to='/' replace />
           )
         }
       />
