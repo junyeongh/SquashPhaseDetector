@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
   uploadVideo,
   getUploadedFiles,
@@ -8,6 +8,7 @@ import {
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
 import PreprocessingPage from '@/pages/PreprocessingPage';
+import VideoDetailPage from '@/pages/VideoDetailPage';
 import './App.css';
 
 function App() {
@@ -164,7 +165,7 @@ function App() {
 
         setTimeout(() => {
           setIsProcessing(false);
-          setProcessedVideoUrl('/api/video/file/' + uploadedVideo?.filename);
+          setProcessedVideoUrl(`/api/video/uuid/${uploadedVideo?.uuid}/processed`);
 
           // Mark preprocess step as completed and move to next step
           const updatedCompletedSteps = new Set(completedSteps);
@@ -270,18 +271,21 @@ function App() {
                               onClick={() => {
                                 // Set as selected video
                                 setUploadedVideo({
+                                  uuid: file.uuid,
                                   filename: file.filename,
                                   original_filename: file.filename,
                                   content_type: 'video/mp4', // Default to video/mp4 since FileInfo doesn't have type
                                 });
 
-                                // Mark upload step as completed and move to next step
+                                // Mark upload step as completed
                                 const updatedCompletedSteps = new Set(
                                   completedSteps
                                 );
                                 updatedCompletedSteps.add('upload');
                                 setCompletedSteps(updatedCompletedSteps);
-                                handleStepChange('preprocess');
+
+                                // Navigate to the video detail page with UUID
+                                navigate(`/${file.uuid}`);
                               }}
                               className='text-gray-600'
                             >
@@ -309,7 +313,7 @@ function App() {
       case 'preprocess':
         return (
           <PreprocessingPage
-            originalVideoUrl={`/api/video/file/${uploadedVideo?.filename}`}
+            originalVideoUrl={`/api/video/uuid/${uploadedVideo?.uuid}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
@@ -393,69 +397,75 @@ function App() {
             activeStep={activeStep}
             onStepChange={handleStepChange}
             completedSteps={completedSteps}
+            uploadedFiles={uploadedFiles}
           >
             {renderContent()}
           </AppLayout>
         }
       />
+      {/* New route for video detail page with UUID */}
       <Route
-        path='/preprocess'
+        path='/:uuid'
         element={
           <AppLayout
             activeStep={activeStep}
             onStepChange={handleStepChange}
             completedSteps={completedSteps}
+            uploadedFiles={uploadedFiles}
           >
-            {renderContent()}
+            <VideoDetailPage />
           </AppLayout>
+        }
+      />
+      {/* Legacy routes - redirect to the new UUID-based route if a video is selected */}
+      <Route
+        path='/preprocess'
+        element={
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/segmentation'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/pose'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/game_state'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/export'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
     </Routes>

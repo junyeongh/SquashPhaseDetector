@@ -27,6 +27,7 @@ export async function uploadVideo(file: File): Promise<any> {
 }
 
 export interface FileInfo {
+  uuid: string;
   filename: string;
   path: string;
   size: number;
