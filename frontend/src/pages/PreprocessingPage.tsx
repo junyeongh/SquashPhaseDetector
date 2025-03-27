@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import VideoPlayer from '@/components/video/VideoPlayer';
-import VideoToggle from '@/components/video/VideoToggle';
+import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
 
 interface ProcessingPageProps {
   originalVideoUrl: string;
-  processedVideoUrl?: string;
   isProcessing: boolean;
   onProcess: () => void;
   processingStatus: string;
@@ -12,48 +12,38 @@ interface ProcessingPageProps {
 
 const PreprocessingPage: React.FC<ProcessingPageProps> = ({
   originalVideoUrl,
-  processedVideoUrl,
   isProcessing,
   onProcess,
   processingStatus,
 }) => {
-  const [showProcessed, setShowProcessed] = useState(false);
+  const { uuid } = useParams<{ uuid: string }>();
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
 
-  // Reset to original view if processed video becomes unavailable
+  // Fetch mainview timestamps when component mounts
   useEffect(() => {
-    if (showProcessed && !processedVideoUrl) {
-      setShowProcessed(false);
+    if (uuid) {
+      getMainviewTimestamps(uuid)
+        .then(timestamps => {
+          setMainviewTimestamps(timestamps);
+        })
+        .catch(error => {
+          console.error('Failed to fetch mainview timestamps:', error);
+        });
     }
-  }, [processedVideoUrl, showProcessed]);
-
-  // Handle video toggle
-  const handleToggle = (processed: boolean) => {
-    if (processed && !processedVideoUrl) return;
-    setShowProcessed(processed);
-  };
+  }, [uuid]);
 
   return (
     <div className='flex h-full flex-col'>
       <h1 className='mb-3 text-2xl font-bold'>Video Preprocessing</h1>
 
       <div className='flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-md'>
-        {/* Video Toggle */}
-        <VideoToggle
-          isProcessed={showProcessed}
-          onToggle={handleToggle}
-          isProcessingComplete={!!processedVideoUrl}
-        />
-
         {/* Video Player */}
         <div className='flex flex-1 items-center justify-center bg-gray-50 p-4'>
           <VideoPlayer
-            src={
-              showProcessed && processedVideoUrl
-                ? processedVideoUrl
-                : originalVideoUrl
-            }
+            src={originalVideoUrl}
             onFrameChange={setCurrentFrame}
+            mainviewTimestamps={mainviewTimestamps}
           />
         </div>
 

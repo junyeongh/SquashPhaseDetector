@@ -21,14 +21,11 @@ const VideoDetailPage: React.FC = () => {
     new Set()
   );
 
-  // Mock states for video processing (these would be replaced with actual API calls)
+  // States for video processing
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [processedVideoUrl, setProcessedVideoUrl] = useState<
-    string | undefined
-  >(undefined);
 
-  // Mock function for processing video (simulate API call)
+  // Function for processing video
   const handleProcessVideo = () => {
     setIsProcessing(true);
     setProcessingStatus('Preprocessing video...');
@@ -42,10 +39,6 @@ const VideoDetailPage: React.FC = () => {
 
         setTimeout(() => {
           setIsProcessing(false);
-          // Use the uuid parameter for API calls
-          setProcessedVideoUrl(
-            `${BASE_API_URL}/video/stream/${uuid}/processed`
-          );
 
           // Mark preprocess stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -66,7 +59,6 @@ const VideoDetailPage: React.FC = () => {
         return (
           <PreprocessingPage
             originalVideoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
-            processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
             processingStatus={processingStatus}

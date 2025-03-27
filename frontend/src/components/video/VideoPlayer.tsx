@@ -1,10 +1,13 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
+import MainviewTimeline from './MainviewTimeline';
+import { MainviewTimestamp } from '@/services/api/video';
 
 interface VideoPlayerProps {
   src: string;
   onFrameChange?: (frameNumber: number) => void;
   fps?: number;
   overlay?: React.ReactNode;
+  mainviewTimestamps?: MainviewTimestamp[];
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -12,6 +15,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onFrameChange,
   fps = 30,
   overlay,
+  mainviewTimestamps = [],
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,6 +25,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Flag to ignore timeupdate events during manual seeking
   const isSeekingRef = useRef(false);
+  const seekTimeoutRef = useRef<number | null>(null);
 
   // Convert time to frame number based on FPS
   const timeToFrame = (timeInSeconds: number) =>
@@ -79,34 +84,63 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Helper function to update time with debounce
+  // Helper function to update video time using the browser's seeked event
   const updateVideoTime = useCallback(
     (newTime: number) => {
       if (!videoRef.current) return;
 
+      // Remember if the video was playing
+      const wasPlaying = isPlaying;
+
+      // Pause the video first to ensure consistent behavior
+      if (wasPlaying) {
+        videoRef.current.pause();
+      }
+
       // Set the flag to ignore timeupdate events
       isSeekingRef.current = true;
 
-      // Set the current time on the video element
+      // Clear any existing timeout
+      if (seekTimeoutRef.current) {
+        window.clearTimeout(seekTimeoutRef.current);
+      }
+
+      // Set the current time
       videoRef.current.currentTime = newTime;
 
-      // Update state and notify about frame change after a small delay
-      // This gives the browser time to process the time change
-      setTimeout(() => {
-        setCurrentTime(newTime);
+      // Update state immediately for UI responsiveness
+      setCurrentTime(newTime);
 
-        if (onFrameChange) {
-          onFrameChange(timeToFrame(newTime));
+      if (onFrameChange) {
+        onFrameChange(timeToFrame(newTime));
+      }
+
+      // Use a timeout to ensure the seeking has completed
+      seekTimeoutRef.current = window.setTimeout(() => {
+        // Reset the flag after seeking is complete
+        isSeekingRef.current = false;
+
+        // Resume playback if it was playing before
+        if (wasPlaying && videoRef.current) {
+          videoRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(err => console.error("Error resuming playback:", err));
         }
 
-        // Reset the flag after a delay to resume timeupdate events
-        setTimeout(() => {
-          isSeekingRef.current = false;
-        }, 50);
-      }, 10);
+        seekTimeoutRef.current = null;
+      }, 50); // 50ms should be enough time for the browser to process the seek
     },
-    [onFrameChange, timeToFrame]
+    [isPlaying, onFrameChange, timeToFrame]
   );
+
+  // Don't forget to clean up the timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (seekTimeoutRef.current) {
+        window.clearTimeout(seekTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle seeking
   const handleSeek = useCallback(
@@ -138,14 +172,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           Math.min(duration, currentTime + frameOffset * frameTime)
         );
 
-        // Update the video time with our debounced function
-        updateVideoTime(newTime);
-
         // Ensure video is paused when navigating frame by frame
+        // This is now handled in updateVideoTime, but we still need to update the state
         if (isPlaying) {
-          videoRef.current.pause();
           setIsPlaying(false);
         }
+
+        // Update the video time with our improved function
+        updateVideoTime(newTime);
       }
     },
     [currentTime, duration, fps, isPlaying, updateVideoTime]
@@ -160,7 +194,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           Math.min(duration, currentTime + secondsOffset)
         );
 
-        // Update the video time with our debounced function
+        // Update the video time with our improved function
         updateVideoTime(newTime);
       }
     },
@@ -200,6 +234,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className='h-2 w-full cursor-pointer appearance-none rounded bg-gray-600'
           />
         </div>
+
+        {/* Mainview timeline */}
+        {mainviewTimestamps.length > 0 && (
+          <div className='mb-2'>
+            <MainviewTimeline
+              timestamps={mainviewTimestamps}
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={updateVideoTime}
+            />
+          </div>
+        )}
 
         {/* Control buttons */}
         <div className='flex items-center justify-between'>

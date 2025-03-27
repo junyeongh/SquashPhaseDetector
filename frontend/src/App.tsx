@@ -409,7 +409,6 @@ function App() {
           </AppLayout>
         }
       />
-      {/* New route for video detail page with UUID */}
       <Route
         path='/:uuid'
         element={
@@ -421,57 +420,6 @@ function App() {
           >
             <VideoDetailPage />
           </AppLayout>
-        }
-      />
-      {/* Legacy routes - redirect to the new UUID-based route if a video is selected */}
-      <Route
-        path='/preprocess'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/segmentation'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/pose'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/game_state'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
-        }
-      />
-      <Route
-        path='/export'
-        element={
-          uploadedVideo ? (
-            <Navigate to={`/${uploadedVideo.uuid}`} replace />
-          ) : (
-            <Navigate to='/' replace />
-          )
         }
       />
     </Routes>
