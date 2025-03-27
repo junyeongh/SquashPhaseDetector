@@ -80,38 +80,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   // Helper function to update time with debounce
-  const updateVideoTime = useCallback((newTime: number) => {
-    if (!videoRef.current) return;
+  const updateVideoTime = useCallback(
+    (newTime: number) => {
+      if (!videoRef.current) return;
 
-    // Set the flag to ignore timeupdate events
-    isSeekingRef.current = true;
+      // Set the flag to ignore timeupdate events
+      isSeekingRef.current = true;
 
-    // Set the current time on the video element
-    videoRef.current.currentTime = newTime;
+      // Set the current time on the video element
+      videoRef.current.currentTime = newTime;
 
-    // Update state and notify about frame change after a small delay
-    // This gives the browser time to process the time change
-    setTimeout(() => {
-      setCurrentTime(newTime);
-
-      if (onFrameChange) {
-        onFrameChange(timeToFrame(newTime));
-      }
-
-      // Reset the flag after a delay to resume timeupdate events
+      // Update state and notify about frame change after a small delay
+      // This gives the browser time to process the time change
       setTimeout(() => {
-        isSeekingRef.current = false;
-      }, 50);
-    }, 10);
-  }, [onFrameChange, timeToFrame]);
+        setCurrentTime(newTime);
+
+        if (onFrameChange) {
+          onFrameChange(timeToFrame(newTime));
+        }
+
+        // Reset the flag after a delay to resume timeupdate events
+        setTimeout(() => {
+          isSeekingRef.current = false;
+        }, 50);
+      }, 10);
+    },
+    [onFrameChange, timeToFrame]
+  );
 
   // Handle seeking
-  const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
-    if (videoRef.current) {
-      updateVideoTime(newTime);
-    }
-  }, [updateVideoTime]);
+  const handleSeek = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newTime = parseFloat(e.target.value);
+      if (videoRef.current) {
+        updateVideoTime(newTime);
+      }
+    },
+    [updateVideoTime]
+  );
 
   // Handle volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,40 +129,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   // Seek by frame (forward or backward)
-  const seekByFrame = useCallback((frameOffset: number) => {
-    if (videoRef.current) {
-      const frameTime = 1 / fps;
-      const newTime = Math.max(
-        0,
-        Math.min(duration, currentTime + frameOffset * frameTime)
-      );
+  const seekByFrame = useCallback(
+    (frameOffset: number) => {
+      if (videoRef.current) {
+        const frameTime = 1 / fps;
+        const newTime = Math.max(
+          0,
+          Math.min(duration, currentTime + frameOffset * frameTime)
+        );
 
-      // Update the video time with our debounced function
-      updateVideoTime(newTime);
+        // Update the video time with our debounced function
+        updateVideoTime(newTime);
 
-      // Ensure video is paused when navigating frame by frame
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
+        // Ensure video is paused when navigating frame by frame
+        if (isPlaying) {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
       }
-    }
-  }, [currentTime, duration, fps, isPlaying, updateVideoTime]);
+    },
+    [currentTime, duration, fps, isPlaying, updateVideoTime]
+  );
 
   // Seek by time (seconds)
-  const seekByTime = useCallback((secondsOffset: number) => {
-    if (videoRef.current) {
-      const newTime = Math.max(
-        0,
-        Math.min(duration, currentTime + secondsOffset)
-      );
+  const seekByTime = useCallback(
+    (secondsOffset: number) => {
+      if (videoRef.current) {
+        const newTime = Math.max(
+          0,
+          Math.min(duration, currentTime + secondsOffset)
+        );
 
-      // Update the video time with our debounced function
-      updateVideoTime(newTime);
-    }
-  }, [currentTime, duration, updateVideoTime]);
+        // Update the video time with our debounced function
+        updateVideoTime(newTime);
+      }
+    },
+    [currentTime, duration, updateVideoTime]
+  );
 
   return (
-    <div className='flex flex-col w-full'>
+    <div className='flex w-full flex-col'>
       {/* Video container */}
       <div className='relative aspect-video max-h-[calc(100vh-250px)] w-full overflow-hidden rounded-t bg-gray-900'>
         {/* Video element */}
@@ -176,7 +188,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       </div>
 
       {/* Controls section - now outside the video */}
-      <div className='bg-gray-800 p-3 text-gray-300 rounded-b'>
+      <div className='rounded-b bg-gray-800 p-3 text-gray-300'>
         {/* Progress bar */}
         <div className='mb-2 flex items-center'>
           <input
@@ -196,7 +208,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={() => seekByTime(-5)}
               className='rounded p-1.5'
-              title="Back 5 seconds"
+              title='Back 5 seconds'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -211,7 +223,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               >
                 <path d='m12 19-7-7 7-7'></path>
                 <path d='M19 12H5'></path>
-                <text x="7" y="16" fontSize="8" fill="currentColor">5s</text>
+                <text x='7' y='16' fontSize='8' fill='currentColor'>
+                  5s
+                </text>
               </svg>
             </button>
 
@@ -219,7 +233,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={() => seekByFrame(-1)}
               className='rounded p-1.5'
-              title="Previous frame"
+              title='Previous frame'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -238,10 +252,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </button>
 
             {/* Play/Pause button */}
-            <button
-              onClick={togglePlay}
-              className='rounded p-1.5'
-            >
+            <button onClick={togglePlay} className='rounded p-1.5'>
               {isPlaying ? (
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
@@ -278,7 +289,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={() => seekByFrame(1)}
               className='rounded p-1.5'
-              title="Next frame"
+              title='Next frame'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -300,7 +311,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={() => seekByTime(5)}
               className='rounded p-1.5'
-              title="Forward 5 seconds"
+              title='Forward 5 seconds'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -315,7 +326,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               >
                 <path d='m12 5 7 7-7 7'></path>
                 <path d='M5 12h14'></path>
-                <text x="7" y="16" fontSize="8" fill="currentColor">5s</text>
+                <text x='7' y='16' fontSize='8' fill='currentColor'>
+                  5s
+                </text>
               </svg>
             </button>
 
@@ -347,7 +360,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <path d='M15.54 8.46a5 5 0 0 1 0 7.07'></path>
               <path d='M19.07 4.93a10 10 0 0 1 0 14.14'></path>
             </svg>
-            <span className='text-xs w-8'>{Math.round(volume * 100)}%</span>
+            <span className='w-8 text-xs'>{Math.round(volume * 100)}%</span>
             <input
               type='range'
               min={0}

@@ -4,7 +4,12 @@ import PreprocessingPage from './PreprocessingPage';
 import { BASE_API_URL } from '@/services/api/config';
 
 // Define the types of processing stages
-type ProcessingStage = 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';
+type ProcessingStage =
+  | 'preprocess'
+  | 'segmentation'
+  | 'pose'
+  | 'game_state'
+  | 'export';
 
 const VideoDetailPage: React.FC = () => {
   // Get the UUID from the URL
@@ -12,12 +17,16 @@ const VideoDetailPage: React.FC = () => {
 
   // State for the current active stage
   const [activeStage, setActiveStage] = useState<ProcessingStage>('preprocess');
-  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(new Set());
+  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(
+    new Set()
+  );
 
   // Mock states for video processing (these would be replaced with actual API calls)
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [processedVideoUrl, setProcessedVideoUrl] = useState<string | undefined>(undefined);
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<
+    string | undefined
+  >(undefined);
 
   // Mock function for processing video (simulate API call)
   const handleProcessVideo = () => {
@@ -34,7 +43,9 @@ const VideoDetailPage: React.FC = () => {
         setTimeout(() => {
           setIsProcessing(false);
           // Use the uuid parameter for API calls
-          setProcessedVideoUrl(`${BASE_API_URL}/video/stream/${uuid}/processed`);
+          setProcessedVideoUrl(
+            `${BASE_API_URL}/video/stream/${uuid}/processed`
+          );
 
           // Mark preprocess stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -63,32 +74,32 @@ const VideoDetailPage: React.FC = () => {
         );
       case 'segmentation':
         return (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-gray-500">
+          <div className='flex h-full items-center justify-center'>
+            <p className='text-gray-500'>
               Segmentation page - Under development
             </p>
           </div>
         );
       case 'pose':
         return (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-gray-500">
+          <div className='flex h-full items-center justify-center'>
+            <p className='text-gray-500'>
               Pose detection page - Under development
             </p>
           </div>
         );
       case 'game_state':
         return (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-gray-500">
+          <div className='flex h-full items-center justify-center'>
+            <p className='text-gray-500'>
               Game state analysis page - Under development
             </p>
           </div>
         );
       case 'export':
         return (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-gray-500">Export page - Under development</p>
+          <div className='flex h-full items-center justify-center'>
+            <p className='text-gray-500'>Export page - Under development</p>
           </div>
         );
       default:
@@ -97,8 +108,8 @@ const VideoDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <p className="mb-4 text-base font-bold">Video Processing: {uuid}</p>
+    <div className='flex h-full flex-col'>
+      <p className='mb-4 text-base font-bold'>Video Processing: {uuid}</p>
       {renderContent()}
     </div>
   );
