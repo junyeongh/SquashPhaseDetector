@@ -43,7 +43,8 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
   });
 
   // Extract state variables for convenience
-  const { playing, played, loaded, duration, volume, playbackRate, muted } = state;
+  const { playing, played, loaded, duration, volume, playbackRate, muted } =
+    state;
 
   // Calculate current frame based on played percentage and duration
   const currentFrame = Math.round(played * duration * fps);
@@ -129,7 +130,11 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
   // Handle volume change
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
-    setState((prev) => ({ ...prev, volume: newVolume, muted: newVolume === 0 }));
+    setState((prev) => ({
+      ...prev,
+      volume: newVolume,
+      muted: newVolume === 0,
+    }));
   };
 
   // Handle playback rate change
@@ -185,29 +190,29 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
           onClick={togglePlay}
         >
           {!playing && (
-            <div className='flex h-20 w-20 items-center justify-center rounded-full bg-black bg-opacity-60 text-white hover:bg-opacity-70 transition-all'>
-              <Play size={36} fill="white" />
+            <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
+              <Play size={36} fill='white' />
             </div>
           )}
         </div>
       </div>
 
       {/* Progress bar section */}
-      <div className='bg-gray-800 pt-2 px-3'>
+      <div className='bg-gray-100 px-3 pt-2'>
         <div
-          className='relative h-3 w-full cursor-pointer rounded-full bg-gray-700'
+          className='relative h-2 w-full cursor-pointer rounded-full bg-gray-200'
           ref={progressBarRef}
           onClick={handleProgressBarClick}
         >
           {/* Buffer indicator */}
           <div
-            className='absolute top-0 left-0 h-full rounded-full bg-gray-600'
+            className='absolute top-0 left-0 h-full rounded-full bg-gray-300'
             style={{ width: `${loaded * 100}%` }}
           ></div>
 
           {/* Progress indicator */}
           <div
-            className='absolute top-0 left-0 h-full rounded-full bg-blue-500'
+            className='absolute top-0 left-0 h-full rounded-full bg-gray-500'
             style={{ width: `${played * 100}%` }}
           ></div>
 
@@ -221,81 +226,81 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
             onMouseDown={handleSeekMouseDown}
             onChange={handleSeekChange}
             onMouseUp={handleSeekMouseUp}
-            className='absolute top-0 left-0 h-full w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white'
+            className='absolute top-0 left-0 h-full w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-700'
           />
         </div>
       </div>
 
       {/* Controls section */}
-      <div className='bg-gray-800 px-3 pb-2 pt-1'>
-        <div className='flex items-center justify-between text-white'>
-          <div className='flex items-center space-x-4'>
+      <div className='bg-gray-100 px-3 pt-1 pb-2'>
+        <div className='flex items-center justify-between text-gray-800'>
+          <div className='flex items-center space-x-2'>
             {/* Play/Pause button */}
             <button
               onClick={togglePlay}
-              className='rounded bg-gray-700 p-2 hover:bg-gray-600 transition-colors'
+              className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
               title={playing ? 'Pause' : 'Play'}
             >
-              {playing ? <Pause size={22} /> : <Play size={22} />}
+              {playing ? <Pause size={18} /> : <Play size={18} />}
             </button>
 
             {/* 5 seconds backward */}
             <button
               onClick={() => seekByTime(-5)}
-              className='rounded bg-gray-700 p-2 hover:bg-gray-600 transition-colors'
+              className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
               title='Back 5 seconds'
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={16} />
             </button>
 
             {/* Frame backward */}
             <button
               onClick={() => seekByFrame(-1)}
-              className='rounded bg-gray-700 p-2 hover:bg-gray-600 transition-colors'
+              className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
               title='Previous frame'
             >
-              <SkipBack size={20} />
+              <SkipBack size={16} />
             </button>
 
             {/* Frame forward */}
             <button
               onClick={() => seekByFrame(1)}
-              className='rounded bg-gray-700 p-2 hover:bg-gray-600 transition-colors'
+              className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
               title='Next frame'
             >
-              <SkipForward size={20} />
+              <SkipForward size={16} />
             </button>
 
             {/* 5 seconds forward */}
             <button
               onClick={() => seekByTime(5)}
-              className='rounded bg-gray-700 p-2 hover:bg-gray-600 transition-colors'
+              className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
               title='Forward 5 seconds'
             >
-              <RotateCw size={18} />
+              <RotateCw size={16} />
             </button>
           </div>
 
           <div className='flex items-center'>
             {/* Time indicator */}
-            <div className='mr-4 text-sm'>
+            <div className='mr-4 text-xs font-medium text-gray-600'>
               <span>{formatTime(played * duration)}</span>
               <span className='mx-1'>/</span>
               <span>{formatTime(duration)}</span>
             </div>
 
             {/* Volume control */}
-            <div className='flex items-center space-x-2 mx-4'>
+            <div className='mx-4 flex items-center space-x-2'>
               <button
                 onClick={toggleMute}
-                className='rounded p-1 hover:bg-gray-700 transition-colors'
+                className='rounded border border-gray-200 bg-white p-1 transition-colors hover:bg-gray-50'
                 title={muted ? 'Unmute' : 'Mute'}
               >
-                {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
-              <div className='relative h-1 w-16 rounded-full bg-gray-700'>
+              <div className='relative h-1.5 w-16 rounded-full bg-gray-200'>
                 <div
-                  className='absolute top-0 left-0 h-full rounded-full bg-blue-500'
+                  className='absolute top-0 left-0 h-full rounded-full bg-gray-500'
                   style={{ width: `${muted ? 0 : volume * 100}%` }}
                 ></div>
                 <input
@@ -305,7 +310,7 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
                   step='any'
                   value={volume}
                   onChange={handleVolumeChange}
-                  className='absolute top-0 left-0 h-full w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white'
+                  className='absolute top-0 left-0 h-full w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-700'
                 />
               </div>
             </div>
@@ -314,8 +319,10 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
             <div className='flex items-center space-x-1'>
               <button
                 onClick={() => handleSetPlaybackRate(0.25)}
-                className={`rounded px-2 py-1 text-xs ${
-                  playbackRate === 0.25 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                className={`rounded border px-2 py-1 text-xs ${
+                  playbackRate === 0.25
+                    ? 'border-gray-300 bg-gray-200 text-gray-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                 } transition-colors`}
                 title='Quarter speed'
               >
@@ -323,8 +330,10 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
               </button>
               <button
                 onClick={() => handleSetPlaybackRate(0.5)}
-                className={`rounded px-2 py-1 text-xs ${
-                  playbackRate === 0.5 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                className={`rounded border px-2 py-1 text-xs ${
+                  playbackRate === 0.5
+                    ? 'border-gray-300 bg-gray-200 text-gray-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                 } transition-colors`}
                 title='Half speed'
               >
@@ -332,8 +341,10 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
               </button>
               <button
                 onClick={() => handleSetPlaybackRate(1.0)}
-                className={`rounded px-2 py-1 text-xs ${
-                  playbackRate === 1.0 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                className={`rounded border px-2 py-1 text-xs ${
+                  playbackRate === 1.0
+                    ? 'border-gray-300 bg-gray-200 text-gray-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                 } transition-colors`}
                 title='Normal speed'
               >
@@ -341,8 +352,10 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
               </button>
               <button
                 onClick={() => handleSetPlaybackRate(2.0)}
-                className={`rounded px-2 py-1 text-xs ${
-                  playbackRate === 2.0 ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                className={`rounded border px-2 py-1 text-xs ${
+                  playbackRate === 2.0
+                    ? 'border-gray-300 bg-gray-200 text-gray-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                 } transition-colors`}
                 title='Double speed'
               >
@@ -355,8 +368,10 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
 
       {/* Mainview timeline section - completely separate */}
       {mainviewTimestamps && mainviewTimestamps.length > 0 && (
-        <div className='mt-2 bg-gray-100 p-2 rounded-lg border border-gray-300'>
-          <div className='text-xs text-gray-500 mb-1'>Main View Segments</div>
+        <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2'>
+          <div className='mb-1 text-xs font-medium text-gray-500'>
+            Main View Segments
+          </div>
           <MainviewTimeline
             timestamps={mainviewTimestamps}
             duration={duration}

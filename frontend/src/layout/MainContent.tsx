@@ -10,12 +10,12 @@ const MainContent: React.FC<MainContentProps> = ({ children }) => {
 
   return (
     <div
-      className='h-screen overflow-auto bg-gray-100'
+      className='h-screen overflow-auto bg-white'
       style={{
         width: `calc(100vw - ${collapsed ? 'var(--spacing-sidebar-collasped)' : 'var(--spacing-sidebar)'})`,
       }}
     >
-      <div className='h-full p-6'>{children}</div>
+      <div className='h-full px-6 py-5'>{children}</div>
     </div>
   );
 };

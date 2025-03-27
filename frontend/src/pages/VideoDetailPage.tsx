@@ -67,7 +67,7 @@ const VideoDetailPage: React.FC = () => {
       case 'segmentation':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Segmentation page - Under development
             </p>
           </div>
@@ -75,7 +75,7 @@ const VideoDetailPage: React.FC = () => {
       case 'pose':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Pose detection page - Under development
             </p>
           </div>
@@ -83,7 +83,7 @@ const VideoDetailPage: React.FC = () => {
       case 'game_state':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>
+            <p className='text-xs text-gray-500'>
               Game state analysis page - Under development
             </p>
           </div>
@@ -91,20 +91,17 @@ const VideoDetailPage: React.FC = () => {
       case 'export':
         return (
           <div className='flex h-full items-center justify-center'>
-            <p className='text-gray-500'>Export page - Under development</p>
+            <p className='text-xs text-gray-500'>
+              Export page - Under development
+            </p>
           </div>
         );
       default:
-        return <div>Unknown stage</div>;
+        return <div className='text-xs text-gray-500'>Unknown stage</div>;
     }
   };
 
-  return (
-    <div className='flex h-full flex-col'>
-      <p className='mb-4 text-base font-bold'>Video Processing: {uuid}</p>
-      {renderContent()}
-    </div>
-  );
+  return <div className='flex h-full flex-col'>{renderContent()}</div>;
 };
 
 export default VideoDetailPage;

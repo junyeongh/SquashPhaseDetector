@@ -38,40 +38,48 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
 
   return (
     <div className='flex h-full flex-col'>
-      <h1 className='mb-3 text-xl font-medium'>Video Preprocessing</h1>
-      <p className='mb-4 text-sm text-gray-600'>
-        Analyze the video to detect main view angles and prepare it for player segmentation.
+      <h1 className='mb-2 text-lg font-medium text-gray-800'>
+        Video Preprocessing
+      </h1>
+      <p className='mb-4 text-xs text-gray-500'>
+        Analyze the video to detect main view angles and prepare it for player
+        segmentation.
       </p>
 
-      <div className='flex flex-1 flex-col overflow-hidden rounded-lg shadow-lg'>
+      <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Video Player Container */}
-        <ReactPlayerWrapper
-          src={originalVideoUrl}
-          onFrameChange={setCurrentFrame}
-          mainviewTimestamps={mainviewTimestamps}
-        />
+        <div className='overflow-hidden rounded-md border border-gray-200 bg-white'>
+          <ReactPlayerWrapper
+            src={originalVideoUrl}
+            onFrameChange={setCurrentFrame}
+            mainviewTimestamps={mainviewTimestamps}
+          />
+        </div>
 
         {/* Processing Controls */}
-        <div className='mt-4 border border-gray-200 bg-white p-4 rounded-lg'>
+        <div className='mt-4 rounded-md border border-gray-200 bg-white p-3'>
           <div className='flex items-center justify-between'>
-            <div className='space-y-2'>
+            <div className='space-y-1'>
               <div className='flex items-center space-x-2'>
-                <div className='text-sm text-gray-700'>Current Frame:</div>
-                <div className='rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600'>
+                <div className='text-xs text-gray-500'>Current Frame:</div>
+                <div className='rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700'>
                   {currentFrame}
                 </div>
               </div>
 
               {isProcessing && (
-                <div className='flex items-center space-x-2 text-sm text-gray-600'>
-                  <Loader className='h-4 w-4 animate-spin text-blue-500' />
+                <div className='flex items-center space-x-2 text-xs text-gray-500'>
+                  <Loader className='h-3 w-3 animate-spin text-gray-500' />
                   <span>{processingStatus}</span>
                 </div>
               )}
 
               {mainviewTimestamps.length > 0 && (
-                <div className='text-sm text-gray-600'>
-                  <span className='font-medium'>{mainviewTimestamps.length}</span> main view segments detected
+                <div className='text-xs text-gray-500'>
+                  <span className='font-medium'>
+                    {mainviewTimestamps.length}
+                  </span>{' '}
+                  main view segments detected
                 </div>
               )}
             </div>
@@ -79,20 +87,20 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
             <button
               onClick={onProcess}
               disabled={isProcessing}
-              className={`flex items-center gap-2 rounded-lg px-5 py-2 font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
                 isProcessing
-                  ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                  : 'border border-gray-300 bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               {isProcessing ? (
                 <>
-                  <Loader className='h-4 w-4 animate-spin' />
+                  <Loader className='h-3 w-3 animate-spin' />
                   Processing...
                 </>
               ) : (
                 <>
-                  <Play className='h-4 w-4' />
+                  <Play className='h-3 w-3' />
                   Process Video
                 </>
               )}
