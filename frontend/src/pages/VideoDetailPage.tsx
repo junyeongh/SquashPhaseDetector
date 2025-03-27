@@ -98,7 +98,7 @@ const VideoDetailPage: React.FC = () => {
 
   return (
     <div className="flex h-full flex-col">
-      <h1 className="mb-4 text-2xl font-bold">Video Processing: {uuid}</h1>
+      <p className="mb-4 text-base font-bold">Video Processing: {uuid}</p>
       {renderContent()}
     </div>
   );

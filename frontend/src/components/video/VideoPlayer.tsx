@@ -18,24 +18,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.5);
-  const [showControls, setShowControls] = useState(true);
 
   // Convert time to frame number based on FPS
   const timeToFrame = (timeInSeconds: number) =>
     Math.round(timeInSeconds * fps);
-
-  // Function to show controls temporarily when moving mouse over video
-  const showControlsTemporarily = () => {
-    setShowControls(true);
-    // Hide controls after 3 seconds of inactivity
-    const timeout = setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
-      }
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  };
 
   // Update current time and notify about frame changes
   useEffect(() => {
@@ -125,32 +111,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <div
-      className='relative aspect-video max-h-[calc(100vh-200px)] w-full overflow-hidden rounded bg-gray-900'
-      onMouseMove={showControlsTemporarily}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
-    >
-      {/* Video element */}
-      <video
-        ref={videoRef}
-        src={src}
-        className='h-full w-full object-contain'
-        onClick={togglePlay}
-      />
+    <div className='flex flex-col w-full'>
+      {/* Video container */}
+      <div className='relative aspect-video max-h-[calc(100vh-250px)] w-full overflow-hidden rounded-t bg-gray-900'>
+        {/* Video element */}
+        <video
+          ref={videoRef}
+          src={src}
+          className='h-full w-full object-contain'
+          onClick={togglePlay}
+        />
 
-      {/* Overlay content (e.g., masks, pose skeletons) */}
-      {overlay && (
-        <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>
-          {overlay}
-        </div>
-      )}
+        {/* Overlay content (e.g., masks, pose skeletons) */}
+        {overlay && (
+          <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>
+            {overlay}
+          </div>
+        )}
+      </div>
 
-      {/* Controls overlay */}
-      <div
-        className={`absolute right-0 bottom-0 left-0 bg-gray-800 p-3 text-gray-300 ${
-          showControls ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
+      {/* Controls section - now outside the video */}
+      <div className='bg-gray-800 p-3 text-gray-300 rounded-b'>
         {/* Progress bar */}
         <div className='mb-2 flex items-center'>
           <input
@@ -271,6 +252,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <path d='M15.54 8.46a5 5 0 0 1 0 7.07'></path>
               <path d='M19.07 4.93a10 10 0 0 1 0 14.14'></path>
             </svg>
+            <span className='text-xs w-8'>{Math.round(volume * 100)}%</span>
             <input
               type='range'
               min={0}
