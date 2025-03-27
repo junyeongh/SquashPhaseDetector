@@ -1,47 +1,14 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 import os
 import uuid
 import shutil
 from pathlib import Path
-import time
 import json
+import re
 
 from utils.video import extract_frames
 from utils.preprocess import generate_mainview_timestamp
-
-
-def update_session_with_mainview(session_id, video_dir):
-    """
-    Update session with main view timestamps from CSV file
-    """
-    from app import sessions
-
-    if session_id not in sessions:
-        return False
-
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
-    if not os.path.exists(mainview_file_path):
-        return False
-
-    # Read and parse the CSV file
-    timestamps = []
-    with open(mainview_file_path, "r") as f:
-        # Skip header
-        next(f)
-        for line in f:
-            start, end, start_frame, end_frame = line.strip().split(",")
-            timestamps.append(
-                {
-                    "start": float(start),
-                    "end": float(end),
-                    "start_frame": int(start_frame),
-                    "end_frame": int(end_frame),
-                }
-            )
-
-    sessions[session_id]["main_view_timestamps"] = timestamps
-    return True
 
 
 router = APIRouter(
@@ -167,9 +134,9 @@ async def list_gallery():
 
 
 @router.get("/stream/{video_uuid}")
-async def stream_video(video_uuid: str):
+async def stream_video(request: Request, video_uuid: str):
     """
-    Stream a video file by UUID
+    Stream a video file by UUID with support for range requests
     """
     try:
         # Find the video in the uploads folder
@@ -207,15 +174,67 @@ async def stream_video(video_uuid: str):
         elif ext == ".wmv":
             content_type = "video/x-ms-wmv"
 
-        # Create a generator to stream the file
-        def iterfile():
+        # Get file size
+        file_size = os.path.getsize(video_path)
+
+        # Parse range header
+        range_header = request.headers.get("range")
+
+        # If no range header, return entire file
+        if range_header is None:
+
+            def iterfile():
+                with open(video_path, "rb") as f:
+                    yield from f
+
+            return StreamingResponse(
+                iterfile(),
+                media_type=content_type,
+                headers={
+                    "Content-Disposition": f"inline; filename={video_filename}",
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(file_size),
+                },
+            )
+
+        # Parse range
+        range_match = re.search(r"bytes=(\d+)-(\d*)", range_header)
+        if not range_match:
+            raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+
+        start_byte = int(range_match.group(1))
+        end_byte_str = range_match.group(2)
+        end_byte = int(end_byte_str) if end_byte_str else file_size - 1
+
+        # Validate range
+        if start_byte > end_byte or start_byte >= file_size or end_byte >= file_size:
+            raise HTTPException(status_code=416, detail="Range Not Satisfiable")
+
+        content_length = end_byte - start_byte + 1
+
+        # Create a generator to stream the requested range
+        def iterfile_range():
             with open(video_path, "rb") as f:
-                yield from f
+                f.seek(start_byte)
+                remaining = content_length
+                while remaining > 0:
+                    chunk_size = min(8192, remaining)  # Read in 8kb chunks
+                    data = f.read(chunk_size)
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    yield data
 
         return StreamingResponse(
-            iterfile(),
+            content=iterfile_range(),
+            status_code=206,
             media_type=content_type,
-            headers={"Content-Disposition": f"inline; filename={video_filename}"},
+            headers={
+                "Content-Range": f"bytes {start_byte}-{end_byte}/{file_size}",
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(content_length),
+                "Content-Disposition": f"inline; filename={video_filename}",
+            },
         )
 
     except Exception as e:
