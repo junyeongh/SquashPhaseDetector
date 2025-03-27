@@ -222,86 +222,6 @@ async def stream_video(video_uuid: str):
         raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
 
 
-@router.post("/session/start")
-async def start_session(video_path: str):
-    """
-    Initialize a new session for video processing
-    """
-    if not os.path.exists(video_path):
-        raise HTTPException(status_code=404, detail="Video file not found")
-
-    session_id = str(uuid.uuid4())
-
-    # Store session information
-    from app import sessions
-
-    sessions[session_id] = {
-        "id": session_id,
-        "video_path": video_path,
-        "creation_time": time.time(),
-        "masks": {},
-        "poses": {},
-        "game_states": [],
-        "main_view_timestamps": [],
-    }
-
-    return {"session_id": session_id}
-
-
-@router.get("/session/{session_id}")
-async def get_session(session_id: str):
-    """
-    Get session information
-    """
-    from app import sessions
-
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    return sessions[session_id]
-
-
-@router.delete("/session/{session_id}")
-async def close_session(session_id: str):
-    """
-    Close and cleanup a session
-    """
-    from app import sessions
-
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    # Here you would add any cleanup code
-
-    # Remove session
-    del sessions[session_id]
-
-    return {"success": True, "message": "Session closed"}
-
-
-@router.post("/session/{session_id}/mainview")
-async def update_session_mainview(session_id: str):
-    """
-    Update session with main view timestamps
-    """
-    from app import sessions
-
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    video_path = sessions[session_id]["video_path"]
-    video_dir = os.path.dirname(video_path)
-
-    # Try to update the session with main view timestamps
-    if update_session_with_mainview(session_id, video_dir):
-        return {"success": True, "message": "Session updated with main view timestamps"}
-    else:
-        raise HTTPException(
-            status_code=404,
-            detail="Main view timestamps not found. Generate them first using the /mainview endpoint.",
-        )
-
-
 @router.post("/mainview/{video_uuid}")
 async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str):
     """
@@ -363,3 +283,83 @@ async def get_main_view_timestamps(video_uuid: str):
             )
 
     return {"timestamps": timestamps}
+
+
+# @router.post("/session/start")
+# async def start_session(video_path: str):
+#     """
+#     Initialize a new session for video processing
+#     """
+#     if not os.path.exists(video_path):
+#         raise HTTPException(status_code=404, detail="Video file not found")
+
+#     session_id = str(uuid.uuid4())
+
+#     # Store session information
+#     from app import sessions
+
+#     sessions[session_id] = {
+#         "id": session_id,
+#         "video_path": video_path,
+#         "creation_time": time.time(),
+#         "masks": {},
+#         "poses": {},
+#         "game_states": [],
+#         "main_view_timestamps": [],
+#     }
+
+#     return {"session_id": session_id}
+
+
+# @router.get("/session/{session_id}")
+# async def get_session(session_id: str):
+#     """
+#     Get session information
+#     """
+#     from app import sessions
+
+#     if session_id not in sessions:
+#         raise HTTPException(status_code=404, detail="Session not found")
+
+#     return sessions[session_id]
+
+
+# @router.delete("/session/{session_id}")
+# async def close_session(session_id: str):
+#     """
+#     Close and cleanup a session
+#     """
+#     from app import sessions
+
+#     if session_id not in sessions:
+#         raise HTTPException(status_code=404, detail="Session not found")
+
+#     # Here you would add any cleanup code
+
+#     # Remove session
+#     del sessions[session_id]
+
+#     return {"success": True, "message": "Session closed"}
+
+
+# @router.post("/session/{session_id}/mainview")
+# async def update_session_mainview(session_id: str):
+#     """
+#     Update session with main view timestamps
+#     """
+#     from app import sessions
+
+#     if session_id not in sessions:
+#         raise HTTPException(status_code=404, detail="Session not found")
+
+#     video_path = sessions[session_id]["video_path"]
+#     video_dir = os.path.dirname(video_path)
+
+#     # Try to update the session with main view timestamps
+#     if update_session_with_mainview(session_id, video_dir):
+#         return {"success": True, "message": "Session updated with main view timestamps"}
+#     else:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Main view timestamps not found. Generate them first using the /mainview endpoint.",
+#         )
