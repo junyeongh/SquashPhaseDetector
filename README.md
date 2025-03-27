@@ -44,8 +44,9 @@ docker-compose up --build
 ## Processing Pipeline
 
 1. Upload squash match video
-2. Mark players in specific frames
-3. Generate player masks using SAM2
-4. Apply YOLO-Pose to detect body landmarks
-5. Analyze pose data to detect game states (rally vs rest)
-6. Export results for further analysis
+2. Find frames with mainviews
+3. Mark players in specific frames
+4. Generate player masks using SAM2
+5. Apply YOLO-Pose to detect body landmarks
+6. Analyze pose data to detect game states (rally vs rest)
+7. Export results for further analysis

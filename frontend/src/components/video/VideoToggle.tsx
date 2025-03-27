@@ -10,23 +10,23 @@ const VideoToggle: React.FC<VideoToggleProps> = ({
   isProcessingComplete,
 }) => {
   return (
-    <div className='flex items-center justify-center border-b bg-gray-100 py-3'>
-      <div className='inline-flex rounded-full bg-gray-200 p-1 shadow-sm'>
+    <div className='flex items-center justify-center border-b bg-gray-200 py-3'>
+      <div className='inline-flex rounded bg-gray-300 p-1'>
         <button
-          className={`rounded-full px-6 py-2 font-medium transition-colors ${
+          className={`rounded px-6 py-2 ${
             !isProcessed
-              ? 'bg-white text-gray-800 shadow'
-              : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-700'
+              ? 'bg-gray-400 text-gray-700'
+              : 'bg-transparent text-gray-600'
           }`}
           onClick={() => onToggle(false)}
         >
           Original
         </button>
         <button
-          className={`rounded-full px-6 py-2 font-medium transition-colors ${
+          className={`rounded px-6 py-2 ${
             isProcessed
-              ? 'bg-white text-gray-800 shadow'
-              : 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-700'
+              ? 'bg-gray-400 text-gray-700'
+              : 'bg-transparent text-gray-600'
           }`}
           onClick={() => onToggle(true)}
           disabled={!isProcessingComplete}

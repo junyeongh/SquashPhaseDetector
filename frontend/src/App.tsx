@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { fetchRootMessage } from '@/services/api';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
   uploadVideo,
   getUploadedFiles,
-  getGalleryFiles,
   FileInfo,
 } from '@/services/api/video';
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
-import ProcessingPage from '@/pages/ProcessingPage';
+import PreprocessingPage from '@/pages/PreprocessingPage';
+import VideoDetailPage from '@/pages/VideoDetailPage';
 import './App.css';
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
   const location = useLocation();
 
   // API connection state
-  const [message, setMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,7 +53,6 @@ function App() {
 
   // File listing states
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
-  const [galleryFiles, setGalleryFiles] = useState<FileInfo[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
   const [fileListError, setFileListError] = useState<string | null>(null);
 
@@ -80,8 +77,6 @@ function App() {
     const getApiMessage = async () => {
       try {
         setLoading(true);
-        const data = await fetchRootMessage();
-        setMessage(data.message);
         setError(null);
       } catch (err) {
         setError(
@@ -94,22 +89,18 @@ function App() {
     };
 
     getApiMessage();
-    fetchAllFiles();
+    fetchUploadedFiles();
   }, []);
 
   // Function to fetch both uploaded and gallery files
-  const fetchAllFiles = async () => {
+  const fetchUploadedFiles = async () => {
     setIsLoadingFiles(true);
     setFileListError(null);
 
     try {
-      const [uploads, gallery] = await Promise.all([
-        getUploadedFiles(),
-        getGalleryFiles(),
-      ]);
+      const uploads = await getUploadedFiles();
 
       setUploadedFiles(uploads);
-      setGalleryFiles(gallery);
     } catch (error) {
       setFileListError(
         error instanceof Error ? error.message : 'Failed to load files'
@@ -143,14 +134,10 @@ function App() {
       setUploadedVideo(response);
       console.log('Upload successful:', response);
 
-      // Mark upload step as completed and move to next step
-      const updatedCompletedSteps = new Set(completedSteps);
-      updatedCompletedSteps.add('upload');
-      setCompletedSteps(updatedCompletedSteps);
-      handleStepChange('preprocess');
-
       // Refresh file lists after successful upload
-      fetchAllFiles();
+      // Note: We don't automatically redirect to preprocess page anymore
+      // so the user can select from the uploaded videos
+      fetchUploadedFiles();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed');
     } finally {
@@ -178,7 +165,7 @@ function App() {
 
         setTimeout(() => {
           setIsProcessing(false);
-          setProcessedVideoUrl('/api/video/file/' + uploadedVideo?.filename);
+          setProcessedVideoUrl(`/api/video/uuid/${uploadedVideo?.uuid}/processed`);
 
           // Mark preprocess step as completed and move to next step
           const updatedCompletedSteps = new Set(completedSteps);
@@ -212,7 +199,7 @@ function App() {
             <div className='w-full max-w-md'>
               <label
                 htmlFor='fileInput'
-                className='block w-full cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-12 text-center transition-colors hover:border-blue-500'
+                className='block w-full cursor-pointer rounded border-2 border-dashed border-gray-300 p-12 text-center'
               >
                 <div className='space-y-2'>
                   <div className='text-4xl'>📤</div>
@@ -235,12 +222,12 @@ function App() {
 
               {isUploading && (
                 <div className='mt-4 text-center'>
-                  <p className='text-blue-600'>Uploading video...</p>
+                  <p className='text-gray-600'>Uploading video...</p>
                 </div>
               )}
 
               {uploadError && (
-                <div className='mt-4 rounded-md bg-red-100 p-3 text-red-700'>
+                <div className='mt-4 rounded-md bg-gray-200 p-3 text-gray-700'>
                   <p>{uploadError}</p>
                 </div>
               )}
@@ -284,20 +271,23 @@ function App() {
                               onClick={() => {
                                 // Set as selected video
                                 setUploadedVideo({
+                                  uuid: file.uuid,
                                   filename: file.filename,
                                   original_filename: file.filename,
                                   content_type: 'video/mp4', // Default to video/mp4 since FileInfo doesn't have type
                                 });
 
-                                // Mark upload step as completed and move to next step
+                                // Mark upload step as completed
                                 const updatedCompletedSteps = new Set(
                                   completedSteps
                                 );
                                 updatedCompletedSteps.add('upload');
                                 setCompletedSteps(updatedCompletedSteps);
-                                handleStepChange('preprocess');
+
+                                // Navigate to the video detail page with UUID
+                                navigate(`/${file.uuid}`);
                               }}
-                              className='text-blue-600 hover:text-blue-800'
+                              className='text-gray-600'
                             >
                               Select
                             </button>
@@ -322,8 +312,8 @@ function App() {
         return renderUploadPage();
       case 'preprocess':
         return (
-          <ProcessingPage
-            originalVideoUrl={`/api/video/file/${uploadedVideo?.filename}`}
+          <PreprocessingPage
+            originalVideoUrl={`/api/video/uuid/${uploadedVideo?.uuid}`}
             processedVideoUrl={processedVideoUrl}
             isProcessing={isProcessing}
             onProcess={handleProcessVideo}
@@ -368,9 +358,9 @@ function App() {
   // Show loading screen if checking API connection
   if (loading) {
     return (
-      <div className='flex h-screen items-center justify-center bg-gray-100'>
-        <div className='rounded-lg bg-white p-8 text-center shadow-lg'>
-          <p className='text-xl text-gray-800'>
+      <div className='flex h-screen items-center justify-center bg-gray-200'>
+        <div className='rounded bg-gray-100 p-8 text-center'>
+          <p className='text-xl text-gray-600'>
             Connecting to backend server...
           </p>
         </div>
@@ -381,15 +371,15 @@ function App() {
   // Show error screen if API connection failed
   if (error) {
     return (
-      <div className='flex h-screen items-center justify-center bg-gray-100'>
-        <div className='max-w-2xl rounded-lg bg-white p-8 shadow-lg'>
-          <h1 className='mb-4 text-2xl font-bold text-red-600'>
+      <div className='flex h-screen items-center justify-center bg-gray-200'>
+        <div className='max-w-2xl rounded bg-gray-100 p-8'>
+          <h1 className='mb-4 text-2xl font-bold text-gray-700'>
             Connection Error
           </h1>
-          <p className='mb-4 text-gray-700'>{error}</p>
+          <p className='mb-4 text-gray-600'>{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className='rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600'
+            className='rounded bg-gray-500 px-4 py-2 text-gray-200'
           >
             Retry Connection
           </button>
@@ -407,69 +397,75 @@ function App() {
             activeStep={activeStep}
             onStepChange={handleStepChange}
             completedSteps={completedSteps}
+            uploadedFiles={uploadedFiles}
           >
             {renderContent()}
           </AppLayout>
         }
       />
+      {/* New route for video detail page with UUID */}
       <Route
-        path='/preprocess'
+        path='/:uuid'
         element={
           <AppLayout
             activeStep={activeStep}
             onStepChange={handleStepChange}
             completedSteps={completedSteps}
+            uploadedFiles={uploadedFiles}
           >
-            {renderContent()}
+            <VideoDetailPage />
           </AppLayout>
+        }
+      />
+      {/* Legacy routes - redirect to the new UUID-based route if a video is selected */}
+      <Route
+        path='/preprocess'
+        element={
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/segmentation'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/pose'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/game_state'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
       <Route
         path='/export'
         element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-          >
-            {renderContent()}
-          </AppLayout>
+          uploadedVideo ? (
+            <Navigate to={`/${uploadedVideo.uuid}`} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
     </Routes>

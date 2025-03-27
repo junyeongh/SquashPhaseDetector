@@ -4,6 +4,28 @@ Video Utilities
 Utility functions for video processing.
 """
 
+import subprocess
+
+
+def extract_frames(video_file_path: str, frame_dir: str):
+    """Extract frames from video using ffmpeg in background"""
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-i",
+            video_file_path,
+            "-q:v",
+            "2",
+            "-start_number",
+            "0",
+            f"{frame_dir}/%06d.jpg",
+        ]
+    )
+
+
+#####
+
+
 import cv2
 import os
 import numpy as np

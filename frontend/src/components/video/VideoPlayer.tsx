@@ -126,7 +126,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div
-      className='relative aspect-video max-h-[calc(100vh-200px)] w-full overflow-hidden rounded-lg bg-black'
+      className='relative aspect-video max-h-[calc(100vh-200px)] w-full overflow-hidden rounded bg-gray-900'
       onMouseMove={showControlsTemporarily}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
@@ -147,7 +147,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       {/* Controls overlay */}
       <div
-        className={`bg-opacity-70 absolute right-0 bottom-0 left-0 bg-black p-3 text-white transition-opacity ${
+        className={`absolute right-0 bottom-0 left-0 bg-gray-800 p-3 text-gray-300 ${
           showControls ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -159,7 +159,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             max={duration || 100}
             value={currentTime}
             onChange={handleSeek}
-            className='h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-600'
+            className='h-2 w-full cursor-pointer appearance-none rounded bg-gray-600'
           />
         </div>
 
@@ -169,7 +169,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Play/Pause button */}
             <button
               onClick={togglePlay}
-              className='rounded p-1.5 hover:bg-gray-700'
+              className='rounded p-1.5'
             >
               {isPlaying ? (
                 <svg
@@ -206,7 +206,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             {/* Frame by frame controls */}
             <button
               onClick={() => seekByFrame(-1)}
-              className='rounded p-1.5 hover:bg-gray-700'
+              className='rounded p-1.5'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -225,7 +225,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </button>
             <button
               onClick={() => seekByFrame(1)}
-              className='rounded p-1.5 hover:bg-gray-700'
+              className='rounded p-1.5'
             >
               <svg
                 xmlns='http://www.w3.org/2000/svg'
