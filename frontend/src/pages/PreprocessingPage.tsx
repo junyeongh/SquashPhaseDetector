@@ -38,28 +38,26 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
 
   return (
     <div className='flex h-full flex-col'>
-      <h1 className='mb-4 text-2xl font-bold'>Video Preprocessing</h1>
-      <p className='mb-6 text-gray-600'>
+      <h1 className='mb-3 text-xl font-medium'>Video Preprocessing</h1>
+      <p className='mb-4 text-sm text-gray-600'>
         Analyze the video to detect main view angles and prepare it for player segmentation.
       </p>
 
-      <div className='flex flex-1 flex-col overflow-hidden rounded-lg bg-white shadow-lg'>
-        {/* Video Player */}
-        <div className='flex flex-1 items-center justify-center bg-gray-900 p-4'>
-          <ReactPlayerWrapper
-            src={originalVideoUrl}
-            onFrameChange={setCurrentFrame}
-            mainviewTimestamps={mainviewTimestamps}
-          />
-        </div>
+      <div className='flex flex-1 flex-col overflow-hidden rounded-lg shadow-lg'>
+        {/* Video Player Container */}
+        <ReactPlayerWrapper
+          src={originalVideoUrl}
+          onFrameChange={setCurrentFrame}
+          mainviewTimestamps={mainviewTimestamps}
+        />
 
         {/* Processing Controls */}
-        <div className='border-t border-gray-200 bg-white p-6'>
+        <div className='mt-4 border border-gray-200 bg-white p-4 rounded-lg'>
           <div className='flex items-center justify-between'>
             <div className='space-y-2'>
               <div className='flex items-center space-x-2'>
-                <div className='font-medium text-gray-700'>Current Frame:</div>
-                <div className='rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-600'>
+                <div className='text-sm text-gray-700'>Current Frame:</div>
+                <div className='rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600'>
                   {currentFrame}
                 </div>
               </div>
@@ -81,7 +79,7 @@ const PreprocessingPage: React.FC<ProcessingPageProps> = ({
             <button
               onClick={onProcess}
               disabled={isProcessing}
-              className={`flex items-center gap-2 rounded-lg px-6 py-3 font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-lg px-5 py-2 font-medium transition-colors ${
                 isProcessing
                   ? 'cursor-not-allowed bg-gray-200 text-gray-500'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
