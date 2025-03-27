@@ -65,9 +65,7 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
 
     # Add frame extraction and main view timestamp generation as background tasks
     background_tasks.add_task(extract_frames, video_file_path, frame_dir)
-    background_tasks.add_task(
-        generate_mainview_timestamp, video_file_path, video_file_dir
-    )
+    # background_tasks.add_task(generate_mainview_timestamp, video_file_path, video_file_dir)
 
     return {
         "UUID": video_file_id,
