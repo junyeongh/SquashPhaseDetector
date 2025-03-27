@@ -90,6 +90,7 @@ async def list_uploads():
                         metadata = json.load(f)
                         video_file_path = os.path.join(full_path, metadata["filename"])
                         data = {
+                            "uuid": metadata["UUID"],
                             "filename": metadata["filename"],
                             "path": video_file_path,
                             "size": os.path.getsize(video_file_path),
