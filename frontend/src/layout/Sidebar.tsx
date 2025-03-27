@@ -1,6 +1,12 @@
 import { useState, createContext, useContext } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
-import { PanelLeftClose, PanelLeftOpen, Upload } from 'lucide-react';
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  Upload,
+  CheckCircle,
+  ChevronRight,
+} from 'lucide-react';
 import { FileInfo } from '@/services/api/video';
 
 export type PipelineStep =
@@ -80,48 +86,55 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
       <div
-        className='h-screen flex-shrink-0'
+        className='h-screen flex-shrink-0 transition-all duration-300 ease-in-out'
         style={{
           width: collapsed
             ? 'var(--spacing-sidebar-collasped)'
             : 'var(--spacing-sidebar)',
         }}
       >
-        <div className='flex h-full flex-col bg-gray-700 text-gray-300'>
+        <div className='flex h-full flex-col bg-gradient-to-b from-gray-800 to-gray-900 text-gray-100 shadow-lg'>
           {/* Sidebar Header */}
-          <div className='flex items-center justify-between border-b border-gray-600 p-4'>
+          <div className='flex items-center justify-between border-b border-gray-700 bg-gray-900 p-4'>
             <button
               onClick={toggleCollapsed}
-              className='rounded p-2 text-gray-400'
+              className='rounded p-2 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors'
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+              {collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
             </button>
+            {!collapsed && (
+              <span className='text-sm font-semibold uppercase tracking-wider'>
+                Squash Analyzer
+              </span>
+            )}
           </div>
 
           <div className='flex-grow overflow-y-auto'>
             {/* Upload New Video Button */}
-            <div className='border-b border-gray-600 px-2 py-2'>
+            <div className='border-b border-gray-700 px-2 py-4'>
               <Link
                 to='/'
-                className='flex w-full items-center gap-3 rounded bg-gray-600 p-3 text-left text-gray-300 no-underline hover:bg-gray-500'
+                className={`flex w-full items-center gap-3 rounded-lg p-3 text-left text-gray-200 no-underline transition-colors
+                  ${location.pathname === '/' ? 'bg-blue-600 shadow-md' : 'hover:bg-gray-700'}`}
                 style={{ textDecoration: 'none' }}
               >
                 <span
-                  className={`text-xl ${collapsed ? 'flex w-full justify-center' : 'flex-shrink-0'}`}
+                  className={`flex items-center justify-center flex-shrink-0 ${collapsed ? 'w-full' : ''}`}
                 >
-                  <Upload size={20} />
+                  <Upload size={20} className="text-blue-300" />
                 </span>
                 {!collapsed && (
-                  <span className='truncate'>Upload New Video</span>
+                  <span className='truncate font-medium'>Upload New Video</span>
                 )}
               </Link>
             </div>
 
             {/* Recent Uploads Section */}
             {uploadedFiles.length > 0 && (
-              <div className='py-2'>
+              <div className='py-3'>
                 {!collapsed && (
-                  <h3 className='px-4 py-2 text-sm font-semibold text-gray-400 uppercase'>
+                  <h3 className='mb-2 px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider'>
                     Recent Uploads
                   </h3>
                 )}
@@ -130,11 +143,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     <Link
                       key={index}
                       to={`/${file.uuid}`}
-                      className={`flex w-full items-center gap-3 rounded p-3 text-left text-gray-300 no-underline hover:bg-gray-600 ${
-                        location.pathname === `/${file.uuid}`
-                          ? 'bg-gray-500'
-                          : ''
-                      }`}
+                      className={`flex w-full items-center gap-3 rounded-lg p-3 text-left text-gray-300 no-underline transition-colors
+                        ${location.pathname === `/${file.uuid}` ? 'bg-gray-700' : 'hover:bg-gray-800'}`}
                       style={{ textDecoration: 'none' }}
                     >
                       <span
@@ -143,7 +153,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         🎬
                       </span>
                       {!collapsed && (
-                        <span className='truncate'>{file.filename}</span>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className='truncate text-sm'>{file.filename}</span>
+                          <span className='truncate text-xs text-gray-400'>
+                            {new Date(file.created * 1000).toLocaleDateString()}
+                          </span>
+                        </div>
                       )}
                     </Link>
                   ))}
@@ -153,10 +168,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Processing Stages - Only show when on a video detail page */}
             {isVideoDetailPage && (
-              <div className='py-2'>
+              <div className='py-3'>
                 {!collapsed && (
-                  <h3 className='px-4 py-2 text-sm font-semibold text-gray-400 uppercase'>
-                    Processing Stages
+                  <h3 className='mb-2 px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider'>
+                    Processing Steps
                   </h3>
                 )}
                 <div className='space-y-1 px-2'>
@@ -185,30 +200,34 @@ const Sidebar: React.FC<SidebarProps> = ({
                           }
                         }}
                         disabled={!canBeActive}
-                        className={`flex w-full items-center gap-3 rounded p-3 text-left text-gray-300 ${
-                          isActive
-                            ? 'bg-gray-500'
+                        className={`flex w-full items-center gap-3 rounded-lg p-3 text-left text-gray-300 transition-colors
+                          ${isActive
+                            ? 'bg-blue-600 shadow-md'
                             : isCompleted
-                              ? 'bg-gray-600'
+                              ? 'bg-gray-700 border-l-4 border-green-500'
                               : !canBeActive
-                                ? 'cursor-not-allowed opacity-50'
-                                : 'hover:bg-gray-600'
-                        }`}
+                                ? 'cursor-not-allowed opacity-50 hover:bg-gray-800/50'
+                                : 'hover:bg-gray-700'}`}
                       >
                         <span
-                          className={`text-xl ${collapsed ? 'flex w-full justify-center' : 'flex-shrink-0'}`}
+                          className={`flex items-center justify-center text-xl ${collapsed ? 'w-full' : 'flex-shrink-0'}`}
                         >
                           {stage.icon}
                         </span>
+
                         {!collapsed && (
-                          <div className='flex items-center gap-2 overflow-hidden'>
-                            <span className='truncate'>{stage.label}</span>
+                          <>
+                            <span className='flex-grow truncate'>{stage.label}</span>
                             {isCompleted && (
-                              <span className='flex-shrink-0 text-gray-400'>
-                                ✓
-                              </span>
+                              <CheckCircle size={16} className="text-green-400" />
                             )}
-                          </div>
+                            {!isCompleted && isActive && (
+                              <div className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></div>
+                            )}
+                            {!isCompleted && !isActive && canBeActive && (
+                              <ChevronRight size={16} className="text-gray-400" />
+                            )}
+                          </>
                         )}
                       </button>
                     );
@@ -216,6 +235,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="p-3 border-t border-gray-700 bg-gray-900/50">
+            <div className="flex items-center justify-center text-xs text-gray-400">
+              {!collapsed ? 'Squash Phase Detector v1.0' : 'v1.0'}
+            </div>
           </div>
         </div>
       </div>
