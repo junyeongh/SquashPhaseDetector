@@ -31,15 +31,18 @@ def update_session_with_mainview(session_id, video_dir):
         next(f)
         for line in f:
             start, end, start_frame, end_frame = line.strip().split(",")
-            timestamps.append({
-                "start": float(start),
-                "end": float(end),
-                "start_frame": int(start_frame),
-                "end_frame": int(end_frame)
-            })
+            timestamps.append(
+                {
+                    "start": float(start),
+                    "end": float(end),
+                    "start_frame": int(start_frame),
+                    "end_frame": int(end_frame),
+                }
+            )
 
     sessions[session_id]["main_view_timestamps"] = timestamps
     return True
+
 
 router = APIRouter(
     prefix="/video",
@@ -95,7 +98,9 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
 
     # Add frame extraction and main view timestamp generation as background tasks
     background_tasks.add_task(extract_frames, video_file_path, frame_dir)
-    background_tasks.add_task(generate_mainview_timestamp, video_file_path, video_file_dir)
+    background_tasks.add_task(
+        generate_mainview_timestamp, video_file_path, video_file_dir
+    )
 
     return {
         "UUID": video_file_id,
@@ -293,7 +298,7 @@ async def update_session_mainview(session_id: str):
     else:
         raise HTTPException(
             status_code=404,
-            detail="Main view timestamps not found. Generate them first using the /mainview endpoint."
+            detail="Main view timestamps not found. Generate them first using the /mainview endpoint.",
         )
 
 
@@ -348,11 +353,13 @@ async def get_main_view_timestamps(video_uuid: str):
         next(f)
         for line in f:
             start, end, start_frame, end_frame = line.strip().split(",")
-            timestamps.append({
-                "start": float(start),
-                "end": float(end),
-                "start_frame": int(start_frame),
-                "end_frame": int(end_frame)
-            })
+            timestamps.append(
+                {
+                    "start": float(start),
+                    "end": float(end),
+                    "start_frame": int(start_frame),
+                    "end_frame": int(end_frame),
+                }
+            )
 
     return {"timestamps": timestamps}
