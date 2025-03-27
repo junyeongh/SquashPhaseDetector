@@ -128,6 +128,62 @@ async def list_gallery():
         raise HTTPException(status_code=500, detail=f"Error listing gallery: {str(e)}")
 
 
+@router.get("/stream/{video_uuid}")
+async def stream_video(video_uuid: str):
+    """
+    Stream a video file by UUID
+    """
+    try:
+        # Find the video in the uploads folder
+        video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
+
+        if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
+            raise HTTPException(status_code=404, detail="Video not found")
+
+        # Read metadata to get the filename
+        metadata_path = os.path.join(video_dir, "metadata.json")
+        if not os.path.exists(metadata_path):
+            raise HTTPException(status_code=404, detail="Video metadata not found")
+
+        with open(metadata_path, "r", encoding="UTF-8") as f:
+            metadata = json.load(f)
+            video_filename = metadata["filename"]
+
+        video_path = os.path.join(video_dir, video_filename)
+        if not os.path.exists(video_path):
+            raise HTTPException(status_code=404, detail="Video file not found")
+
+        # Determine content type based on file extension
+        content_type = "video/mp4"  # Default
+        ext = os.path.splitext(video_filename)[1].lower()
+        if ext == ".avi":
+            content_type = "video/x-msvideo"
+        elif ext == ".mov":
+            content_type = "video/quicktime"
+        elif ext == ".webm":
+            content_type = "video/webm"
+        elif ext == ".mkv":
+            content_type = "video/x-matroska"
+        elif ext == ".flv":
+            content_type = "video/x-flv"
+        elif ext == ".wmv":
+            content_type = "video/x-ms-wmv"
+
+        # Create a generator to stream the file
+        def iterfile():
+            with open(video_path, "rb") as f:
+                yield from f
+
+        return StreamingResponse(
+            iterfile(),
+            media_type=content_type,
+            headers={"Content-Disposition": f"inline; filename={video_filename}"},
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
+
+
 @router.post("/session/start")
 async def start_session(video_path: str):
     """
@@ -182,57 +238,3 @@ async def close_session(session_id: str):
     del sessions[session_id]
 
     return {"success": True, "message": "Session closed"}
-
-
-@router.get("/stream/{video_uuid}")
-async def stream_video(video_uuid: str):
-    """
-    Stream a video file by UUID
-    """
-    try:
-        # Find the video in the uploads folder
-        video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
-
-        if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
-            raise HTTPException(status_code=404, detail="Video not found")
-
-        # Read metadata to get the filename
-        metadata_path = os.path.join(video_dir, "metadata.json")
-        if not os.path.exists(metadata_path):
-            raise HTTPException(status_code=404, detail="Video metadata not found")
-
-        with open(metadata_path, "r", encoding="UTF-8") as f:
-            metadata = json.load(f)
-            video_filename = metadata["filename"]
-
-        video_path = os.path.join(video_dir, video_filename)
-        if not os.path.exists(video_path):
-            raise HTTPException(status_code=404, detail="Video file not found")
-
-        # Determine content type based on file extension
-        content_type = "video/mp4"  # Default
-        ext = os.path.splitext(video_filename)[1].lower()
-        if ext == ".avi":
-            content_type = "video/x-msvideo"
-        elif ext == ".mov":
-            content_type = "video/quicktime"
-        elif ext == ".webm":
-            content_type = "video/webm"
-        elif ext == ".mkv":
-            content_type = "video/x-matroska"
-        elif ext == ".flv":
-            content_type = "video/x-flv"
-        elif ext == ".wmv":
-            content_type = "video/x-ms-wmv"
-
-        # Create a generator to stream the file
-        def iterfile():
-            with open(video_path, "rb") as f:
-                yield from f
-
-        return StreamingResponse(
-            iterfile(), media_type=content_type, headers={"Content-Disposition": f"inline; filename={video_filename}"}
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
