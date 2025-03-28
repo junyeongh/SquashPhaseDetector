@@ -16,7 +16,7 @@ interface ProcessingProgressSidebarProps {
   processingStatus: string;
 }
 
-const ProcessingProgressSidebar: React.FC<ProcessingProgressSidebarProps> = ({
+const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
   activeStage,
   completedStages,
   isProcessing,
@@ -152,4 +152,4 @@ const ProcessingProgressSidebar: React.FC<ProcessingProgressSidebarProps> = ({
   );
 };
 
-export default ProcessingProgressSidebar;
+export default ProcessingProgressSidemenu;
