@@ -20,6 +20,12 @@ router = APIRouter(
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
 GALLERY_FOLDER = os.environ.get("GALLERY_FOLDER", "/data/gallery")
 
+VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
+
+# Add a dictionary to track videos being processed and their status
+# This is a simple in-memory storage - in production, use a database
+processing_videos = {}
+
 
 @router.post("/upload")
 async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
@@ -65,9 +71,7 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
 
     # Add frame extraction and main view timestamp generation as background tasks
     background_tasks.add_task(extract_frames, video_file_path, frame_dir)
-    background_tasks.add_task(
-        generate_mainview_timestamp, video_file_path, video_file_dir
-    )
+    # background_tasks.add_task(generate_mainview_timestamp, video_file_path, video_file_dir)
 
     return {
         "UUID": video_file_id,
@@ -75,9 +79,6 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
         "filename": video_filename,
         "content_type": file.content_type,
     }
-
-
-VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
 
 
 @router.get("/upload")
@@ -241,6 +242,37 @@ async def stream_video(request: Request, video_uuid: str):
         raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
 
 
+@router.get("/mainview/{video_uuid}/status")
+async def get_mainview_processing_status(video_uuid: str):
+    """
+    Get the processing status of main view detection for a video
+    """
+    video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
+
+    if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Check if the video is currently being processed
+    is_processing = video_uuid in processing_videos
+
+    # Check if mainview timestamps exist
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
+    has_mainview = os.path.exists(mainview_file_path)
+
+    status = "idle"
+    if is_processing:
+        status = processing_videos[video_uuid]
+    elif has_mainview:
+        status = "completed"
+
+    return {
+        "video_uuid": video_uuid,
+        "is_processing": is_processing,
+        "has_mainview": has_mainview,
+        "status": status,
+    }
+
+
 @router.post("/mainview/{video_uuid}")
 async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str):
     """
@@ -251,6 +283,10 @@ async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str)
 
     if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
         raise HTTPException(status_code=404, detail="Video not found")
+
+    # Check if already processing this video
+    if video_uuid in processing_videos:
+        return {"status": "Processing already in progress", "video_uuid": video_uuid}
 
     # Read metadata to get the filename
     metadata_path = os.path.join(video_dir, "metadata.json")
@@ -265,8 +301,30 @@ async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str)
     if not os.path.exists(video_path):
         raise HTTPException(status_code=404, detail="Video file not found")
 
-    # Add main view timestamp generation as a background task
-    background_tasks.add_task(generate_mainview_timestamp, video_path, video_dir)
+    # Mark as processing
+    processing_videos[video_uuid] = "starting"
+
+    # Define a wrapper function to update status and clean up after processing
+    async def process_with_status_updates():
+        try:
+            # Update status
+            processing_videos[video_uuid] = "extracting frames"
+
+            # Add main view timestamp generation as a background task
+            await generate_mainview_timestamp(video_path, video_dir)
+
+            # Processing complete, remove from processing dict
+            if video_uuid in processing_videos:
+                del processing_videos[video_uuid]
+
+        except Exception as e:
+            # On error, update status and log error
+            if video_uuid in processing_videos:
+                processing_videos[video_uuid] = f"error: {str(e)}"
+            print(f"Error processing video {video_uuid}: {str(e)}")
+
+    # Add the wrapped task to background tasks
+    background_tasks.add_task(process_with_status_updates)
 
     return {"status": "Processing started", "video_uuid": video_uuid}
 

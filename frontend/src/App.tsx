@@ -1,80 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
-import { BASE_API_URL } from '@/services/api/config';
 import AppLayout from '@/layout/AppLayout';
-import { PipelineStep } from '@/layout/Sidebar';
-import PreprocessingPage from '@/pages/PreprocessingPage';
-import VideoDetailPage from '@/pages/VideoDetailPage';
+import VideoDetailPage from '@/components/VideoDetail';
 import './App.css';
 
 function App() {
   // Router hooks
   const navigate = useNavigate();
-  const location = useLocation();
 
   // API connection state
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pipeline state
-  const [activeStep, setActiveStep] = useState<PipelineStep>('upload');
-  const [completedSteps, setCompletedSteps] = useState<Set<PipelineStep>>(
-    new Set()
-  );
-
-  // Map paths to steps
-  const pathToStep: Record<string, PipelineStep> = {
-    '/': 'upload',
-    '/preprocess': 'preprocess',
-    '/segmentation': 'segmentation',
-    '/pose': 'pose',
-    '/game_state': 'game_state',
-    '/export': 'export',
-  };
-
-  // Map steps to paths
-  const stepToPath: Record<PipelineStep, string> = {
-    upload: '/',
-    preprocess: '/preprocess',
-    segmentation: '/segmentation',
-    pose: '/pose',
-    game_state: '/game_state',
-    export: '/export',
-  };
+  // Pipeline state - needed for marking the upload step as completed
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadedVideo, setUploadedVideo] = useState<{
-    uuid: string;
-    filename: string;
-    original_filename: string;
-    content_type: string;
-  } | null>(null);
-
-  // File listing states
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
-  const [isLoadingFiles, setIsLoadingFiles] = useState<boolean>(false);
-  const [fileListError, setFileListError] = useState<string | null>(null);
-
-  // Processing state
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [processingStatus, setProcessingStatus] = useState<string>('');
-  const [processedVideoUrl, setProcessedVideoUrl] = useState<
-    string | undefined
-  >(undefined);
-
-  // Sync URL with active step
-  useEffect(() => {
-    const currentPath = location.pathname;
-    const step = pathToStep[currentPath];
-
-    if (step && step !== activeStep) {
-      setActiveStep(step);
-    }
-  }, [location, pathToStep, activeStep]);
 
   useEffect(() => {
     const getApiMessage = async () => {
@@ -97,20 +43,11 @@ function App() {
 
   // Function to fetch both uploaded and gallery files
   const fetchUploadedFiles = async () => {
-    setIsLoadingFiles(true);
-    setFileListError(null);
-
     try {
       const uploads = await getUploadedFiles();
-
       setUploadedFiles(uploads);
     } catch (error) {
-      setFileListError(
-        error instanceof Error ? error.message : 'Failed to load files'
-      );
       console.error('Error loading files:', error);
-    } finally {
-      setIsLoadingFiles(false);
     }
   };
 
@@ -134,52 +71,15 @@ function App() {
 
     try {
       const response = await uploadVideo(file);
-      setUploadedVideo(response);
       console.log('Upload successful:', response);
 
       // Refresh file lists after successful upload
-      // Note: We don't automatically redirect to preprocess page anymore
-      // so the user can select from the uploaded videos
       fetchUploadedFiles();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed');
     } finally {
       setIsUploading(false);
     }
-  };
-
-  // Function to handle step changes
-  const handleStepChange = (step: PipelineStep) => {
-    setActiveStep(step);
-    navigate(stepToPath[step]);
-  };
-
-  // Mock function for processing video (simulate API call)
-  const handleProcessVideo = () => {
-    setIsProcessing(true);
-    setProcessingStatus('Preprocessing video...');
-
-    // Simulate processing with timeout
-    setTimeout(() => {
-      setProcessingStatus('Detecting main camera angle...');
-
-      setTimeout(() => {
-        setProcessingStatus('Filtering frames...');
-
-        setTimeout(() => {
-          setIsProcessing(false);
-          setProcessedVideoUrl(
-            `${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}/processed`
-          );
-
-          // Mark preprocess step as completed and move to next step
-          const updatedCompletedSteps = new Set(completedSteps);
-          updatedCompletedSteps.add('preprocess');
-          setCompletedSteps(updatedCompletedSteps);
-          handleStepChange('segmentation');
-        }, 2000);
-      }, 2000);
-    }, 2000);
   };
 
   // Helper function to format file size
@@ -278,14 +178,6 @@ function App() {
                           <td className='px-3 py-2 text-left text-xs'>
                             <button
                               onClick={() => {
-                                // Set as selected video
-                                setUploadedVideo({
-                                  uuid: file.uuid,
-                                  filename: file.filename,
-                                  original_filename: file.filename,
-                                  content_type: 'video/mp4', // Default to video/mp4 since FileInfo doesn't have type
-                                });
-
                                 // Mark upload step as completed
                                 const updatedCompletedSteps = new Set(
                                   completedSteps
@@ -312,57 +204,6 @@ function App() {
         </div>
       </div>
     );
-  };
-
-  // Render content based on active step
-  const renderContent = () => {
-    switch (activeStep) {
-      case 'upload':
-        return renderUploadPage();
-      case 'preprocess':
-        return (
-          <PreprocessingPage
-            originalVideoUrl={`${BASE_API_URL}/video/stream/${uploadedVideo?.uuid}`}
-            isProcessing={isProcessing}
-            onProcess={handleProcessVideo}
-            processingStatus={processingStatus}
-          />
-        );
-      case 'segmentation':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Segmentation page - Under development
-            </p>
-          </div>
-        );
-      case 'pose':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Pose detection page - Under development
-            </p>
-          </div>
-        );
-      case 'game_state':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Game state analysis page - Under development
-            </p>
-          </div>
-        );
-      case 'export':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Export page - Under development
-            </p>
-          </div>
-        );
-      default:
-        return <div>Unknown step</div>;
-    }
   };
 
   // Show loading screen if checking API connection
@@ -399,34 +240,43 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route
-        path='/'
-        element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-            uploadedFiles={uploadedFiles}
-          >
-            {renderContent()}
-          </AppLayout>
-        }
-      />
-      <Route
-        path='/:uuid'
-        element={
-          <AppLayout
-            activeStep={activeStep}
-            onStepChange={handleStepChange}
-            completedSteps={completedSteps}
-            uploadedFiles={uploadedFiles}
-          >
-            <VideoDetailPage />
-          </AppLayout>
-        }
-      />
-    </Routes>
+    <div className='app'>
+      {error && (
+        <div className='flex h-screen w-screen items-center justify-center bg-gray-100'>
+          <div className='mx-auto max-w-md rounded-lg border border-red-200 bg-white p-6 shadow-sm'>
+            <div className='mb-2 text-red-600'>Connection Error</div>
+            <p className='text-sm text-gray-700'>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className='mt-4 rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600'
+            >
+              Retry Connection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!error && (
+        <Routes>
+          <Route
+            path='/'
+            element={
+              <AppLayout uploadedFiles={uploadedFiles}>
+                {renderUploadPage()}
+              </AppLayout>
+            }
+          />
+          <Route
+            path='/:uuid'
+            element={
+              <AppLayout uploadedFiles={uploadedFiles}>
+                <VideoDetailPage />
+              </AppLayout>
+            }
+          />
+        </Routes>
+      )}
+    </div>
   );
 }
 
