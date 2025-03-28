@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
+import { BASE_API_URL } from '@/services/api/config';
 import VideoPlayerSection, {
   VideoPlayerSectionRef,
-} from './video/VideoPlayerSection';
-import { BASE_API_URL } from '@/services/api/config';
-import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
+} from '@/components/video/VideoPlayerSection';
 import {
   PreprocessContent,
   SegmentationContent,
   PoseContent,
   GameStateContent,
   ExportContent,
-} from './stages/StageContent';
+} from '@/components/StageContent';
 import {
   getMainviewTimestamps,
   MainviewTimestamp,
@@ -19,9 +19,9 @@ import {
   getProcessingStatus,
   createProcessingEventSource,
 } from '@/services/api/video';
-import ProcessingProgressSidebar, {
+import ProcessingProgressSidemenu, {
   ProcessingStage,
-} from './processing/ProcessingProgressSidebar';
+} from '@/components/ProcessingProgressSidebar';
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -398,7 +398,7 @@ const VideoDetailPage: React.FC = () => {
 
         {/* Processing progress sidebar */}
         <div className='h-full w-[30%]'>
-          <ProcessingProgressSidebar
+          <ProcessingProgressSidemenu
             activeStage={activeStage}
             completedStages={completedStages}
             isProcessing={isProcessing}
