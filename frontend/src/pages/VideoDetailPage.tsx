@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import VideoPlayerSection, {
   VideoPlayerSectionRef,
-} from './video/VideoPlayerSection';
+} from '../components/video/VideoPlayerSection';
 import { BASE_API_URL } from '@/services/api/config';
 import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
 import {
@@ -11,7 +11,7 @@ import {
   PoseContent,
   GameStateContent,
   ExportContent,
-} from './stages/StageContent';
+} from '../components/stages/StageContent';
 import {
   getMainviewTimestamps,
   MainviewTimestamp,
@@ -21,7 +21,7 @@ import {
 } from '@/services/api/video';
 import ProcessingProgressSidebar, {
   ProcessingStage,
-} from './processing/ProcessingProgressSidebar';
+} from '../components/processing/ProcessingProgressSidebar';
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();

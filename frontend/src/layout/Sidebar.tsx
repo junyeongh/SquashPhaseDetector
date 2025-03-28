@@ -85,11 +85,9 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
             {/* Recent Uploads Section */}
             {uploadedFiles.length > 0 && (
               <div className='py-2'>
-                {!collapsed && (
-                  <div className='px-4 py-1 text-xs font-medium text-gray-500'>
-                    Recent Uploads
-                  </div>
-                )}
+                <div className='px-4 py-1 text-xs font-medium text-gray-500'>
+                  {!collapsed ? 'Recent Uploads' : ''}
+                </div>
                 <div className='space-y-1 px-2'>
                   {uploadedFiles.slice(0, 5).map((file, index) => (
                     <Link
@@ -116,6 +114,12 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
                 </div>
               </div>
             )}
+          </div>
+          {/* Sidebar Footer */}
+          <div className='border-t border-gray-200 p-3'>
+            <div className='flex items-center justify-center text-xs text-gray-400'>
+              {!collapsed ? 'Squash Phase Detector' : ''}
+            </div>
           </div>
         </div>
       </aside>
