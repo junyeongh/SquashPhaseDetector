@@ -282,6 +282,7 @@ const ReactPlayerWrapper: React.FC<ReactPlayerWrapperProps> = ({
           </div>
 
           <div className='flex items-center'>
+            {/* Current frame */}
             {/* Time indicator */}
             <div className='mr-4 text-xs font-medium text-gray-600'>
               <span>{formatTime(played * duration)}</span>

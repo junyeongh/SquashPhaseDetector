@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { uploadVideo, getUploadedFiles, FileInfo } from '@/services/api/video';
 import { BASE_API_URL } from '@/services/api/config';
 import AppLayout from '@/layout/AppLayout';
 import { PipelineStep } from '@/layout/Sidebar';
 import PreprocessingPage from '@/pages/PreprocessingPage';
-import VideoDetailPage from '@/pages/VideoDetailPage';
+import VideoDetailPage from '@/components/VideoDetail';
 import './App.css';
 
 function App() {
   // Router hooks
   const navigate = useNavigate();
-  const location = useLocation();
 
   // API connection state
   const [loading, setLoading] = useState<boolean>(true);
@@ -24,25 +23,25 @@ function App() {
     new Set()
   );
 
-  // Map paths to steps
-  const pathToStep: Record<string, PipelineStep> = {
-    '/': 'upload',
-    '/preprocess': 'preprocess',
-    '/segmentation': 'segmentation',
-    '/pose': 'pose',
-    '/game_state': 'game_state',
-    '/export': 'export',
-  };
+  // Map paths to steps - no longer needed since we removed navigation
+  // const pathToStep: Record<string, PipelineStep> = {
+  //   '/': 'upload',
+  //   '/preprocess': 'preprocess',
+  //   '/segmentation': 'segmentation',
+  //   '/pose': 'pose',
+  //   '/game_state': 'game_state',
+  //   '/export': 'export',
+  // };
 
-  // Map steps to paths
-  const stepToPath: Record<PipelineStep, string> = {
-    upload: '/',
-    preprocess: '/preprocess',
-    segmentation: '/segmentation',
-    pose: '/pose',
-    game_state: '/game_state',
-    export: '/export',
-  };
+  // Map steps to paths - no longer needed since we removed navigation
+  // const stepToPath: Record<PipelineStep, string> = {
+  //   upload: '/',
+  //   preprocess: '/preprocess',
+  //   segmentation: '/segmentation',
+  //   pose: '/pose',
+  //   game_state: '/game_state',
+  //   export: '/export',
+  // };
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -66,15 +65,15 @@ function App() {
     string | undefined
   >(undefined);
 
-  // Sync URL with active step
-  useEffect(() => {
-    const currentPath = location.pathname;
-    const step = pathToStep[currentPath];
+  // Sync URL with active step - no longer needed
+  // useEffect(() => {
+  //   const currentPath = location.pathname;
+  //   const step = pathToStep[currentPath];
 
-    if (step && step !== activeStep) {
-      setActiveStep(step);
-    }
-  }, [location, pathToStep, activeStep]);
+  //   if (step && step !== activeStep) {
+  //     setActiveStep(step);
+  //   }
+  // }, [location, pathToStep, activeStep]);
 
   useEffect(() => {
     const getApiMessage = async () => {
@@ -151,7 +150,6 @@ function App() {
   // Function to handle step changes
   const handleStepChange = (step: PipelineStep) => {
     setActiveStep(step);
-    navigate(stepToPath[step]);
   };
 
   // Mock function for processing video (simulate API call)

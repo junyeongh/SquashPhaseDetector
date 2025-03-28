@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import PreprocessingPage from './PreprocessingPage';
+import PreprocessingPage from '../pages/PreprocessingPage';
 import { BASE_API_URL } from '@/services/api/config';
 
 // Define the types of processing stages
