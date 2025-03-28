@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Play, Loader, Check } from 'lucide-react';
 import { MainviewTimestamp } from '@/services/api/video';
+import InteractiveCanvas from '@/components/video/InteractiveCanvas';
+import { Point, SegmentationResult } from '@/services/api/segmentation';
+import { FramePoseResult } from '@/services/api/pose';
+import PoseOverlay from '@/components/video/PoseOverlay';
 
 interface PreprocessContentProps {
   onProcess: () => void;
@@ -160,81 +164,434 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
   );
 };
 
-export const SegmentationContent = () => (
-  <div className='mb-4'>
-    <h1 className='mb-2 text-lg font-medium text-gray-800'>
-      Player Segmentation
-    </h1>
-    <p className='text-xs text-gray-500'>
-      Segment players from the video for pose estimation.
-    </p>
-    <div className='mt-4 rounded-lg bg-gray-50 p-4'>
-      <h2 className='mb-2 text-sm font-medium text-gray-700'>
-        Segmentation Controls
-      </h2>
-      <div className='space-y-4'>
-        <div>
-          <label className='mb-1 block text-xs font-medium text-gray-700'>
-            Detection Confidence
-          </label>
-          <input
-            type='range'
-            min='0'
-            max='100'
-            className='w-full'
-            defaultValue='80'
-          />
-        </div>
-        <div>
-          <label className='mb-1 block text-xs font-medium text-gray-700'>
-            Tracking Method
-          </label>
-          <select className='w-full rounded border p-1 text-xs'>
-            <option>YOLO</option>
-            <option>Faster R-CNN</option>
-            <option>SSD</option>
-          </select>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+export const SegmentationContent = ({
+  frameUrl,
+  frameIndex,
+  player1Points,
+  player2Points,
+  onPlayer1PointsChange,
+  onPlayer2PointsChange,
+  onMarkPlayers,
+  onStartSegmentation,
+  isProcessing,
+  processingStatus,
+  segmentationResults,
+}: {
+  frameUrl: string;
+  frameIndex: number;
+  player1Points: Point[];
+  player2Points: Point[];
+  onPlayer1PointsChange: (points: Point[]) => void;
+  onPlayer2PointsChange: (points: Point[]) => void;
+  onMarkPlayers: () => void;
+  onStartSegmentation: () => void;
+  isProcessing: boolean;
+  processingStatus: string;
+  segmentationResults: SegmentationResult[] | null;
+}) => {
+  const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
+  const [confidence, setConfidence] = useState<number>(80);
 
-export const PoseContent = () => (
-  <div className='mb-4'>
-    <h1 className='mb-2 text-lg font-medium text-gray-800'>Pose Detection</h1>
-    <p className='text-xs text-gray-500'>Detect player poses and movements.</p>
-    <div className='mt-4 rounded-lg bg-gray-50 p-4'>
-      <h2 className='mb-2 text-sm font-medium text-gray-700'>
-        Pose Detection Settings
-      </h2>
-      <div className='space-y-4'>
+  // Calculate frameSize based on a standard 16:9 ratio, limited to a max width
+  const frameWidth = Math.min(800, window.innerWidth - 40);
+  const frameHeight = (frameWidth * 9) / 16;
+
+  return (
+    <div className='mb-4'>
+      <div className='mb-4 flex items-start justify-between'>
         <div>
-          <label className='mb-1 block text-xs font-medium text-gray-700'>
-            Model Type
-          </label>
-          <select className='w-full rounded border p-1 text-xs'>
-            <option>BlazePose</option>
-            <option>MoveNet</option>
-            <option>OpenPose</option>
-          </select>
+          <h1 className='mb-2 text-lg font-medium text-gray-800'>
+            Player Segmentation
+          </h1>
+          <p className='text-xs text-gray-500'>
+            Mark players in the frame by clicking on them. Add multiple points
+            for better segmentation.
+          </p>
         </div>
-        <div>
-          <label className='mb-1 block text-xs font-medium text-gray-700'>
-            Keypoint Confidence Threshold
-          </label>
-          <input
-            type='range'
-            min='0'
-            max='100'
-            className='w-full'
-            defaultValue='70'
-          />
+
+        <div className='flex gap-2'>
+          <button
+            onClick={onMarkPlayers}
+            disabled={
+              isProcessing ||
+              player1Points.length === 0 ||
+              player2Points.length === 0
+            }
+            className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
+              isProcessing ||
+              player1Points.length === 0 ||
+              player2Points.length === 0
+                ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                : 'border border-gray-300 bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Mark Players
+          </button>
+
+          <button
+            onClick={onStartSegmentation}
+            disabled={isProcessing}
+            className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
+              isProcessing
+                ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                : 'border border-blue-300 bg-blue-200 text-blue-700 hover:bg-blue-300'
+            }`}
+          >
+            {isProcessing ? (
+              <>
+                <Loader className='h-3 w-3 animate-spin' />
+                Processing...
+              </>
+            ) : (
+              'Start Segmentation'
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Processing status indicator */}
+      {isProcessing && (
+        <div className='mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+          <div className='mb-2 flex items-center space-x-2'>
+            <Loader className='h-3 w-3 animate-spin text-gray-500' />
+            <span className='text-sm font-medium text-gray-700'>
+              {processingStatus}
+            </span>
+          </div>
+
+          <div className='mt-2'>
+            <div className='mb-1 flex justify-between text-xs text-gray-500'>
+              <span>Segmenting players</span>
+              <span>This may take several minutes</span>
+            </div>
+            <div className='relative h-2 w-full overflow-hidden rounded-full bg-gray-200'>
+              <div className='absolute left-0 h-full w-1/2 animate-pulse bg-blue-200'></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+        {/* Interactive canvas for player marking */}
+        <div>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Mark Players
+          </div>
+          <div className='rounded-lg border border-gray-200'>
+            <InteractiveCanvas
+              imageUrl={frameUrl}
+              width={frameWidth}
+              height={frameHeight}
+              player1Points={player1Points}
+              player2Points={player2Points}
+              onPlayer1PointsChange={onPlayer1PointsChange}
+              onPlayer2PointsChange={onPlayer2PointsChange}
+              activePlayer={activePlayer}
+              setActivePlayer={setActivePlayer}
+              disabled={isProcessing}
+            />
+          </div>
+          <div className='mt-2 text-xs text-gray-500'>
+            Click on players to mark them. Add multiple points for each player.
+          </div>
+        </div>
+
+        {/* Segmentation controls and settings */}
+        <div>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Segmentation Controls
+          </div>
+          <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+            <div className='space-y-4'>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Detection Confidence ({confidence}%)
+                </label>
+                <input
+                  type='range'
+                  min='0'
+                  max='100'
+                  value={confidence}
+                  onChange={(e) => setConfidence(parseInt(e.target.value))}
+                  className='w-full'
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Frame Navigation
+                </label>
+                <div className='flex items-center gap-2'>
+                  <button
+                    className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
+                    disabled={isProcessing}
+                  >
+                    Previous Frame
+                  </button>
+                  <span className='text-xs text-gray-600'>
+                    Frame {frameIndex}
+                  </span>
+                  <button
+                    className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
+                    disabled={isProcessing}
+                  >
+                    Next Frame
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Instructions
+                </label>
+                <ul className='ml-4 list-disc text-xs text-gray-600'>
+                  <li>
+                    Mark Player 1 with red points (multiple points recommended)
+                  </li>
+                  <li>
+                    Mark Player 2 with blue points (multiple points recommended)
+                  </li>
+                  <li>Click "Mark Players" to save the current frame</li>
+                  <li>
+                    Navigate to other frames and mark players there as well
+                  </li>
+                  <li>Click "Start Segmentation" when done marking frames</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Segmentation results, if available */}
+      {segmentationResults && segmentationResults.length > 0 && (
+        <div className='mt-6'>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Segmentation Results
+          </div>
+          <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+            <div className='text-sm text-gray-600'>
+              Successfully segmented {segmentationResults.length} frames
+            </div>
+            {/* We could add a preview of segmentation results here */}
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
+
+export const PoseContent = ({
+  frameUrl,
+  frameIndex,
+  onStartPoseDetection,
+  isProcessing,
+  processingStatus,
+  poseResults,
+  modelType,
+  setModelType,
+  confidenceThreshold,
+  setConfidenceThreshold,
+}: {
+  frameUrl: string;
+  frameIndex: number;
+  onStartPoseDetection: () => void;
+  isProcessing: boolean;
+  processingStatus: string;
+  poseResults: FramePoseResult[] | null;
+  modelType: string;
+  setModelType: (type: string) => void;
+  confidenceThreshold: number;
+  setConfidenceThreshold: (threshold: number) => void;
+}) => {
+  // Calculate frameSize based on a standard 16:9 ratio, limited to a max width
+  const frameWidth = Math.min(800, window.innerWidth - 40);
+  const frameHeight = (frameWidth * 9) / 16;
+
+  // Find the current frame's pose result, if available
+  const currentFramePose = poseResults?.find(
+    (p) => p.frameIndex === frameIndex
+  );
+
+  return (
+    <div className='mb-4'>
+      <div className='mb-4 flex items-start justify-between'>
+        <div>
+          <h1 className='mb-2 text-lg font-medium text-gray-800'>
+            Pose Detection
+          </h1>
+          <p className='text-xs text-gray-500'>
+            Detect player poses and body landmarks throughout the video.
+          </p>
+        </div>
+
+        <button
+          onClick={onStartPoseDetection}
+          disabled={isProcessing}
+          className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
+            isProcessing
+              ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+              : 'border border-blue-300 bg-blue-200 text-blue-700 hover:bg-blue-300'
+          }`}
+        >
+          {isProcessing ? (
+            <>
+              <Loader className='h-3 w-3 animate-spin' />
+              Processing...
+            </>
+          ) : (
+            'Start Pose Detection'
+          )}
+        </button>
+      </div>
+
+      {/* Processing status indicator */}
+      {isProcessing && (
+        <div className='mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+          <div className='mb-2 flex items-center space-x-2'>
+            <Loader className='h-3 w-3 animate-spin text-gray-500' />
+            <span className='text-sm font-medium text-gray-700'>
+              {processingStatus}
+            </span>
+          </div>
+
+          <div className='mt-2'>
+            <div className='mb-1 flex justify-between text-xs text-gray-500'>
+              <span>Detecting poses in frames</span>
+              <span>This may take several minutes</span>
+            </div>
+            <div className='relative h-2 w-full overflow-hidden rounded-full bg-gray-200'>
+              <div className='absolute left-0 h-full w-1/2 animate-pulse bg-blue-200'></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+        {/* Pose preview area */}
+        <div>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Preview Frame
+          </div>
+          <div className='relative overflow-hidden rounded-lg border border-gray-200'>
+            {/* Show frame with pose overlay if results available for this frame */}
+            <img
+              src={frameUrl}
+              alt={`Frame ${frameIndex}`}
+              className='h-auto w-full object-contain'
+              style={{ width: frameWidth, height: frameHeight }}
+            />
+
+            {/* Pose overlay when results are available */}
+            {currentFramePose && (
+              <PoseOverlay
+                width={frameWidth}
+                height={frameHeight}
+                player1Pose={currentFramePose.player1Pose}
+                player2Pose={currentFramePose.player2Pose}
+              />
+            )}
+
+            {/* Fallback message when no pose is detected */}
+            {!currentFramePose && poseResults && poseResults.length > 0 && (
+              <div className='bg-opacity-70 absolute bottom-2 left-2 rounded bg-gray-800 p-1 text-xs text-white'>
+                No pose detected in this frame
+              </div>
+            )}
+          </div>
+          <div className='mt-2 text-xs text-gray-500'>
+            After detection, pose keypoints will be overlaid on the frames.
+          </div>
+        </div>
+
+        {/* Pose detection settings */}
+        <div>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Pose Detection Settings
+          </div>
+          <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+            <div className='space-y-4'>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Model Type
+                </label>
+                <select
+                  className='w-full rounded border p-1 text-xs'
+                  value={modelType}
+                  onChange={(e) => setModelType(e.target.value)}
+                  disabled={isProcessing}
+                >
+                  <option value='YOLOv8'>YOLOv8-Pose</option>
+                  <option value='YOLOv7'>YOLOv7-Pose</option>
+                  <option value='YOLOv8-Large'>YOLOv8-Pose Large</option>
+                </select>
+              </div>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Keypoint Confidence Threshold ({confidenceThreshold}%)
+                </label>
+                <input
+                  type='range'
+                  min='0'
+                  max='100'
+                  value={confidenceThreshold}
+                  onChange={(e) =>
+                    setConfidenceThreshold(parseInt(e.target.value))
+                  }
+                  className='w-full'
+                  disabled={isProcessing}
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs font-medium text-gray-700'>
+                  Frame Navigation
+                </label>
+                <div className='flex items-center gap-2'>
+                  <button
+                    className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
+                    disabled={isProcessing}
+                  >
+                    Previous Frame
+                  </button>
+                  <span className='text-xs text-gray-600'>
+                    Frame {frameIndex}
+                  </span>
+                  <button
+                    className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
+                    disabled={isProcessing}
+                  >
+                    Next Frame
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pose detection results summary, if available */}
+      {poseResults && poseResults.length > 0 && (
+        <div className='mt-6'>
+          <div className='mb-2 text-sm font-medium text-gray-700'>
+            Pose Detection Results
+          </div>
+          <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
+            <div className='text-sm text-gray-600'>
+              Successfully detected poses in {poseResults.length} frames
+            </div>
+            <div className='mt-2 text-xs text-gray-500'>
+              Player 1:{' '}
+              {poseResults.filter((r) => r.player1Pose !== null).length} frames
+              with poses
+              <br />
+              Player 2:{' '}
+              {poseResults.filter((r) => r.player2Pose !== null).length} frames
+              with poses
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const GameStateContent = () => (
   <div className='mb-4'>
