@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import PreprocessingPage from '../pages/PreprocessingPage';
+import VideoPlayerSection from './video/VideoPlayerSection';
 import { BASE_API_URL } from '@/services/api/config';
+import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
+import {
+  PreprocessContent,
+  SegmentationContent,
+  PoseContent,
+  GameStateContent,
+  ExportContent,
+} from './stages/StageContent';
+import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
 
 // Define the types of processing stages
 type ProcessingStage =
@@ -12,96 +21,204 @@ type ProcessingStage =
   | 'export';
 
 const VideoDetailPage: React.FC = () => {
-  // Get the UUID from the URL
   const { uuid } = useParams<{ uuid: string }>();
-
-  // State for the current active stage
   const [activeStage, setActiveStage] = useState<ProcessingStage>('preprocess');
   const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(
     new Set()
   );
-
-  // States for video processing
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+
+  // State for video player data
+  const [currentFrame, setCurrentFrame] = useState<number>(0); // Still needed for future features or for communicating with backend
+  const [duration, setDuration] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [mainviewTimestamps, setMainviewTimestamps] = useState<
+    MainviewTimestamp[]
+  >([]);
+
+  // Fetch mainview timestamps when component mounts
+  useEffect(() => {
+    if (uuid) {
+      getMainviewTimestamps(uuid)
+        .then((timestamps) => {
+          setMainviewTimestamps(timestamps);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch mainview timestamps:', error);
+        });
+    }
+  }, [uuid]);
+
+  // Log frame updates for debugging purposes
+  useEffect(() => {
+    console.debug(`Current frame updated: ${currentFrame}`);
+  }, [currentFrame]);
+
+  // Update frame and player info
+  const handleFrameUpdate = (
+    frame: number,
+    newDuration: number,
+    newCurrentTime: number
+  ) => {
+    setCurrentFrame(frame);
+    setDuration(newDuration);
+    setCurrentTime(newCurrentTime);
+  };
 
   // Function for processing video
   const handleProcessVideo = () => {
     setIsProcessing(true);
-    setProcessingStatus('Preprocessing video...');
+    setProcessingStatus(`${activeStage} in progress...`);
 
     // Simulate processing with timeout
     setTimeout(() => {
-      setProcessingStatus('Detecting main camera angle...');
+      setProcessingStatus(`${activeStage} processing step 2...`);
 
       setTimeout(() => {
-        setProcessingStatus('Filtering frames...');
+        setProcessingStatus(`${activeStage} finalizing...`);
 
         setTimeout(() => {
           setIsProcessing(false);
 
-          // Mark preprocess stage as completed
+          // Mark current stage as completed
           const updatedCompletedStages = new Set(completedStages);
-          updatedCompletedStages.add('preprocess');
+          updatedCompletedStages.add(activeStage);
           setCompletedStages(updatedCompletedStages);
 
           // Move to next stage
-          setActiveStage('segmentation');
+          moveToNextStage();
         }, 2000);
       }, 2000);
     }, 2000);
   };
 
-  // Render the appropriate content based on the active stage
-  const renderContent = () => {
+  const moveToNextStage = () => {
     switch (activeStage) {
       case 'preprocess':
-        return (
-          <PreprocessingPage
-            originalVideoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
-            isProcessing={isProcessing}
-            onProcess={handleProcessVideo}
-            processingStatus={processingStatus}
-          />
-        );
+        setActiveStage('segmentation');
+        break;
+      case 'segmentation':
+        setActiveStage('pose');
+        break;
+      case 'pose':
+        setActiveStage('game_state');
+        break;
+      case 'game_state':
+        setActiveStage('export');
+        break;
+      case 'export':
+        // This is the final stage
+        break;
+    }
+  };
+
+  // Get button text and icon based on the active stage
+  const getButtonConfig = () => {
+    switch (activeStage) {
+      case 'preprocess':
+        return { label: 'Process Video', icon: <Play className='h-3 w-3' /> };
+      case 'segmentation':
+        return {
+          label: 'Run Segmentation',
+          icon: <Scissors className='h-3 w-3' />,
+        };
+      case 'pose':
+        return {
+          label: 'Detect Poses',
+          icon: <Activity className='h-3 w-3' />,
+        };
+      case 'game_state':
+        return { label: 'Analyze Game', icon: <Zap className='h-3 w-3' /> };
+      case 'export':
+        return {
+          label: 'Export Results',
+          icon: <Download className='h-3 w-3' />,
+        };
+      default:
+        return { label: 'Process', icon: <Play className='h-3 w-3' /> };
+    }
+  };
+
+  // Get stage-specific overlay
+  const getStageOverlay = () => {
+    switch (activeStage) {
       case 'segmentation':
         return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Segmentation page - Under development
-            </p>
+          <div className='pointer-events-none absolute top-1/4 left-1/4 h-1/2 w-1/2 border-2 border-dashed border-red-500 opacity-50'>
+            <div className='absolute -top-6 left-0 rounded bg-red-500 px-2 py-1 text-xs text-white'>
+              Segmentation Area
+            </div>
           </div>
         );
       case 'pose':
         return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Pose detection page - Under development
-            </p>
-          </div>
-        );
-      case 'game_state':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Game state analysis page - Under development
-            </p>
-          </div>
-        );
-      case 'export':
-        return (
-          <div className='flex h-full items-center justify-center'>
-            <p className='text-xs text-gray-500'>
-              Export page - Under development
-            </p>
+          <div className='pointer-events-none absolute flex h-full w-full items-center justify-center'>
+            <div className='relative h-1/2 w-1/2'>
+              <div className='absolute h-full w-full border-2 border-dashed border-blue-500 opacity-50'></div>
+              <div className='absolute -top-6 left-0 rounded bg-blue-500 px-2 py-1 text-xs text-white'>
+                Pose Detection Area
+              </div>
+            </div>
           </div>
         );
       default:
-        return <div className='text-xs text-gray-500'>Unknown stage</div>;
+        return null;
     }
   };
 
-  return <div className='flex h-full flex-col'>{renderContent()}</div>;
+  // Handle seek in the timeline
+  const handleSeek = (time: number) => {
+    console.log('Seeking to time:', time);
+    // This would call the VideoPlayerSection's seekToTime method
+    // In a real implementation, we would use a ref to the VideoPlayerSection
+  };
+
+  // Render stage-specific content
+  const renderStageContent = () => {
+    switch (activeStage) {
+      case 'preprocess':
+        return (
+          <PreprocessContent
+            onProcess={handleProcessVideo}
+            isProcessing={isProcessing}
+            processingStatus={processingStatus}
+            mainviewTimestamps={mainviewTimestamps}
+            duration={duration}
+            currentTime={currentTime}
+            onSeek={handleSeek}
+            buttonConfig={getButtonConfig()}
+          />
+        );
+      case 'segmentation':
+        return <SegmentationContent />;
+      case 'pose':
+        return <PoseContent />;
+      case 'game_state':
+        return <GameStateContent />;
+      case 'export':
+        return <ExportContent />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className='flex h-full flex-col'>
+      {/* Stage-specific content */}
+      {renderStageContent()}
+      {/* Persistent video player */}
+      <div className='flex-1'>
+        <VideoPlayerSection
+          videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
+          stage={activeStage}
+          videoId={uuid || ''}
+          customOverlay={getStageOverlay()}
+          onFrameUpdate={handleFrameUpdate}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default VideoDetailPage;
