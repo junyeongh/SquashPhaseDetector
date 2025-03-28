@@ -1,6 +1,5 @@
 import React from 'react';
 import { Play, Loader } from 'lucide-react';
-import MainviewTimeline from '../video/MainviewTimeline';
 import { MainviewTimestamp } from '@/services/api/video';
 
 interface PreprocessContentProps {
@@ -23,71 +22,94 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
   currentTime,
   onSeek,
   buttonConfig,
-}) => (
-  <div className='mb-4'>
-    <div className='mb-4 flex items-start justify-between'>
-      <div>
-        <h1 className='mb-2 text-lg font-medium text-gray-800'>
-          Video Preprocessing
-        </h1>
-        <p className='text-xs text-gray-500'>
-          Analyze the video to detect main view angles and prepare it for player
-          segmentation.
-        </p>
+}) => {
+  const playheadPosition = (currentTime / duration) * 100;
+  return (
+    <div className='mb-4'>
+      <div className='mb-4 flex items-start justify-between'>
+        <div>
+          <h1 className='mb-2 text-lg font-medium text-gray-800'>
+            Video Preprocessing
+          </h1>
+          <p className='text-xs text-gray-500'>
+            Analyze the video to detect main view angles and prepare it for
+            player segmentation.
+          </p>
+        </div>
+
+        <button
+          onClick={onProcess}
+          disabled={isProcessing}
+          className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
+            isProcessing
+              ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+              : 'border border-gray-300 bg-gray-200 text-gray-700 hover:bg-gray-300'
+          }`}
+        >
+          {isProcessing ? (
+            <>
+              <Loader className='h-3 w-3 animate-spin' />
+              Processing...
+            </>
+          ) : (
+            <>
+              {buttonConfig?.icon || <Play className='h-3 w-3' />}
+              {buttonConfig?.label || 'Process Video'}
+            </>
+          )}
+        </button>
       </div>
 
-      <button
-        onClick={onProcess}
-        disabled={isProcessing}
-        className={`flex items-center gap-2 rounded px-4 py-1.5 text-sm transition-colors ${
-          isProcessing
-            ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
-            : 'border border-gray-300 bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-      >
-        {isProcessing ? (
-          <>
-            <Loader className='h-3 w-3 animate-spin' />
-            Processing...
-          </>
-        ) : (
-          <>
-            {buttonConfig?.icon || <Play className='h-3 w-3' />}
-            {buttonConfig?.label || 'Process Video'}
-          </>
-        )}
-      </button>
-    </div>
+      {isProcessing && (
+        <div className='mb-2 flex items-center space-x-2 text-xs text-gray-500'>
+          <Loader className='h-3 w-3 animate-spin text-gray-500' />
+          <span>{processingStatus}</span>
+        </div>
+      )}
 
-    {isProcessing && (
-      <div className='mb-2 flex items-center space-x-2 text-xs text-gray-500'>
-        <Loader className='h-3 w-3 animate-spin text-gray-500' />
-        <span>{processingStatus}</span>
-      </div>
-    )}
-
-    {/* MainviewTimeline for preprocessing stage */}
-    {mainviewTimestamps && mainviewTimestamps.length > 0 && (
-      <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2'>
-        <div className='mb-1 flex items-center justify-between'>
-          <div className='text-xs font-medium text-gray-500'>
-            Main View Segments
+      {/* MainviewTimeline for preprocessing stage */}
+      {mainviewTimestamps && mainviewTimestamps.length > 0 && (
+        <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2'>
+          <div className='mb-1 flex items-center justify-between'>
+            <div className='text-xs font-medium text-gray-500'>
+              Main View Segments
+            </div>
+            <div className='text-xs text-gray-500'>
+              <span className='font-medium'>{mainviewTimestamps.length}</span>{' '}
+              segments detected
+            </div>
           </div>
-          <div className='text-xs text-gray-500'>
-            <span className='font-medium'>{mainviewTimestamps.length}</span>{' '}
-            segments detected
+          <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
+            {/* Timeline segments */}
+            {mainviewTimestamps.map((segment, index) => {
+              const startPercent = (segment.start / duration) * 100;
+              const widthPercent =
+                ((segment.end - segment.start) / duration) * 100;
+
+              return (
+                <div
+                  key={index}
+                  className='absolute h-full bg-blue-200'
+                  style={{
+                    left: `${startPercent}%`,
+                    width: `${widthPercent}%`,
+                  }}
+                  onClick={() => onSeek && onSeek(segment.start)}
+                />
+              );
+            })}
+
+            {/* Playhead */}
+            <div
+              className='absolute top-0 h-full w-1 bg-gray-600'
+              style={{ left: `${playheadPosition}%` }}
+            />
           </div>
         </div>
-        <MainviewTimeline
-          timestamps={mainviewTimestamps}
-          duration={duration}
-          currentTime={currentTime}
-          onSeek={onSeek}
-        />
-      </div>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+};
 
 export const SegmentationContent = () => (
   <div className='mb-4'>
