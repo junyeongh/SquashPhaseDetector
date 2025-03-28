@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import ReactPlayerWrapper from './VideoPlayer';
 import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
 import ReactPlayer from 'react-player';
@@ -16,13 +22,14 @@ interface VideoPlayerSectionProps {
   ) => void;
 }
 
-const VideoPlayerSection: React.FC<VideoPlayerSectionProps> = ({
-  videoUrl,
-  stage,
-  videoId,
-  customOverlay,
-  onFrameUpdate,
-}) => {
+export interface VideoPlayerSectionRef {
+  seekToTime: (time: number) => void;
+}
+
+const VideoPlayerSection = forwardRef<
+  VideoPlayerSectionRef,
+  VideoPlayerSectionProps
+>(({ videoUrl, stage, videoId, customOverlay, onFrameUpdate }, ref) => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [mainviewTimestamps, setMainviewTimestamps] = useState<
     MainviewTimestamp[]
@@ -31,18 +38,60 @@ const VideoPlayerSection: React.FC<VideoPlayerSectionProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
 
-  // Fetch mainview timestamps when component mounts
+  // Expose the seekToTime method to parent components
+  useImperativeHandle(ref, () => ({
+    seekToTime: (time: number) => {
+      if (playerRef.current && duration > 0) {
+        // Calculate the position as a percentage of the duration
+        playerRef.current.seekTo(time, 'seconds');
+      }
+    },
+  }));
+
+  // Fetch mainview timestamps when component mounts or videoId changes
   useEffect(() => {
+    // Reset timestamps immediately when videoId changes to prevent displaying wrong data
+    setMainviewTimestamps([]);
+
     if (videoId) {
       getMainviewTimestamps(videoId)
         .then((timestamps) => {
           setMainviewTimestamps(timestamps);
+          console.log(
+            'Loaded main view timestamps for video:',
+            videoId,
+            timestamps
+          );
         })
         .catch((error) => {
           console.error('Failed to fetch mainview timestamps:', error);
         });
     }
   }, [videoId]);
+
+  // Refresh main view timestamps when stage changes to preprocess
+  useEffect(() => {
+    // Only refresh if we're on the preprocess stage
+    if (stage === 'preprocess' && videoId) {
+      console.log(
+        'Stage changed to preprocess, refreshing timestamps for video:',
+        videoId
+      );
+
+      getMainviewTimestamps(videoId)
+        .then((timestamps) => {
+          // Only update if we get back data that belongs to the current video
+          setMainviewTimestamps(timestamps);
+          console.log(
+            'Refreshed timestamps on stage change:',
+            timestamps.length
+          );
+        })
+        .catch((error) => {
+          console.error('Failed to refresh mainview timestamps:', error);
+        });
+    }
+  }, [stage, videoId]);
 
   // Handle frame change
   const handleFrameChange = (frame: number) => {
@@ -66,16 +115,6 @@ const VideoPlayerSection: React.FC<VideoPlayerSectionProps> = ({
     playerRef.current = ref;
   };
 
-  // Method to seek to a specific time (would be exported through ref in a complete implementation)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const seekToTime = (time: number) => {
-    if (playerRef.current && duration > 0) {
-      // Calculate the position as a percentage of the duration
-      const position = time / duration;
-      playerRef.current.seekTo(position);
-    }
-  };
-
   return (
     <div className='flex flex-1 flex-col overflow-hidden'>
       {/* Video Player Container */}
@@ -91,6 +130,8 @@ const VideoPlayerSection: React.FC<VideoPlayerSectionProps> = ({
       </div>
     </div>
   );
-};
+});
+
+VideoPlayerSection.displayName = 'VideoPlayerSection';
 
 export default VideoPlayerSection;

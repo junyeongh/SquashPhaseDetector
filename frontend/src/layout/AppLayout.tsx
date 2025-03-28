@@ -13,9 +13,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 }) => {
   return (
     <div className='flex h-screen w-full flex-row overflow-hidden'>
-      <Sidebar
-        uploadedFiles={uploadedFiles}
-      />
+      <Sidebar uploadedFiles={uploadedFiles} />
       <MainContent>{children}</MainContent>
     </div>
   );

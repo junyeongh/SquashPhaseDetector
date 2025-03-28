@@ -15,9 +15,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   // Pipeline state - needed for marking the upload step as completed
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(
-    new Set()
-  );
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -263,9 +261,7 @@ function App() {
           <Route
             path='/'
             element={
-              <AppLayout
-                uploadedFiles={uploadedFiles}
-              >
+              <AppLayout uploadedFiles={uploadedFiles}>
                 {renderUploadPage()}
               </AppLayout>
             }
@@ -273,9 +269,7 @@ function App() {
           <Route
             path='/:uuid'
             element={
-              <AppLayout
-                uploadedFiles={uploadedFiles}
-              >
+              <AppLayout uploadedFiles={uploadedFiles}>
                 <VideoDetailPage />
               </AppLayout>
             }

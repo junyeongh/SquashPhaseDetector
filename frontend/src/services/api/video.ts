@@ -29,7 +29,33 @@ export const getMainviewTimestamps = async (
   }
 };
 
-export async function uploadVideo(file: File): Promise<any> {
+export const generateMainView = async (
+  videoUuid: string
+): Promise<{ status: string; video_uuid: string }> => {
+  try {
+    const response = await axios.post(`${API_URL}/mainview/${videoUuid}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Error generating main view:', error.response.data);
+      throw new Error(
+        error.response.data.detail || 'Failed to generate main view'
+      );
+    } else {
+      console.error('Error generating main view:', error);
+      throw error;
+    }
+  }
+};
+
+export interface UploadResponse {
+  UUID: string;
+  original_filename: string;
+  filename: string;
+  content_type: string;
+}
+
+export async function uploadVideo(file: File): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -75,4 +101,39 @@ export const getUploadedFiles = async (): Promise<FileInfo[]> => {
       throw error;
     }
   }
+};
+
+export interface ProcessingStatus {
+  status: string;
+  is_processing: boolean;
+  has_mainview: boolean;
+  video_uuid: string;
+}
+
+export const getProcessingStatus = async (
+  videoUuid: string
+): Promise<ProcessingStatus> => {
+  try {
+    const response = await axios.get(`${API_URL}/mainview/${videoUuid}/status`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Error checking processing status:', error.response.data);
+      throw new Error(
+        error.response.data.detail || 'Failed to check processing status'
+      );
+    } else {
+      console.error('Error checking processing status:', error);
+      throw error;
+    }
+  }
+};
+
+// Add an SSE function for live processing updates
+export const createProcessingEventSource = (videoUuid: string): EventSource => {
+  const eventSource = new EventSource(
+    `${API_URL}/mainview/${videoUuid}/events`
+  );
+  console.log(`Created SSE connection for video: ${videoUuid}`);
+  return eventSource;
 };

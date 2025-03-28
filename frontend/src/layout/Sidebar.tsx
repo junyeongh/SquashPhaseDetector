@@ -1,11 +1,6 @@
 import { useState, createContext, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  Upload,
-  Video,
-} from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, Upload, Video } from 'lucide-react';
 import { FileInfo } from '@/services/api/video';
 
 export type PipelineStep =
@@ -34,9 +29,7 @@ interface SidebarProps {
   uploadedFiles?: FileInfo[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
-  uploadedFiles = [],
-}) => {
+const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 

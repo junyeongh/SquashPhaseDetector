@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Loader } from 'lucide-react';
+import { Play, Loader, Check } from 'lucide-react';
 import { MainviewTimestamp } from '@/services/api/video';
 
 interface PreprocessContentProps {
@@ -24,6 +24,9 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
   buttonConfig,
 }) => {
   const playheadPosition = (currentTime / duration) * 100;
+  const hasMainViewSegments =
+    mainviewTimestamps && mainviewTimestamps.length > 0;
+
   return (
     <div className='mb-4'>
       <div className='mb-4 flex items-start justify-between'>
@@ -60,28 +63,60 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
         </button>
       </div>
 
+      {/* Processing status indicator with more detailed feedback */}
       {isProcessing && (
-        <div className='mb-2 flex items-center space-x-2 text-xs text-gray-500'>
-          <Loader className='h-3 w-3 animate-spin text-gray-500' />
-          <span>{processingStatus}</span>
+        <div className='mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+          <div className='mb-2 flex items-center space-x-2'>
+            <Loader className='h-3 w-3 animate-spin text-gray-500' />
+            <span className='text-sm font-medium text-gray-700'>
+              {processingStatus}
+            </span>
+          </div>
+
+          <div className='mt-2'>
+            <div className='mb-1 flex justify-between text-xs text-gray-500'>
+              <span>Processing video frames</span>
+              <span>This may take a few minutes</span>
+            </div>
+            <div className='relative h-2 w-full overflow-hidden rounded-full bg-gray-200'>
+              <div className='absolute left-0 h-full w-1/2 animate-pulse bg-blue-200'></div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* MainviewTimeline for preprocessing stage */}
-      {mainviewTimestamps && mainviewTimestamps.length > 0 && (
-        <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-2'>
-          <div className='mb-1 flex items-center justify-between'>
-            <div className='text-xs font-medium text-gray-500'>
-              Main View Segments
-            </div>
-            <div className='text-xs text-gray-500'>
-              <span className='font-medium'>{mainviewTimestamps.length}</span>{' '}
-              segments detected
-            </div>
+      <div className='mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+        <div className='mb-3 flex items-center justify-between'>
+          <div className='text-sm font-medium text-gray-700'>
+            Main View Segments
           </div>
-          <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
-            {/* Timeline segments */}
-            {mainviewTimestamps.map((segment, index) => {
+          <div className='text-xs text-gray-500'>
+            {hasMainViewSegments ? (
+              <span className='flex items-center gap-1'>
+                <Check className='h-3 w-3 text-green-500' />
+                <span>
+                  <span className='font-medium'>
+                    {mainviewTimestamps.length}
+                  </span>{' '}
+                  segments detected
+                </span>
+              </span>
+            ) : isProcessing ? (
+              <span className='flex items-center gap-1'>
+                <Loader className='h-3 w-3 animate-spin text-gray-500' />
+                <span>Detecting segments...</span>
+              </span>
+            ) : (
+              <span>No segments detected yet</span>
+            )}
+          </div>
+        </div>
+
+        <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
+          {/* Timeline segments */}
+          {hasMainViewSegments ? (
+            mainviewTimestamps.map((segment, index) => {
               const startPercent = (segment.start / duration) * 100;
               const widthPercent =
                 ((segment.end - segment.start) / duration) * 100;
@@ -89,24 +124,38 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
               return (
                 <div
                   key={index}
-                  className='absolute h-full bg-blue-200'
+                  className='absolute h-full cursor-pointer bg-blue-200 transition-colors hover:bg-blue-300'
                   style={{
                     left: `${startPercent}%`,
                     width: `${widthPercent}%`,
                   }}
                   onClick={() => onSeek && onSeek(segment.start)}
+                  title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s`}
                 />
               );
-            })}
+            })
+          ) : isProcessing ? (
+            // Show loading animation when processing
+            <div className='absolute inset-0 flex items-center justify-center'>
+              <div className='h-1 w-full animate-pulse bg-gray-300'></div>
+            </div>
+          ) : null}
 
-            {/* Playhead */}
+          {/* Playhead - only show if we have a duration */}
+          {duration > 0 && (
             <div
               className='absolute top-0 h-full w-1 bg-gray-600'
               style={{ left: `${playheadPosition}%` }}
             />
-          </div>
+          )}
         </div>
-      )}
+
+        {hasMainViewSegments && (
+          <div className='mt-2 text-xs text-gray-500'>
+            Click on a segment to jump to that position in the video
+          </div>
+        )}
+      </div>
     </div>
   );
 };
