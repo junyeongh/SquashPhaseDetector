@@ -11,14 +11,7 @@ import {
   ExportContent,
 } from './stages/StageContent';
 import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
-
-// Define the types of processing stages
-type ProcessingStage =
-  | 'preprocess'
-  | 'segmentation'
-  | 'pose'
-  | 'game_state'
-  | 'export';
+import ProcessingProgressSidebar, { ProcessingStage } from './processing/ProcessingProgressSidebar';
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -207,15 +200,29 @@ const VideoDetailPage: React.FC = () => {
     <div className='flex h-full flex-col'>
       {/* Stage-specific content */}
       {renderStageContent()}
-      {/* Persistent video player */}
-      <div className='flex-1'>
-        <VideoPlayerSection
-          videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
-          stage={activeStage}
-          videoId={uuid || ''}
-          customOverlay={getStageOverlay()}
-          onFrameUpdate={handleFrameUpdate}
-        />
+
+      {/* New layout with video player and progress sidebar */}
+      <div className='flex-1 flex'>
+        {/* Video player section - now with fixed width */}
+        <div className='flex-1 max-w-[70%] overflow-hidden'>
+          <VideoPlayerSection
+            videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
+            stage={activeStage}
+            videoId={uuid || ''}
+            customOverlay={getStageOverlay()}
+            onFrameUpdate={handleFrameUpdate}
+          />
+        </div>
+
+        {/* Processing progress sidebar */}
+        <div className='w-[30%] h-full'>
+          <ProcessingProgressSidebar
+            activeStage={activeStage}
+            completedStages={completedStages}
+            isProcessing={isProcessing}
+            processingStatus={processingStatus}
+          />
+        </div>
       </div>
     </div>
   );
