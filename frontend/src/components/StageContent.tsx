@@ -1,5 +1,12 @@
 import React, { useState, ReactNode } from 'react';
-import { Play, Loader, Check, ChevronDown, ChevronUp, ArrowLeft, ArrowRight } from 'lucide-react';
+import {
+  Play,
+  Loader,
+  ChevronDown,
+  ChevronUp,
+  ArrowLeft,
+  ArrowRight,
+} from 'lucide-react';
 import { MainviewTimestamp } from '@/services/api/video';
 import InteractiveCanvas from '@/components/video/InteractiveCanvas';
 import { Point, SegmentationResult } from '@/services/api/segmentation';
@@ -11,7 +18,7 @@ interface PreprocessContentProps {
   onProcess: () => void;
   isProcessing: boolean;
   processingStatus: string;
-  mainviewTimestamps: MainviewTimestamp[];
+  mainviewTimestamps?: MainviewTimestamp[];
   duration: number;
   currentTime: number;
   onSeek?: (time: number) => void;
@@ -25,30 +32,23 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
   onProcess,
   isProcessing,
   processingStatus,
-  mainviewTimestamps,
-  duration,
-  currentTime,
-  onSeek,
   buttonConfig,
   currentStage,
   onPreviousStage,
   onNextStage,
 }) => {
-  const playheadPosition = (currentTime / duration) * 100;
-  const hasMainViewSegments =
-    mainviewTimestamps && mainviewTimestamps.length > 0;
-
   return (
     <StageWrapper
-      title="Video Preprocessing"
-      description="Analyze the video to detect main view angles and prepare it for player segmentation."
+      title='Video Preprocessing'
+      description='Analyze the video to detect main view angles and prepare it for player segmentation.'
       currentStage={currentStage}
       onPreviousStage={onPreviousStage}
       onNextStage={onNextStage}
     >
-      <div className='flex items-start justify-between mb-4'>
+      <div className='mb-4 flex items-start justify-between'>
         <div className='text-sm text-gray-600'>
-          Use this stage to automatically detect the main view segments in your squash video.
+          Use this stage to automatically detect the main view segments in your
+          squash video.
         </div>
 
         <button
@@ -96,77 +96,7 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
         </div>
       )}
 
-      {/* MainviewTimeline for preprocessing stage */}
-      <div className='rounded-lg border border-gray-200 bg-gray-50 p-3'>
-        <div className='mb-3 flex items-center justify-between'>
-          <div className='text-sm font-medium text-gray-700'>
-            Main View Segments
-          </div>
-          <div className='text-xs text-gray-500'>
-            {hasMainViewSegments ? (
-              <span className='flex items-center gap-1'>
-                <Check className='h-3 w-3 text-green-500' />
-                <span>
-                  <span className='font-medium'>
-                    {mainviewTimestamps.length}
-                  </span>{' '}
-                  segments detected
-                </span>
-              </span>
-            ) : isProcessing ? (
-              <span className='flex items-center gap-1'>
-                <Loader className='h-3 w-3 animate-spin text-gray-500' />
-                <span>Detecting segments...</span>
-              </span>
-            ) : (
-              <span>No segments detected yet</span>
-            )}
-          </div>
-        </div>
-
-        <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
-          {/* Timeline segments */}
-          {hasMainViewSegments ? (
-            mainviewTimestamps.map((segment, index) => {
-              const startPercent = (segment.start / duration) * 100;
-              const widthPercent =
-                ((segment.end - segment.start) / duration) * 100;
-
-              return (
-                <div
-                  key={index}
-                  className='absolute h-full cursor-pointer bg-blue-200 transition-colors hover:bg-blue-300'
-                  style={{
-                    left: `${startPercent}%`,
-                    width: `${widthPercent}%`,
-                  }}
-                  onClick={() => onSeek && onSeek(segment.start)}
-                  title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s`}
-                />
-              );
-            })
-          ) : isProcessing ? (
-            // Show loading animation when processing
-            <div className='absolute inset-0 flex items-center justify-center'>
-              <div className='h-1 w-full animate-pulse bg-gray-300'></div>
-            </div>
-          ) : null}
-
-          {/* Playhead - only show if we have a duration */}
-          {duration > 0 && (
-            <div
-              className='absolute top-0 h-full w-1 bg-gray-600'
-              style={{ left: `${playheadPosition}%` }}
-            />
-          )}
-        </div>
-
-        {hasMainViewSegments && (
-          <div className='mt-2 text-xs text-gray-500'>
-            Click on a segment to jump to that position in the video
-          </div>
-        )}
-      </div>
+      {/* MainviewTimeline has been moved to VideoPlayer component */}
     </StageWrapper>
   );
 };
@@ -215,8 +145,8 @@ export const SegmentationContent = ({
 
   return (
     <StageWrapper
-      title="Player Segmentation"
-      description="Mark players in the frame and generate segmentation masks for tracking."
+      title='Player Segmentation'
+      description='Mark players in the frame and generate segmentation masks for tracking.'
       currentStage={currentStage}
       onPreviousStage={onPreviousStage}
       onNextStage={onNextStage}
@@ -416,7 +346,7 @@ export const PoseContent = ({
   onPreviousFrame,
   currentStage,
   onPreviousStage,
-  onNextStage
+  onNextStage,
 }: {
   frameUrl: string;
   frameIndex: number;
@@ -445,8 +375,8 @@ export const PoseContent = ({
 
   return (
     <StageWrapper
-      title="Pose Detection"
-      description="Detect player poses and body landmarks throughout the video."
+      title='Pose Detection'
+      description='Detect player poses and body landmarks throughout the video.'
       currentStage={currentStage}
       onPreviousStage={onPreviousStage}
       onNextStage={onNextStage}
@@ -454,7 +384,8 @@ export const PoseContent = ({
       <div className='mb-4 flex items-start justify-between'>
         <div>
           <p className='text-sm text-gray-600'>
-            Analyze player movements and detect body landmarks for pose tracking.
+            Analyze player movements and detect body landmarks for pose
+            tracking.
           </p>
         </div>
 
@@ -527,7 +458,7 @@ export const PoseContent = ({
 
             {/* Fallback message when no pose is detected */}
             {!currentFramePose && poseResults && poseResults.length > 0 && (
-              <div className='absolute bottom-2 left-2 rounded bg-gray-800 bg-opacity-70 p-1 text-xs text-white'>
+              <div className='bg-opacity-70 absolute bottom-2 left-2 rounded bg-gray-800 p-1 text-xs text-white'>
                 No pose detected in this frame
               </div>
             )}
@@ -633,21 +564,22 @@ export const PoseContent = ({
 export const GameStateContent = ({
   currentStage,
   onPreviousStage,
-  onNextStage
+  onNextStage,
 }: {
   currentStage: ProcessingStage;
   onPreviousStage?: () => void;
   onNextStage?: () => void;
 }) => (
   <StageWrapper
-    title="Game State Analysis"
-    description="Analyze game state, shots, and rallies."
+    title='Game State Analysis'
+    description='Analyze game state, shots, and rallies.'
     currentStage={currentStage}
     onPreviousStage={onPreviousStage}
     onNextStage={onNextStage}
   >
-    <div className='text-sm text-gray-600 mb-4'>
-      Use machine learning to automatically detect rallies, shots, and game states.
+    <div className='mb-4 text-sm text-gray-600'>
+      Use machine learning to automatically detect rallies, shots, and game
+      states.
     </div>
 
     <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
@@ -679,21 +611,22 @@ export const GameStateContent = ({
 export const ExportContent = ({
   currentStage,
   onPreviousStage,
-  onNextStage
+  onNextStage,
 }: {
   currentStage: ProcessingStage;
   onPreviousStage?: () => void;
   onNextStage?: () => void;
 }) => (
   <StageWrapper
-    title="Export Results"
-    description="Export processed video and analysis results."
+    title='Export Results'
+    description='Export processed video and analysis results.'
     currentStage={currentStage}
     onPreviousStage={onPreviousStage}
     onNextStage={onNextStage}
   >
-    <div className='text-sm text-gray-600 mb-4'>
-      Export your analysis results in various formats for further processing or visualization.
+    <div className='mb-4 text-sm text-gray-600'>
+      Export your analysis results in various formats for further processing or
+      visualization.
     </div>
 
     <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>

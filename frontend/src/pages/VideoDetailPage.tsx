@@ -24,12 +24,12 @@ import {
   SegmentationResult,
   markPlayers,
   startSegmentation,
-  getSegmentationStatus
+  getSegmentationStatus,
 } from '@/services/api/segmentation';
 import {
   FramePoseResult,
   startPoseDetection,
-  getPoseDetectionStatus
+  getPoseDetectionStatus,
 } from '@/services/api/pose';
 import ProcessingProgressSidemenu, {
   ProcessingStage,
@@ -59,12 +59,16 @@ const VideoDetailPage: React.FC = () => {
   const [frameIndex, setFrameIndex] = useState<number>(0);
   const [player1Points, setPlayer1Points] = useState<Point[]>([]);
   const [player2Points, setPlayer2Points] = useState<Point[]>([]);
-  const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
+  const [segmentationResults, setSegmentationResults] = useState<
+    SegmentationResult[] | null
+  >(null);
 
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
-  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(null);
+  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(
+    null
+  );
 
   // Set a default frame URL for the current video
   useEffect(() => {
@@ -88,7 +92,9 @@ const VideoDetailPage: React.FC = () => {
 
           // If mainview segments already exist, mark preprocess as completed and advance to segmentation
           if (timestamps && timestamps.length > 0) {
-            console.log('Main view segments already exist, advancing to segmentation stage');
+            console.log(
+              'Main view segments already exist, advancing to segmentation stage'
+            );
 
             const updatedCompletedStages = new Set(completedStages);
             updatedCompletedStages.add('preprocess');
@@ -457,14 +463,17 @@ const VideoDetailPage: React.FC = () => {
 
   // Handler for segmentation
   const handleMarkPlayers = async () => {
-    if (!uuid || player1Points.length === 0 || player2Points.length === 0) return;
+    if (!uuid || player1Points.length === 0 || player2Points.length === 0)
+      return;
 
     try {
       await markPlayers(uuid, frameIndex, player1Points, player2Points);
       setProcessingStatus('Players marked successfully');
     } catch (error) {
       console.error('Error marking players:', error);
-      setProcessingStatus(`Error marking players: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setProcessingStatus(
+        `Error marking players: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   };
 
@@ -510,7 +519,9 @@ const VideoDetailPage: React.FC = () => {
       return () => clearInterval(statusCheckInterval);
     } catch (error) {
       console.error('Error starting segmentation:', error);
-      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setProcessingStatus(
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       setIsProcessing(false);
       setShowSkipButton(true);
     }
@@ -559,7 +570,9 @@ const VideoDetailPage: React.FC = () => {
       return () => clearInterval(statusCheckInterval);
     } catch (error) {
       console.error('Error starting pose detection:', error);
-      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setProcessingStatus(
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       setIsProcessing(false);
       setShowSkipButton(true);
     }
@@ -567,11 +580,11 @@ const VideoDetailPage: React.FC = () => {
 
   // Update frame navigation
   const handleNextFrame = () => {
-    setFrameIndex(prev => prev + 1);
+    setFrameIndex((prev) => prev + 1);
   };
 
   const handlePreviousFrame = () => {
-    setFrameIndex(prev => Math.max(0, prev - 1));
+    setFrameIndex((prev) => Math.max(0, prev - 1));
   };
 
   // Render stage-specific content
@@ -593,10 +606,10 @@ const VideoDetailPage: React.FC = () => {
               onNextStage={moveToNextStage}
             />
             {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
+              <div className='mt-4 flex justify-end'>
                 <button
                   onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
                 >
                   Skip to Next Stage
                 </button>
@@ -626,10 +639,10 @@ const VideoDetailPage: React.FC = () => {
               onNextStage={moveToNextStage}
             />
             {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
+              <div className='mt-4 flex justify-end'>
                 <button
                   onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
                 >
                   Skip to Next Stage
                 </button>
@@ -658,10 +671,10 @@ const VideoDetailPage: React.FC = () => {
               onNextStage={moveToNextStage}
             />
             {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
+              <div className='mt-4 flex justify-end'>
                 <button
                   onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
                 >
                   Skip to Next Stage
                 </button>

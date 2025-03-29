@@ -48,6 +48,13 @@ const VideoPlayerSection = forwardRef<
     },
   }));
 
+  // Handle seeking to specific time (used by MainviewTimeline)
+  const handleSeek = (time: number) => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(time, 'seconds');
+    }
+  };
+
   // Fetch mainview timestamps when component mounts or videoId changes
   useEffect(() => {
     // Reset timestamps immediately when videoId changes to prevent displaying wrong data
@@ -122,10 +129,11 @@ const VideoPlayerSection = forwardRef<
         <ReactPlayerWrapper
           src={videoUrl}
           onFrameChange={handleFrameChange}
-          mainviewTimestamps={stage === 'preprocess' ? mainviewTimestamps : []}
+          mainviewTimestamps={mainviewTimestamps}
           overlay={customOverlay}
           onPlayerUpdates={handlePlayerUpdates}
           ref={setPlayerRef}
+          onSeek={handleSeek}
         />
       </div>
     </div>

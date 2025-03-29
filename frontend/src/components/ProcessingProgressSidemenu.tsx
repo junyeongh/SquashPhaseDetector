@@ -1,5 +1,11 @@
 import React from 'react';
-import { CheckCircle, Circle, Loader, ChevronRight, ChevronsUpDown } from 'lucide-react';
+import {
+  CheckCircle,
+  Circle,
+  Loader,
+  ChevronRight,
+  ChevronsUpDown,
+} from 'lucide-react';
 
 // Define the types of processing stages
 export type ProcessingStage =
@@ -59,10 +65,10 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
     if (completedStages.has(stageId)) return true; // Completed stages are always accessible
 
     // Find the last completed stage index
-    const stageIds = processingStages.map(s => s.id);
+    const stageIds = processingStages.map((s) => s.id);
     const lastCompletedIndex = Math.max(
       -1,
-      ...Array.from(completedStages).map(s => stageIds.indexOf(s))
+      ...Array.from(completedStages).map((s) => stageIds.indexOf(s))
     );
 
     // Can navigate to the next stage after the last completed one
@@ -107,7 +113,7 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
                     ? 'cursor-pointer transition-colors hover:bg-gray-50'
                     : ''
                 }`}
-                onClick={() => canNavigate ? onStageSelect(stage.id) : null}
+                onClick={() => (canNavigate ? onStageSelect(stage.id) : null)}
                 role={canNavigate ? 'button' : undefined}
                 tabIndex={canNavigate ? 0 : undefined}
                 aria-label={canNavigate ? `Go to ${stage.label}` : undefined}
@@ -150,10 +156,10 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
 
                     {/* Navigation indicator */}
                     {canNavigate && !isCurrent && (
-                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                      <ChevronRight className='h-4 w-4 text-gray-400' />
                     )}
                     {isCurrent && (
-                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+                      <ChevronsUpDown className='h-4 w-4 text-gray-400' />
                     )}
                   </div>
 
