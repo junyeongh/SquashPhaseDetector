@@ -19,9 +19,21 @@ import {
   getProcessingStatus,
   createProcessingEventSource,
 } from '@/services/api/video';
+import {
+  Point,
+  SegmentationResult,
+  markPlayers,
+  startSegmentation,
+  getSegmentationStatus
+} from '@/services/api/segmentation';
+import {
+  FramePoseResult,
+  startPoseDetection,
+  getPoseDetectionStatus
+} from '@/services/api/pose';
 import ProcessingProgressSidemenu, {
   ProcessingStage,
-} from '@/components/ProcessingProgressSidebar';
+} from '@/components/ProcessingProgressSidemenu';
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -31,22 +43,40 @@ const VideoDetailPage: React.FC = () => {
   );
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
+  const [showSkipButton, setShowSkipButton] = useState<boolean>(false);
   const videoPlayerRef = useRef<VideoPlayerSectionRef>(null);
 
   // State for video player data
-  const [currentFrame, setCurrentFrame] = useState<number>(0); // Still needed for future features or for communicating with backend
+  const [currentFrame, setCurrentFrame] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [mainviewTimestamps, setMainviewTimestamps] = useState<
     MainviewTimestamp[]
   >([]);
 
-  // Fetch mainview timestamps when component mounts or video changes
-  useEffect(() => {
-    // Clear timestamps immediately when video changes to prevent showing stale data
-    setMainviewTimestamps([]);
+  // State for segmentation
+  const [frameUrl, setFrameUrl] = useState<string>('');
+  const [frameIndex, setFrameIndex] = useState<number>(0);
+  const [player1Points, setPlayer1Points] = useState<Point[]>([]);
+  const [player2Points, setPlayer2Points] = useState<Point[]>([]);
+  const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
 
+  // State for pose detection
+  const [modelType, setModelType] = useState<string>('YOLOv8');
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
+  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(null);
+
+  // Set a default frame URL for the current video
+  useEffect(() => {
     if (uuid) {
+      // Generate a URL to fetch a frame from the current video
+      setFrameUrl(`${BASE_API_URL}/video/${uuid}/frame/${frameIndex}`);
+    }
+  }, [uuid, frameIndex]);
+
+  // Check if main view segments already exist and auto-advance if they do
+  useEffect(() => {
+    if (uuid && activeStage === 'preprocess') {
       getMainviewTimestamps(uuid)
         .then((timestamps) => {
           setMainviewTimestamps(timestamps);
@@ -55,12 +85,26 @@ const VideoDetailPage: React.FC = () => {
             uuid,
             timestamps.length
           );
+
+          // If mainview segments already exist, mark preprocess as completed and advance to segmentation
+          if (timestamps && timestamps.length > 0) {
+            console.log('Main view segments already exist, advancing to segmentation stage');
+
+            const updatedCompletedStages = new Set(completedStages);
+            updatedCompletedStages.add('preprocess');
+            setCompletedStages(updatedCompletedStages);
+
+            // Auto-advance to next stage
+            if (activeStage === 'preprocess') {
+              setActiveStage('segmentation');
+            }
+          }
         })
         .catch((error) => {
           console.error('Failed to fetch mainview timestamps:', error);
         });
     }
-  }, [uuid]);
+  }, [uuid, activeStage]);
 
   // Log frame updates for debugging purposes
   useEffect(() => {
@@ -173,6 +217,23 @@ const VideoDetailPage: React.FC = () => {
     };
   };
 
+  const skipCurrentStage = () => {
+    if (isProcessing) {
+      // Close any ongoing connections
+      setIsProcessing(false);
+      setProcessingStatus('Skipped current stage');
+    }
+
+    // Mark current stage as completed (even though it was skipped)
+    const updatedCompletedStages = new Set(completedStages);
+    updatedCompletedStages.add(activeStage);
+    setCompletedStages(updatedCompletedStages);
+
+    // Move to the next stage
+    moveToNextStage();
+    setShowSkipButton(false);
+  };
+
   // Function for processing video
   const handleProcessVideo = async () => {
     // Prevent starting if already processing
@@ -183,6 +244,21 @@ const VideoDetailPage: React.FC = () => {
 
     setIsProcessing(true);
     setProcessingStatus(`${activeStage} in progress...`);
+
+    // Show skip button after a delay for preprocess stage
+    if (activeStage === 'preprocess') {
+      setShowSkipButton(false);
+      setTimeout(() => {
+        setShowSkipButton(true);
+      }, 5000); // Show skip button after 5 seconds
+    } else {
+      // For other stages, don't show skip button initially
+      setShowSkipButton(false);
+      // But show it after a longer delay
+      setTimeout(() => {
+        setShowSkipButton(true);
+      }, 15000); // Show skip button after 15 seconds for other stages
+    }
 
     try {
       // Execute different processing based on the current stage
@@ -263,6 +339,11 @@ const VideoDetailPage: React.FC = () => {
         `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
       setIsProcessing(false);
+
+      // Show skip button immediately on error for preprocess stage
+      if (activeStage === 'preprocess') {
+        setShowSkipButton(true);
+      }
     }
   };
 
@@ -284,6 +365,32 @@ const VideoDetailPage: React.FC = () => {
         // This is the final stage
         break;
     }
+  };
+
+  const moveToPreviousStage = () => {
+    switch (activeStage) {
+      case 'segmentation':
+        setActiveStage('preprocess');
+        break;
+      case 'pose':
+        setActiveStage('segmentation');
+        break;
+      case 'game_state':
+        setActiveStage('pose');
+        break;
+      case 'export':
+        setActiveStage('game_state');
+        break;
+      case 'preprocess':
+        // This is the first stage
+        break;
+    }
+  };
+
+  // Function to handle direct stage selection from the sidebar
+  const handleStageSelect = (stage: ProcessingStage) => {
+    if (isProcessing) return; // Don't allow changing stages during processing
+    setActiveStage(stage);
   };
 
   // Get button text and icon based on the active stage
@@ -348,30 +455,235 @@ const VideoDetailPage: React.FC = () => {
     }
   };
 
+  // Handler for segmentation
+  const handleMarkPlayers = async () => {
+    if (!uuid || player1Points.length === 0 || player2Points.length === 0) return;
+
+    try {
+      await markPlayers(uuid, frameIndex, player1Points, player2Points);
+      setProcessingStatus('Players marked successfully');
+    } catch (error) {
+      console.error('Error marking players:', error);
+      setProcessingStatus(`Error marking players: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleStartSegmentation = async () => {
+    if (!uuid) return;
+
+    setIsProcessing(true);
+    setProcessingStatus('Starting segmentation...');
+
+    try {
+      await startSegmentation(uuid);
+
+      // Poll for status updates
+      const statusCheckInterval = setInterval(async () => {
+        try {
+          const status = await getSegmentationStatus(uuid);
+          setProcessingStatus(`Segmentation: ${status.message}`);
+
+          if (status.status === 'completed') {
+            clearInterval(statusCheckInterval);
+            setSegmentationResults(status.results || []);
+            setIsProcessing(false);
+
+            // Mark stage as completed
+            const updatedCompletedStages = new Set(completedStages);
+            updatedCompletedStages.add('segmentation');
+            setCompletedStages(updatedCompletedStages);
+
+            // Move to next stage after a delay
+            setTimeout(() => moveToNextStage(), 1000);
+          } else if (status.status === 'failed') {
+            clearInterval(statusCheckInterval);
+            setProcessingStatus(`Segmentation failed: ${status.message}`);
+            setIsProcessing(false);
+            setShowSkipButton(true);
+          }
+        } catch (error) {
+          console.error('Error checking segmentation status:', error);
+        }
+      }, 2000);
+
+      // Clean up interval if component unmounts
+      return () => clearInterval(statusCheckInterval);
+    } catch (error) {
+      console.error('Error starting segmentation:', error);
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsProcessing(false);
+      setShowSkipButton(true);
+    }
+  };
+
+  // Handler for pose detection
+  const handleStartPoseDetection = async () => {
+    if (!uuid) return;
+
+    setIsProcessing(true);
+    setProcessingStatus('Starting pose detection...');
+
+    try {
+      await startPoseDetection(uuid);
+
+      // Poll for status updates
+      const statusCheckInterval = setInterval(async () => {
+        try {
+          const status = await getPoseDetectionStatus(uuid);
+          setProcessingStatus(`Pose detection: ${status.message}`);
+
+          if (status.status === 'completed') {
+            clearInterval(statusCheckInterval);
+            setPoseResults(status.results || []);
+            setIsProcessing(false);
+
+            // Mark stage as completed
+            const updatedCompletedStages = new Set(completedStages);
+            updatedCompletedStages.add('pose');
+            setCompletedStages(updatedCompletedStages);
+
+            // Move to next stage after a delay
+            setTimeout(() => moveToNextStage(), 1000);
+          } else if (status.status === 'failed') {
+            clearInterval(statusCheckInterval);
+            setProcessingStatus(`Pose detection failed: ${status.message}`);
+            setIsProcessing(false);
+            setShowSkipButton(true);
+          }
+        } catch (error) {
+          console.error('Error checking pose detection status:', error);
+        }
+      }, 2000);
+
+      // Clean up interval if component unmounts
+      return () => clearInterval(statusCheckInterval);
+    } catch (error) {
+      console.error('Error starting pose detection:', error);
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsProcessing(false);
+      setShowSkipButton(true);
+    }
+  };
+
+  // Update frame navigation
+  const handleNextFrame = () => {
+    setFrameIndex(prev => prev + 1);
+  };
+
+  const handlePreviousFrame = () => {
+    setFrameIndex(prev => Math.max(0, prev - 1));
+  };
+
   // Render stage-specific content
   const renderStageContent = () => {
     switch (activeStage) {
       case 'preprocess':
         return (
-          <PreprocessContent
-            onProcess={handleProcessVideo}
-            isProcessing={isProcessing}
-            processingStatus={processingStatus}
-            mainviewTimestamps={mainviewTimestamps}
-            duration={duration}
-            currentTime={currentTime}
-            onSeek={handleSeek}
-            buttonConfig={getButtonConfig()}
-          />
+          <>
+            <PreprocessContent
+              onProcess={handleProcessVideo}
+              isProcessing={isProcessing}
+              processingStatus={processingStatus}
+              mainviewTimestamps={mainviewTimestamps}
+              duration={duration}
+              currentTime={currentTime}
+              onSeek={handleSeek}
+              buttonConfig={getButtonConfig()}
+              currentStage={activeStage}
+              onNextStage={moveToNextStage}
+            />
+            {isProcessing && showSkipButton && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={skipCurrentStage}
+                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                >
+                  Skip to Next Stage
+                </button>
+              </div>
+            )}
+          </>
         );
       case 'segmentation':
-        return <SegmentationContent />;
+        return (
+          <>
+            <SegmentationContent
+              frameUrl={frameUrl}
+              frameIndex={frameIndex}
+              player1Points={player1Points}
+              player2Points={player2Points}
+              onPlayer1PointsChange={setPlayer1Points}
+              onPlayer2PointsChange={setPlayer2Points}
+              onMarkPlayers={handleMarkPlayers}
+              onStartSegmentation={handleStartSegmentation}
+              isProcessing={isProcessing}
+              processingStatus={processingStatus}
+              segmentationResults={segmentationResults}
+              onNextFrame={handleNextFrame}
+              onPreviousFrame={handlePreviousFrame}
+              currentStage={activeStage}
+              onPreviousStage={moveToPreviousStage}
+              onNextStage={moveToNextStage}
+            />
+            {isProcessing && showSkipButton && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={skipCurrentStage}
+                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                >
+                  Skip to Next Stage
+                </button>
+              </div>
+            )}
+          </>
+        );
       case 'pose':
-        return <PoseContent />;
+        return (
+          <>
+            <PoseContent
+              frameUrl={frameUrl}
+              frameIndex={frameIndex}
+              onStartPoseDetection={handleStartPoseDetection}
+              isProcessing={isProcessing}
+              processingStatus={processingStatus}
+              poseResults={poseResults}
+              modelType={modelType}
+              setModelType={setModelType}
+              confidenceThreshold={confidenceThreshold}
+              setConfidenceThreshold={setConfidenceThreshold}
+              onNextFrame={handleNextFrame}
+              onPreviousFrame={handlePreviousFrame}
+              currentStage={activeStage}
+              onPreviousStage={moveToPreviousStage}
+              onNextStage={moveToNextStage}
+            />
+            {isProcessing && showSkipButton && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={skipCurrentStage}
+                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
+                >
+                  Skip to Next Stage
+                </button>
+              </div>
+            )}
+          </>
+        );
       case 'game_state':
-        return <GameStateContent />;
+        return (
+          <GameStateContent
+            currentStage={activeStage}
+            onPreviousStage={moveToPreviousStage}
+            onNextStage={moveToNextStage}
+          />
+        );
       case 'export':
-        return <ExportContent />;
+        return (
+          <ExportContent
+            currentStage={activeStage}
+            onPreviousStage={moveToPreviousStage}
+          />
+        );
       default:
         return null;
     }
@@ -403,6 +715,7 @@ const VideoDetailPage: React.FC = () => {
             completedStages={completedStages}
             isProcessing={isProcessing}
             processingStatus={processingStatus}
+            onStageSelect={handleStageSelect}
           />
         </div>
       </div>

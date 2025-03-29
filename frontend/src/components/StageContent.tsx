@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Play, Loader, Check } from 'lucide-react';
+import React, { useState, ReactNode } from 'react';
+import { Play, Loader, Check, ChevronDown, ChevronUp, ArrowLeft, ArrowRight } from 'lucide-react';
 import { MainviewTimestamp } from '@/services/api/video';
 import InteractiveCanvas from '@/components/video/InteractiveCanvas';
 import { Point, SegmentationResult } from '@/services/api/segmentation';
 import { FramePoseResult } from '@/services/api/pose';
 import PoseOverlay from '@/components/video/PoseOverlay';
+import { ProcessingStage } from '@/components/ProcessingProgressSidemenu';
 
 interface PreprocessContentProps {
   onProcess: () => void;
@@ -15,6 +16,9 @@ interface PreprocessContentProps {
   currentTime: number;
   onSeek?: (time: number) => void;
   buttonConfig?: { label: string; icon: React.ReactNode };
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
 }
 
 export const PreprocessContent: React.FC<PreprocessContentProps> = ({
@@ -26,22 +30,25 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
   currentTime,
   onSeek,
   buttonConfig,
+  currentStage,
+  onPreviousStage,
+  onNextStage,
 }) => {
   const playheadPosition = (currentTime / duration) * 100;
   const hasMainViewSegments =
     mainviewTimestamps && mainviewTimestamps.length > 0;
 
   return (
-    <div className='mb-4'>
-      <div className='mb-4 flex items-start justify-between'>
-        <div>
-          <h1 className='mb-2 text-lg font-medium text-gray-800'>
-            Video Preprocessing
-          </h1>
-          <p className='text-xs text-gray-500'>
-            Analyze the video to detect main view angles and prepare it for
-            player segmentation.
-          </p>
+    <StageWrapper
+      title="Video Preprocessing"
+      description="Analyze the video to detect main view angles and prepare it for player segmentation."
+      currentStage={currentStage}
+      onPreviousStage={onPreviousStage}
+      onNextStage={onNextStage}
+    >
+      <div className='flex items-start justify-between mb-4'>
+        <div className='text-sm text-gray-600'>
+          Use this stage to automatically detect the main view segments in your squash video.
         </div>
 
         <button
@@ -90,7 +97,7 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
       )}
 
       {/* MainviewTimeline for preprocessing stage */}
-      <div className='mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+      <div className='rounded-lg border border-gray-200 bg-gray-50 p-3'>
         <div className='mb-3 flex items-center justify-between'>
           <div className='text-sm font-medium text-gray-700'>
             Main View Segments
@@ -160,7 +167,7 @@ export const PreprocessContent: React.FC<PreprocessContentProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </StageWrapper>
   );
 };
 
@@ -176,6 +183,11 @@ export const SegmentationContent = ({
   isProcessing,
   processingStatus,
   segmentationResults,
+  onNextFrame,
+  onPreviousFrame,
+  currentStage,
+  onPreviousStage,
+  onNextStage,
 }: {
   frameUrl: string;
   frameIndex: number;
@@ -188,6 +200,11 @@ export const SegmentationContent = ({
   isProcessing: boolean;
   processingStatus: string;
   segmentationResults: SegmentationResult[] | null;
+  onNextFrame?: () => void;
+  onPreviousFrame?: () => void;
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
 }) => {
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
   const [confidence, setConfidence] = useState<number>(80);
@@ -197,13 +214,16 @@ export const SegmentationContent = ({
   const frameHeight = (frameWidth * 9) / 16;
 
   return (
-    <div className='mb-4'>
+    <StageWrapper
+      title="Player Segmentation"
+      description="Mark players in the frame and generate segmentation masks for tracking."
+      currentStage={currentStage}
+      onPreviousStage={onPreviousStage}
+      onNextStage={onNextStage}
+    >
       <div className='mb-4 flex items-start justify-between'>
         <div>
-          <h1 className='mb-2 text-lg font-medium text-gray-800'>
-            Player Segmentation
-          </h1>
-          <p className='text-xs text-gray-500'>
+          <p className='text-sm text-gray-600'>
             Mark players in the frame by clicking on them. Add multiple points
             for better segmentation.
           </p>
@@ -324,6 +344,7 @@ export const SegmentationContent = ({
                   <button
                     className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
                     disabled={isProcessing}
+                    onClick={onPreviousFrame}
                   >
                     Previous Frame
                   </button>
@@ -333,6 +354,7 @@ export const SegmentationContent = ({
                   <button
                     className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
                     disabled={isProcessing}
+                    onClick={onNextFrame}
                   >
                     Next Frame
                   </button>
@@ -375,7 +397,7 @@ export const SegmentationContent = ({
           </div>
         </div>
       )}
-    </div>
+    </StageWrapper>
   );
 };
 
@@ -390,6 +412,11 @@ export const PoseContent = ({
   setModelType,
   confidenceThreshold,
   setConfidenceThreshold,
+  onNextFrame,
+  onPreviousFrame,
+  currentStage,
+  onPreviousStage,
+  onNextStage
 }: {
   frameUrl: string;
   frameIndex: number;
@@ -401,6 +428,11 @@ export const PoseContent = ({
   setModelType: (type: string) => void;
   confidenceThreshold: number;
   setConfidenceThreshold: (threshold: number) => void;
+  onNextFrame?: () => void;
+  onPreviousFrame?: () => void;
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
 }) => {
   // Calculate frameSize based on a standard 16:9 ratio, limited to a max width
   const frameWidth = Math.min(800, window.innerWidth - 40);
@@ -412,14 +444,17 @@ export const PoseContent = ({
   );
 
   return (
-    <div className='mb-4'>
+    <StageWrapper
+      title="Pose Detection"
+      description="Detect player poses and body landmarks throughout the video."
+      currentStage={currentStage}
+      onPreviousStage={onPreviousStage}
+      onNextStage={onNextStage}
+    >
       <div className='mb-4 flex items-start justify-between'>
         <div>
-          <h1 className='mb-2 text-lg font-medium text-gray-800'>
-            Pose Detection
-          </h1>
-          <p className='text-xs text-gray-500'>
-            Detect player poses and body landmarks throughout the video.
+          <p className='text-sm text-gray-600'>
+            Analyze player movements and detect body landmarks for pose tracking.
           </p>
         </div>
 
@@ -492,7 +527,7 @@ export const PoseContent = ({
 
             {/* Fallback message when no pose is detected */}
             {!currentFramePose && poseResults && poseResults.length > 0 && (
-              <div className='bg-opacity-70 absolute bottom-2 left-2 rounded bg-gray-800 p-1 text-xs text-white'>
+              <div className='absolute bottom-2 left-2 rounded bg-gray-800 bg-opacity-70 p-1 text-xs text-white'>
                 No pose detected in this frame
               </div>
             )}
@@ -548,6 +583,7 @@ export const PoseContent = ({
                   <button
                     className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
                     disabled={isProcessing}
+                    onClick={onPreviousFrame}
                   >
                     Previous Frame
                   </button>
@@ -557,6 +593,7 @@ export const PoseContent = ({
                   <button
                     className='rounded border border-gray-200 bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200'
                     disabled={isProcessing}
+                    onClick={onNextFrame}
                   >
                     Next Frame
                   </button>
@@ -589,19 +626,31 @@ export const PoseContent = ({
           </div>
         </div>
       )}
-    </div>
+    </StageWrapper>
   );
 };
 
-export const GameStateContent = () => (
-  <div className='mb-4'>
-    <h1 className='mb-2 text-lg font-medium text-gray-800'>
-      Game State Analysis
-    </h1>
-    <p className='text-xs text-gray-500'>
-      Analyze game state, shots, and rallies.
-    </p>
-    <div className='mt-4 rounded-lg bg-gray-50 p-4'>
+export const GameStateContent = ({
+  currentStage,
+  onPreviousStage,
+  onNextStage
+}: {
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
+}) => (
+  <StageWrapper
+    title="Game State Analysis"
+    description="Analyze game state, shots, and rallies."
+    currentStage={currentStage}
+    onPreviousStage={onPreviousStage}
+    onNextStage={onNextStage}
+  >
+    <div className='text-sm text-gray-600 mb-4'>
+      Use machine learning to automatically detect rallies, shots, and game states.
+    </div>
+
+    <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
       <h2 className='mb-2 text-sm font-medium text-gray-700'>
         Game Analysis Options
       </h2>
@@ -624,16 +673,30 @@ export const GameStateContent = () => (
         </div>
       </div>
     </div>
-  </div>
+  </StageWrapper>
 );
 
-export const ExportContent = () => (
-  <div className='mb-4'>
-    <h1 className='mb-2 text-lg font-medium text-gray-800'>Export Results</h1>
-    <p className='text-xs text-gray-500'>
-      Export processed video and analysis results.
-    </p>
-    <div className='mt-4 rounded-lg bg-gray-50 p-4'>
+export const ExportContent = ({
+  currentStage,
+  onPreviousStage,
+  onNextStage
+}: {
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
+}) => (
+  <StageWrapper
+    title="Export Results"
+    description="Export processed video and analysis results."
+    currentStage={currentStage}
+    onPreviousStage={onPreviousStage}
+    onNextStage={onNextStage}
+  >
+    <div className='text-sm text-gray-600 mb-4'>
+      Export your analysis results in various formats for further processing or visualization.
+    </div>
+
+    <div className='rounded-lg border border-gray-200 bg-gray-50 p-4'>
       <h2 className='mb-2 text-sm font-medium text-gray-700'>Export Options</h2>
       <div className='space-y-4'>
         <div>
@@ -654,5 +717,123 @@ export const ExportContent = () => (
         </div>
       </div>
     </div>
-  </div>
+  </StageWrapper>
 );
+
+// New wrapper component for stage content with collapsible sections
+interface StageWrapperProps {
+  title: string;
+  description: string;
+  children: ReactNode;
+  currentStage: ProcessingStage;
+  onPreviousStage?: () => void;
+  onNextStage?: () => void;
+  isCollapsible?: boolean;
+}
+
+export const StageWrapper: React.FC<StageWrapperProps> = ({
+  title,
+  description,
+  children,
+  currentStage,
+  onPreviousStage,
+  onNextStage,
+  isCollapsible = true,
+}) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Get previous and next stage based on current stage
+  const getPreviousStage = (): ProcessingStage | null => {
+    switch (currentStage) {
+      case 'segmentation':
+        return 'preprocess';
+      case 'pose':
+        return 'segmentation';
+      case 'game_state':
+        return 'pose';
+      case 'export':
+        return 'game_state';
+      default:
+        return null;
+    }
+  };
+
+  const getNextStage = (): ProcessingStage | null => {
+    switch (currentStage) {
+      case 'preprocess':
+        return 'segmentation';
+      case 'segmentation':
+        return 'pose';
+      case 'pose':
+        return 'game_state';
+      case 'game_state':
+        return 'export';
+      default:
+        return null;
+    }
+  };
+
+  const prevStage = getPreviousStage();
+  const nextStage = getNextStage();
+
+  return (
+    <div className='mb-6 rounded-lg border border-gray-200'>
+      <div
+        className={`flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-gray-50 p-4 ${isCollapsible ? 'cursor-pointer' : ''}`}
+        onClick={() => isCollapsible && setIsCollapsed(!isCollapsed)}
+      >
+        <div className='flex-1'>
+          <h2 className='text-lg font-medium text-gray-800'>{title}</h2>
+          <p className='text-sm text-gray-500'>{description}</p>
+        </div>
+
+        <div className='flex gap-2'>
+          {isCollapsible && (
+            <button className='rounded-full p-1 hover:bg-gray-200'>
+              {isCollapsed ? (
+                <ChevronDown className='h-5 w-5 text-gray-500' />
+              ) : (
+                <ChevronUp className='h-5 w-5 text-gray-500' />
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!isCollapsed && (
+        <>
+          <div className='p-4'>{children}</div>
+
+          {/* Navigation buttons */}
+          <div className='flex justify-between border-t border-gray-200 p-3'>
+            <button
+              onClick={onPreviousStage}
+              disabled={!prevStage || !onPreviousStage}
+              className={`flex items-center gap-1 rounded px-3 py-1 text-sm ${
+                prevStage && onPreviousStage
+                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'cursor-not-allowed text-gray-300'
+              }`}
+            >
+              <ArrowLeft className='h-4 w-4' />
+              Previous
+            </button>
+
+            <button
+              onClick={onNextStage}
+              disabled={!nextStage || !onNextStage}
+              className={`flex items-center gap-1 rounded px-3 py-1 text-sm ${
+                nextStage && onNextStage
+                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  : 'cursor-not-allowed text-gray-300'
+              }`}
+            >
+              Next
+              <ArrowRight className='h-4 w-4' />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
