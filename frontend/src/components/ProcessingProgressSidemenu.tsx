@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Circle, Loader } from 'lucide-react';
+import { CheckCircle, Circle, Loader, ChevronRight, ChevronsUpDown } from 'lucide-react';
 
 // Define the types of processing stages
 export type ProcessingStage =
@@ -14,6 +14,7 @@ interface ProcessingProgressSidebarProps {
   completedStages: Set<ProcessingStage>;
   isProcessing: boolean;
   processingStatus: string;
+  onStageSelect: (stage: ProcessingStage) => void;
 }
 
 const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
@@ -21,6 +22,7 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
   completedStages,
   isProcessing,
   processingStatus,
+  onStageSelect,
 }) => {
   // Processing stages definition
   const processingStages = [
@@ -51,6 +53,23 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
     },
   ];
 
+  // Check if a stage can be navigated to (either completed or next available stage)
+  const canNavigateToStage = (stageId: ProcessingStage) => {
+    if (isProcessing) return false; // Can't navigate while processing
+    if (completedStages.has(stageId)) return true; // Completed stages are always accessible
+
+    // Find the last completed stage index
+    const stageIds = processingStages.map(s => s.id);
+    const lastCompletedIndex = Math.max(
+      -1,
+      ...Array.from(completedStages).map(s => stageIds.indexOf(s))
+    );
+
+    // Can navigate to the next stage after the last completed one
+    const stageIndex = stageIds.indexOf(stageId);
+    return stageIndex === lastCompletedIndex + 1;
+  };
+
   return (
     <div className='h-full w-full border-l border-gray-200 p-4'>
       <h2 className='text-md mb-4 font-semibold'>Processing Progress</h2>
@@ -69,6 +88,7 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
         {processingStages.map((stage, index) => {
           const isCompleted = completedStages.has(stage.id);
           const isCurrent = activeStage === stage.id;
+          const canNavigate = canNavigateToStage(stage.id);
 
           return (
             <div key={stage.id} className='relative'>
@@ -81,7 +101,17 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
                 />
               )}
 
-              <div className='flex items-start gap-4'>
+              <div
+                className={`flex items-start gap-4 ${
+                  canNavigate
+                    ? 'cursor-pointer transition-colors hover:bg-gray-50'
+                    : ''
+                }`}
+                onClick={() => canNavigate ? onStageSelect(stage.id) : null}
+                role={canNavigate ? 'button' : undefined}
+                tabIndex={canNavigate ? 0 : undefined}
+                aria-label={canNavigate ? `Go to ${stage.label}` : undefined}
+              >
                 {/* Status icon */}
                 <div className='mt-0.5 flex-shrink-0'>
                   {isCompleted ? (
@@ -103,24 +133,39 @@ const ProcessingProgressSidemenu: React.FC<ProcessingProgressSidebarProps> = ({
 
                 {/* Stage content */}
                 <div className='flex-1'>
-                  <h3
-                    className={`text-sm font-medium ${
-                      isCurrent
-                        ? 'text-gray-800'
-                        : isCompleted
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                    }`}
-                  >
-                    {stage.label}
-                  </h3>
+                  <div className='flex items-center justify-between'>
+                    <h3
+                      className={`text-sm font-medium ${
+                        isCurrent
+                          ? 'text-gray-800'
+                          : isCompleted
+                            ? 'text-green-600'
+                            : canNavigate
+                              ? 'text-gray-600'
+                              : 'text-gray-400'
+                      }`}
+                    >
+                      {stage.label}
+                    </h3>
+
+                    {/* Navigation indicator */}
+                    {canNavigate && !isCurrent && (
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    )}
+                    {isCurrent && (
+                      <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+
                   <p
                     className={`mt-1 text-xs ${
                       isCurrent
                         ? 'text-gray-600'
                         : isCompleted
                           ? 'text-green-500'
-                          : 'text-gray-400'
+                          : canNavigate
+                            ? 'text-gray-500'
+                            : 'text-gray-400'
                     }`}
                   >
                     {stage.description}
