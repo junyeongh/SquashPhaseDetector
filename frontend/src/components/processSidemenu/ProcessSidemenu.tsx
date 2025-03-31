@@ -186,6 +186,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             completedStages={completedStages}
             isProcessing={isProcessing}
             onStageSelect={onStageSelect}
+            allStages={stageConfig}
           />
         )}
 
