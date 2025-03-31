@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
 import { BASE_API_URL } from '@/services/api/config';
 import VideoPlayerSection, {
   VideoPlayerSectionRef,
@@ -31,9 +30,9 @@ import {
   startPoseDetection,
   getPoseDetectionStatus,
 } from '@/services/api/pose';
-import ProcessingProgressSidemenu, {
+import ProcessSidemenu, {
   ProcessingStage,
-} from '@/components/ProcessingProgressSidemenu';
+} from '@/components/ProcessSidemenu';
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -48,8 +47,14 @@ const VideoDetailPage: React.FC = () => {
 
   // State for video player data
   const [currentFrame, setCurrentFrame] = useState<number>(0);
+
+  // These values are updated by handleFrameUpdate and are used by the VideoPlayerSection component
+  // They provide time-based information for UI components that need to know the video position
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [duration, setDuration] = useState<number>(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentTime, setCurrentTime] = useState<number>(0);
+
   const [mainviewTimestamps, setMainviewTimestamps] = useState<
     MainviewTimestamp[]
   >([]);
@@ -399,33 +404,6 @@ const VideoDetailPage: React.FC = () => {
     setActiveStage(stage);
   };
 
-  // Get button text and icon based on the active stage
-  const getButtonConfig = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        return { label: 'Process Video', icon: <Play className='h-3 w-3' /> };
-      case 'segmentation':
-        return {
-          label: 'Run Segmentation',
-          icon: <Scissors className='h-3 w-3' />,
-        };
-      case 'pose':
-        return {
-          label: 'Detect Poses',
-          icon: <Activity className='h-3 w-3' />,
-        };
-      case 'game_state':
-        return { label: 'Analyze Game', icon: <Zap className='h-3 w-3' /> };
-      case 'export':
-        return {
-          label: 'Export Results',
-          icon: <Download className='h-3 w-3' />,
-        };
-      default:
-        return { label: 'Process', icon: <Play className='h-3 w-3' /> };
-    }
-  };
-
   // Get stage-specific overlay
   const getStageOverlay = () => {
     switch (activeStage) {
@@ -454,6 +432,9 @@ const VideoDetailPage: React.FC = () => {
   };
 
   // Handle seek in the timeline
+  // This function may be called by components that need to control video position
+  // It's kept for component communication between UI elements and the video player
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSeek = (time: number) => {
     console.log('Seeking to time:', time);
     if (videoPlayerRef.current) {
@@ -592,95 +573,37 @@ const VideoDetailPage: React.FC = () => {
     switch (activeStage) {
       case 'preprocess':
         return (
-          <>
-            <PreprocessContent
-              onProcess={handleProcessVideo}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              mainviewTimestamps={mainviewTimestamps}
-              duration={duration}
-              currentTime={currentTime}
-              onSeek={handleSeek}
-              buttonConfig={getButtonConfig()}
-              currentStage={activeStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className='mt-4 flex justify-end'>
-                <button
-                  onClick={skipCurrentStage}
-                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
+          <PreprocessContent
+            mainviewTimestamps={mainviewTimestamps}
+            currentStage={activeStage}
+            onNextStage={moveToNextStage}
+          />
         );
       case 'segmentation':
         return (
-          <>
-            <SegmentationContent
-              frameUrl={frameUrl}
-              frameIndex={frameIndex}
-              player1Points={player1Points}
-              player2Points={player2Points}
-              onPlayer1PointsChange={setPlayer1Points}
-              onPlayer2PointsChange={setPlayer2Points}
-              onMarkPlayers={handleMarkPlayers}
-              onStartSegmentation={handleStartSegmentation}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              segmentationResults={segmentationResults}
-              onNextFrame={handleNextFrame}
-              onPreviousFrame={handlePreviousFrame}
-              currentStage={activeStage}
-              onPreviousStage={moveToPreviousStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className='mt-4 flex justify-end'>
-                <button
-                  onClick={skipCurrentStage}
-                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
+          <SegmentationContent
+            frameUrl={frameUrl}
+            frameIndex={frameIndex}
+            player1Points={player1Points}
+            player2Points={player2Points}
+            onPlayer1PointsChange={setPlayer1Points}
+            onPlayer2PointsChange={setPlayer2Points}
+            segmentationResults={segmentationResults}
+            currentStage={activeStage}
+            onPreviousStage={moveToPreviousStage}
+            onNextStage={moveToNextStage}
+          />
         );
       case 'pose':
         return (
-          <>
-            <PoseContent
-              frameUrl={frameUrl}
-              frameIndex={frameIndex}
-              onStartPoseDetection={handleStartPoseDetection}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              poseResults={poseResults}
-              modelType={modelType}
-              setModelType={setModelType}
-              confidenceThreshold={confidenceThreshold}
-              setConfidenceThreshold={setConfidenceThreshold}
-              onNextFrame={handleNextFrame}
-              onPreviousFrame={handlePreviousFrame}
-              currentStage={activeStage}
-              onPreviousStage={moveToPreviousStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className='mt-4 flex justify-end'>
-                <button
-                  onClick={skipCurrentStage}
-                  className='flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 transition-colors hover:bg-orange-200'
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
+          <PoseContent
+            frameUrl={frameUrl}
+            frameIndex={frameIndex}
+            poseResults={poseResults}
+            currentStage={activeStage}
+            onPreviousStage={moveToPreviousStage}
+            onNextStage={moveToNextStage}
+          />
         );
       case 'game_state':
         return (
@@ -704,31 +627,62 @@ const VideoDetailPage: React.FC = () => {
 
   return (
     <div className='flex h-full flex-col'>
-      {/* Stage-specific content */}
-      {renderStageContent()}
+      {/* New layout with content, video player and progress sidebar */}
+      <div className='flex flex-1 h-full'>
+        {/* Main content area with stage content and video player */}
+        <div className='flex-1 flex flex-col overflow-hidden'>
+          {/* Stage content - shows only stage-specific information */}
+          <div className='mb-4'>
+            {renderStageContent()}
+          </div>
 
-      {/* New layout with video player and progress sidebar */}
-      <div className='flex flex-1'>
-        {/* Video player section - now with fixed width */}
-        <div className='max-w-[70%] flex-1 overflow-hidden'>
-          <VideoPlayerSection
-            videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
-            stage={activeStage}
-            videoId={uuid || ''}
-            customOverlay={getStageOverlay()}
-            onFrameUpdate={handleFrameUpdate}
-            ref={videoPlayerRef}
-          />
+          {/* Video player section */}
+          <div className='flex-1 overflow-hidden'>
+            <VideoPlayerSection
+              videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
+              stage={activeStage}
+              videoId={uuid || ''}
+              customOverlay={getStageOverlay()}
+              onFrameUpdate={handleFrameUpdate}
+              ref={videoPlayerRef}
+            />
+          </div>
         </div>
 
-        {/* Processing progress sidebar */}
-        <div className='h-full w-[30%]'>
-          <ProcessingProgressSidemenu
+        {/* Processing progress sidebar - now includes processing interfaces */}
+        <div className='h-full w-[350px]'>
+          <ProcessSidemenu
             activeStage={activeStage}
             completedStages={completedStages}
             isProcessing={isProcessing}
             processingStatus={processingStatus}
             onStageSelect={handleStageSelect}
+
+            // Process buttons
+            onProcess={handleProcessVideo}
+            onMarkPlayers={handleMarkPlayers}
+            onStartSegmentation={handleStartSegmentation}
+            onStartPoseDetection={handleStartPoseDetection}
+
+            // Skip controls
+            showSkipButton={showSkipButton}
+            onSkipStage={skipCurrentStage}
+
+            // Stage-specific controls
+            modelType={modelType}
+            confidenceThreshold={confidenceThreshold}
+            setModelType={setModelType}
+            setConfidenceThreshold={setConfidenceThreshold}
+
+            // Navigation controls
+            onPreviousFrame={handlePreviousFrame}
+            onNextFrame={handleNextFrame}
+            onPreviousStage={moveToPreviousStage}
+            onNextStage={moveToNextStage}
+
+            // Player points for segmentation stage
+            player1Points={player1Points}
+            player2Points={player2Points}
           />
         </div>
       </div>
