@@ -15,6 +15,7 @@ import {
   Point,
   SegmentationResult,
   markPlayers,
+  markPlayersSAM2,
   startSegmentation,
   getSegmentationStatus,
 } from '@/services/api/segmentation';
@@ -27,6 +28,7 @@ import ProcessSidemenu, {
   ProcessingStage,
   StageConfig,
 } from '@/components/ProcessSidemenu';
+import SegmentationOverlay from '@/components/video/SegmentationOverlay';
 
 // Shared stage configuration
 export const processingStages: StageConfig[] = [
@@ -101,6 +103,25 @@ const VideoDetailPage: React.FC = () => {
   const [segmentationResults, setSegmentationResults] = useState<
     SegmentationResult[] | null
   >(null);
+
+  // SAM2 specific state
+  const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
+  const [activeMarkerType, setActiveMarkerType] = useState<
+    'positive' | 'negative'
+  >('positive');
+  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Point[]>(
+    []
+  );
+  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Point[]>(
+    []
+  );
+  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Point[]>(
+    []
+  );
+  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Point[]>(
+    []
+  );
+  const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
 
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
@@ -439,60 +460,29 @@ const VideoDetailPage: React.FC = () => {
     setActiveStage(stage);
   };
 
-  // Get stage-specific overlay
-  const getStageOverlay = () => {
-    switch (activeStage) {
-      case 'segmentation':
-        return (
-          <div className='pointer-events-none absolute top-1/4 left-1/4 h-1/2 w-1/2 border-2 border-dashed border-red-500 opacity-50'>
-            <div className='absolute -top-6 left-0 rounded bg-red-500 px-2 py-1 text-xs text-white'>
-              Segmentation Area
-            </div>
-          </div>
-        );
-      case 'pose':
-        return (
-          <div className='pointer-events-none absolute flex h-full w-full items-center justify-center'>
-            <div className='relative h-1/2 w-1/2'>
-              <div className='absolute h-full w-full border-2 border-dashed border-blue-500 opacity-50'></div>
-              <div className='absolute -top-6 left-0 rounded bg-blue-500 px-2 py-1 text-xs text-white'>
-                Pose Detection Area
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   // Handle seek in the timeline
   // This function may be called by components that need to control video position
   // It's kept for component communication between UI elements and the video player
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSeek = (time: number) => {
-    console.log('Seeking to time:', time);
-    if (videoPlayerRef.current) {
-      videoPlayerRef.current.seekToTime(time);
-    }
-  };
+  //   const handleSeek = (time: number) => {
+  //     console.log('Seeking to time:', time);
+  //     if (videoPlayerRef.current) {
+  //       videoPlayerRef.current.seekToTime(time);
+  //     }
+  //   };
 
-  // Handler for segmentation
+  // Handler for player marking
   const handleMarkPlayers = async () => {
-    if (!uuid || player1Points.length === 0 || player2Points.length === 0)
-      return;
+    if (!uuid) return;
 
     try {
       await markPlayers(uuid, frameIndex, player1Points, player2Points);
-      setProcessingStatus('Players marked successfully');
+      console.log('Players marked successfully');
     } catch (error) {
       console.error('Error marking players:', error);
-      setProcessingStatus(
-        `Error marking players: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
     }
   };
 
+  // Handler for SAM2 marking and segmentation
   const handleStartSegmentation = async () => {
     if (!uuid) return;
 
@@ -500,7 +490,29 @@ const VideoDetailPage: React.FC = () => {
     setProcessingStatus('Starting segmentation...');
 
     try {
-      await startSegmentation(uuid);
+      // If using SAM2 model, send SAM2 markers
+      if (segmentationModel === 'SAM2') {
+        try {
+          // First mark the players with SAM2 points
+          await markPlayersSAM2(
+            uuid,
+            frameIndex,
+            player1PositivePoints,
+            player1NegativePoints,
+            player2PositivePoints,
+            player2NegativePoints
+          );
+          console.log('SAM2 markers set successfully');
+        } catch (error) {
+          console.error('Error setting SAM2 markers:', error);
+          setProcessingStatus('Error setting SAM2 markers');
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // Start segmentation with selected model
+      await startSegmentation(uuid, segmentationModel);
 
       // Poll for status updates
       const statusCheckInterval = setInterval(async () => {
@@ -603,6 +615,61 @@ const VideoDetailPage: React.FC = () => {
     setFrameIndex((prev) => Math.max(0, prev - 1));
   };
 
+  // Add marker points based on active player and marker type
+  const handleAddMarkerPoint = (point: Point) => {
+    if (segmentationModel === 'SAM2') {
+      if (activePlayer === 1) {
+        if (activeMarkerType === 'positive') {
+          setPlayer1PositivePoints((prev) => [...prev, point]);
+        } else {
+          setPlayer1NegativePoints((prev) => [...prev, point]);
+        }
+      } else {
+        if (activeMarkerType === 'positive') {
+          setPlayer2PositivePoints((prev) => [...prev, point]);
+        } else {
+          setPlayer2NegativePoints((prev) => [...prev, point]);
+        }
+      }
+    } else {
+      // Legacy player point handling
+      if (activePlayer === 1) {
+        setPlayer1Points((prev) => [...prev, point]);
+      } else {
+        setPlayer2Points((prev) => [...prev, point]);
+      }
+    }
+  };
+
+  // Clear marker points for a specific player and marker type
+  const handleClearPlayerMarkerPoints = (
+    player: 1 | 2,
+    markerType: 'positive' | 'negative'
+  ) => {
+    if (player === 1) {
+      if (markerType === 'positive') {
+        setPlayer1PositivePoints([]);
+      } else {
+        setPlayer1NegativePoints([]);
+      }
+    } else {
+      if (markerType === 'positive') {
+        setPlayer2PositivePoints([]);
+      } else {
+        setPlayer2NegativePoints([]);
+      }
+    }
+  };
+
+  // Clear all points for a specific player
+  const handleClearPlayerPoints = (player: 1 | 2) => {
+    if (player === 1) {
+      setPlayer1Points([]);
+    } else {
+      setPlayer2Points([]);
+    }
+  };
+
   return (
     <div className='flex h-full flex-col'>
       {/* New layout with content, video player and progress sidebar */}
@@ -631,9 +698,26 @@ const VideoDetailPage: React.FC = () => {
               videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
               stage={activeStage}
               videoId={uuid || ''}
-              customOverlay={getStageOverlay()}
               onFrameUpdate={handleFrameUpdate}
               ref={videoPlayerRef}
+              customOverlay={
+                activeStage === 'segmentation' ? (
+                  <SegmentationOverlay
+                    width={1280}
+                    height={720}
+                    activePlayer={activePlayer}
+                    activeMarkerType={activeMarkerType}
+                    player1PositivePoints={player1PositivePoints}
+                    player1NegativePoints={player1NegativePoints}
+                    player2PositivePoints={player2PositivePoints}
+                    player2NegativePoints={player2NegativePoints}
+                    player1Points={player1Points}
+                    player2Points={player2Points}
+                    segmentationModel={segmentationModel}
+                    onAddPoint={handleAddMarkerPoint}
+                  />
+                ) : null
+              }
             />
           </div>
         </div>
@@ -668,6 +752,19 @@ const VideoDetailPage: React.FC = () => {
             // Player points for segmentation stage
             player1Points={player1Points}
             player2Points={player2Points}
+            // SAM2 specific controls
+            segmentationModel={segmentationModel}
+            activeMarkerType={activeMarkerType}
+            setSegmentationModel={setSegmentationModel}
+            setActiveMarkerType={setActiveMarkerType}
+            player1PositivePoints={player1PositivePoints}
+            player1NegativePoints={player1NegativePoints}
+            player2PositivePoints={player2PositivePoints}
+            player2NegativePoints={player2NegativePoints}
+            activePlayer={activePlayer}
+            setActivePlayer={setActivePlayer}
+            onClearPlayerMarkerPoints={handleClearPlayerMarkerPoints}
+            onClearPlayerPoints={handleClearPlayerPoints}
           />
         </div>
       </div>

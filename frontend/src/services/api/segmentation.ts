@@ -16,6 +16,15 @@ export interface MarkPlayersRequest {
   player2Points: Point[];
 }
 
+export interface SAM2MarkersRequest {
+  sessionId: string;
+  frameIndex: number;
+  player1PositivePoints: Point[];
+  player1NegativePoints: Point[];
+  player2PositivePoints: Point[];
+  player2NegativePoints: Point[];
+}
+
 export interface SegmentationMask {
   size: [number, number]; // [height, width]
   counts: string; // RLE encoding
@@ -58,14 +67,43 @@ export const markPlayers = async (
 };
 
 /**
+ * Mark players using SAM2 model with positive and negative points
+ */
+export const markPlayersSAM2 = async (
+  sessionId: string,
+  frameIndex: number,
+  player1PositivePoints: Point[],
+  player1NegativePoints: Point[],
+  player2PositivePoints: Point[],
+  player2NegativePoints: Point[]
+): Promise<{ success: boolean; markersCount: number }> => {
+  try {
+    const response = await axios.post(`${API_URL}/mark-players-sam2`, {
+      sessionId,
+      frameIndex,
+      player1PositivePoints,
+      player1NegativePoints,
+      player2PositivePoints,
+      player2NegativePoints,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error marking players with SAM2:', error);
+    throw error;
+  }
+};
+
+/**
  * Start the segmentation process for a session
  */
 export const startSegmentation = async (
-  sessionId: string
+  sessionId: string,
+  model: string = 'Basic'
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await axios.post(`${API_URL}/start-segmentation`, {
       sessionId,
+      model,
     });
     return response.data;
   } catch (error) {
