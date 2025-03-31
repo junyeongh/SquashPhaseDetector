@@ -5,20 +5,30 @@ A system for analyzing squash match videos, automatically detecting game phases 
 ## Project Structure
 
 ```
-/
-├── backend/                 # FastAPI backend
-│   ├── routers/             # API endpoints
-│   ├── models/              # ML model integrations
-│   └── app.py               # Main FastAPI application
-├── frontend/                # React frontend
-│   └── Dockerfile           # Frontend container definition
-├── docker-compose.yml       # Docker configuration
-├── data/                    # Data output directory
-│   ├── uploads/
-│       ├── [uuid]/
-│           └── frames/
+SquashPhaseDetector/
+├── backend/               # FastAPI backend
+│   ├── routers/           # API endpoints (video.py, segmentation.py, etc.)
+│   ├── models/            # ML model integration (sam2_model.py, etc.)
+│   ├── utils/             # Utility functions (video.py, etc.)
+│   └── app.py             # Main FastAPI application
+├── frontend/
+│   ├── src/
+│   │   ├── components/    # React components (video/, segmentation/, etc.)
+│   │   ├── services/      # API service functions (api/video.ts, api/segmentation.ts)
+│   │   ├── pages/         # Top-level page components (VideoDetailPage.tsx)
+│   │   ├── utils/         # Frontend utility functions (rleUtils.ts)
+│   │   └── ...
+│   └── Dockerfile
+├── data/
+│   ├── uploads/           # Directory for uploaded videos and extracted frames
+│   │   └── [uuid]/
+│   │       ├── frames/    # Extracted .jpg frames
+│   │       ├── metadata.json
+│   │       └── mainview_timestamp.csv
 │   └── exports/
-└── uploads/                 # Video upload directory
+├── docker-compose.yml
+├── README.md
+└── ...
 ```
 
 ## Getting Started
