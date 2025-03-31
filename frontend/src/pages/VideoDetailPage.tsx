@@ -12,14 +12,18 @@ import {
 import {
   Point,
   SegmentationResult,
+  SegmentationMask,
   markPlayers,
   markPlayersSAM2,
   startSegmentation,
   getSegmentationStatus,
+  getSegmentationMask,
 } from '@/services/api/segmentation';
 import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
 import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/ProcessSidemenu';
 import SegmentationOverlay from '@/components/video/SegmentationOverlay';
+import MaskLayer from '@/components/video/MaskLayer';
+import { MarkerType } from '@/components/ProcessSidemenu';
 
 // Shared stage configuration
 export const processingStages: StageConfig[] = [
@@ -94,6 +98,10 @@ const VideoDetailPage: React.FC = () => {
   const [player2NegativePoints, setPlayer2NegativePoints] = useState<Point[]>([]);
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
 
+  // Mask state for current frame
+  const [player1Mask, setPlayer1Mask] = useState<SegmentationMask | null>(null);
+  const [player2Mask, setPlayer2Mask] = useState<SegmentationMask | null>(null);
+
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
@@ -135,6 +143,34 @@ const VideoDetailPage: React.FC = () => {
         });
     }
   }, [uuid, activeStage]);
+
+  // Fetch segmentation masks when frame changes
+  useEffect(() => {
+    if (uuid && activeStage === 'segmentation' && completedStages.has('segmentation')) {
+      // Try to fetch masks for the current frame
+      fetchFrameMasks();
+    } else {
+      // Clear masks when changing frames before segmentation is completed
+      setPlayer1Mask(null);
+      setPlayer2Mask(null);
+    }
+  }, [uuid, frameIndex, activeStage, completedStages]);
+
+  // Fetch masks for the current frame
+  const fetchFrameMasks = async () => {
+    if (!uuid) return;
+
+    try {
+      const result = await getSegmentationMask(uuid, frameIndex);
+      console.log('Fetched masks for frame:', frameIndex, result);
+      setPlayer1Mask(result.player1Mask);
+      setPlayer2Mask(result.player2Mask);
+    } catch (error) {
+      console.error('Error fetching segmentation masks:', error);
+      setPlayer1Mask(null);
+      setPlayer2Mask(null);
+    }
+  };
 
   // Log frame updates for debugging purposes
   useEffect(() => {
@@ -198,9 +234,7 @@ const VideoDetailPage: React.FC = () => {
             moveToNextStage();
           }, 1000);
         } catch (error) {
-          console.error('Error fetching results after completion:', error);
-          setProcessingStatus(`Error fetching results: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          if (eventSource) eventSource.close();
+          console.error('Error fetching timestamps after completion:', error);
           setIsProcessing(false);
         }
       });
@@ -208,210 +242,112 @@ const VideoDetailPage: React.FC = () => {
       // Handle errors
       eventSource.addEventListener('error', (event) => {
         console.error('SSE error:', event);
-        setProcessingStatus('Connection error. Please try again.');
-        if (eventSource) eventSource.close();
+        if (eventSource) {
+          eventSource.close();
+        }
         setIsProcessing(false);
+        setShowSkipButton(true);
       });
 
-      // Standard error event
-      eventSource.onerror = () => {
-        console.error('SSE connection error');
-        setProcessingStatus('Lost connection to server. Please try again.');
-        if (eventSource) eventSource.close();
-        setIsProcessing(false);
-      };
+      // Return the event source for cleanup
+      return eventSource;
     } catch (error) {
-      console.error('Error setting up SSE:', error);
-      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Failed to connect to server'}`);
-      if (eventSource) eventSource.close();
-      setIsProcessing(false);
+      console.error('Error creating SSE connection:', error);
+      return null;
     }
-
-    // Return cleanup function
-    return () => {
-      if (eventSource) {
-        console.log('Cleaning up SSE connection');
-        eventSource.close();
-      }
-    };
   };
 
   const skipCurrentStage = () => {
-    if (isProcessing) {
-      // Close any ongoing connections
-      setIsProcessing(false);
-      setProcessingStatus('Skipped current stage');
-    }
+    // Reset skip button state
+    setShowSkipButton(false);
 
-    // Mark current stage as completed (even though it was skipped)
+    // Mark current stage as completed even though we're skipping it
     const updatedCompletedStages = new Set(completedStages);
     updatedCompletedStages.add(activeStage);
     setCompletedStages(updatedCompletedStages);
 
-    // Move to the next stage
+    // Move to next stage
     moveToNextStage();
-    setShowSkipButton(false);
   };
 
-  // Function for processing video
+  // Handler for processing video (main view detection)
   const handleProcessVideo = async () => {
-    // Prevent starting if already processing
-    if (isProcessing) {
-      console.log('Already processing, ignoring request');
-      return;
-    }
+    if (!uuid) return;
 
     setIsProcessing(true);
-    setProcessingStatus(`${activeStage} in progress...`);
-
-    // Show skip button after a delay for preprocess stage
-    if (activeStage === 'preprocess') {
-      setShowSkipButton(false);
-      setTimeout(() => {
-        setShowSkipButton(true);
-      }, 5000); // Show skip button after 5 seconds
-    } else {
-      // For other stages, don't show skip button initially
-      setShowSkipButton(false);
-      // But show it after a longer delay
-      setTimeout(() => {
-        setShowSkipButton(true);
-      }, 15000); // Show skip button after 15 seconds for other stages
-    }
+    setProcessingStatus('Starting main view detection...');
 
     try {
-      // Execute different processing based on the current stage
-      if (activeStage === 'preprocess') {
-        setProcessingStatus('Starting main view detection...');
+      // Start the main view detection process
+      const response = await generateMainView(uuid);
+      console.log('Started main view detection:', response);
 
-        if (!uuid) {
-          throw new Error('Video UUID is missing');
+      // Listen for updates using SSE
+      const eventSource = listenForProcessingUpdates(uuid);
+
+      // Set up cleanup function to close the event source if component unmounts
+      return () => {
+        if (eventSource) {
+          eventSource.close();
         }
-
-        // Check if video is already being processed or has results
-        try {
-          const statusResponse = await getProcessingStatus(uuid);
-
-          if (statusResponse.is_processing) {
-            // If already processing, just start listening for updates
-            setProcessingStatus(`Main view detection already in progress: ${statusResponse.status}`);
-            console.log('Video already being processed, starting SSE connection');
-          } else if (statusResponse.has_mainview) {
-            // If already has results, load them
-            const timestamps = await getMainviewTimestamps(uuid);
-            setMainviewTimestamps(timestamps);
-            setProcessingStatus('Main view detection already complete!');
-
-            // Mark current stage as completed
-            const updatedCompletedSteps = new Set(completedStages);
-            updatedCompletedSteps.add(activeStage);
-            setCompletedStages(updatedCompletedSteps);
-
-            setIsProcessing(false);
-            return;
-          } else {
-            // If not processing and no results, start a new processing task
-            await generateMainView(uuid);
-            setProcessingStatus('Detecting main view segments...');
-          }
-        } catch (statusError) {
-          // If status endpoint doesn't exist yet, proceed with normal flow
-          console.log('Status endpoint not available, proceeding with processing', statusError);
-          await generateMainView(uuid);
-          setProcessingStatus('Detecting main view segments...');
-        }
-
-        // Start listening for updates with SSE
-        listenForProcessingUpdates(uuid);
-      } else {
-        // Simulate processing with timeout for other stages
-        setTimeout(() => {
-          setProcessingStatus(`${activeStage} processing step 2...`);
-
-          setTimeout(() => {
-            setProcessingStatus(`${activeStage} finalizing...`);
-
-            setTimeout(() => {
-              setIsProcessing(false);
-
-              // Mark current stage as completed
-              const updatedCompletedStages = new Set(completedStages);
-              updatedCompletedStages.add(activeStage);
-              setCompletedStages(updatedCompletedStages);
-
-              // Move to next stage
-              moveToNextStage();
-            }, 2000);
-          }, 2000);
-        }, 2000);
-      }
+      };
     } catch (error) {
-      console.error(`Error during ${activeStage} processing:`, error);
-      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error starting main view detection:', error);
+      setProcessingStatus('Error starting main view detection. Try again or skip this step.');
+      setIsProcessing(false);
+      setShowSkipButton(true);
+    }
+  };
+
+  // Move to next stage in the processing pipeline
+  const moveToNextStage = () => {
+    const currentIndex = processingStages.findIndex((stage) => stage.id === activeStage);
+    if (currentIndex < processingStages.length - 1) {
+      const nextStage = processingStages[currentIndex + 1].id as ProcessingStage;
+      setActiveStage(nextStage);
       setIsProcessing(false);
 
-      // Show skip button immediately on error for preprocess stage
-      if (activeStage === 'preprocess') {
-        setShowSkipButton(true);
+      // Reset stage-specific state when moving to next stage
+      if (nextStage === 'segmentation') {
+        // Reset segmentation state
+        setPlayer1Points([]);
+        setPlayer2Points([]);
+        setPlayer1PositivePoints([]);
+        setPlayer1NegativePoints([]);
+        setPlayer2PositivePoints([]);
+        setPlayer2NegativePoints([]);
       }
     }
   };
 
-  const moveToNextStage = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        setActiveStage('segmentation');
-        break;
-      case 'segmentation':
-        setActiveStage('pose');
-        break;
-      case 'pose':
-        setActiveStage('game_state');
-        break;
-      case 'game_state':
-        setActiveStage('export');
-        break;
-      case 'export':
-        // This is the final stage
-        break;
-    }
-  };
-
+  // Move to previous stage in the processing pipeline
   const moveToPreviousStage = () => {
-    switch (activeStage) {
-      case 'segmentation':
-        setActiveStage('preprocess');
-        break;
-      case 'pose':
-        setActiveStage('segmentation');
-        break;
-      case 'game_state':
-        setActiveStage('pose');
-        break;
-      case 'export':
-        setActiveStage('game_state');
-        break;
-      case 'preprocess':
-        // This is the first stage
-        break;
+    const currentIndex = processingStages.findIndex((stage) => stage.id === activeStage);
+    if (currentIndex > 0) {
+      const previousStage = processingStages[currentIndex - 1].id as ProcessingStage;
+      setActiveStage(previousStage);
+      setIsProcessing(false);
+
+      // Reset stage-specific state when moving to previous stage
+      if (previousStage === 'segmentation') {
+        // Reset segmentation state but keep any completed work
+        // Do not clear points or results that might be useful
+      }
     }
   };
 
-  // Function to handle direct stage selection from the sidebar
+  // Handler for selecting a specific stage
   const handleStageSelect = (stage: ProcessingStage) => {
-    if (isProcessing) return; // Don't allow changing stages during processing
-    setActiveStage(stage);
-  };
+    // Only allow selecting stages that are either completed or the next one to do
+    const currentIndex = processingStages.findIndex((s) => s.id === activeStage);
+    const targetIndex = processingStages.findIndex((s) => s.id === stage);
+    const isCompleted = completedStages.has(stage);
+    const isNextStage = targetIndex === currentIndex + 1;
 
-  // Handle seek in the timeline
-  // This function may be called by components that need to control video position
-  // It's kept for component communication between UI elements and the video player
-  //   const handleSeek = (time: number) => {
-  //     console.log('Seeking to time:', time);
-  //     if (videoPlayerRef.current) {
-  //       videoPlayerRef.current.seekToTime(time);
-  //     }
-  //   };
+    if (isCompleted || isNextStage || stage === activeStage) {
+      setActiveStage(stage);
+    }
+  };
 
   // Handler for player marking
   const handleMarkPlayers = async () => {
@@ -461,7 +397,7 @@ const VideoDetailPage: React.FC = () => {
       const statusCheckInterval = setInterval(async () => {
         try {
           const status = await getSegmentationStatus(uuid);
-          setProcessingStatus(`Segmentation: ${status.message}`);
+          setProcessingStatus(`Segmentation: ${status.message} (${Math.round(status.progress)}%)`);
 
           if (status.status === 'completed') {
             clearInterval(statusCheckInterval);
@@ -472,6 +408,9 @@ const VideoDetailPage: React.FC = () => {
             const updatedCompletedStages = new Set(completedStages);
             updatedCompletedStages.add('segmentation');
             setCompletedStages(updatedCompletedStages);
+
+            // Fetch masks for the current frame
+            await fetchFrameMasks();
 
             // Move to next stage after a delay
             setTimeout(() => moveToNextStage(), 1000);
@@ -580,6 +519,23 @@ const VideoDetailPage: React.FC = () => {
     }
   };
 
+  // Remove marker point at a specific index
+  const handleRemoveMarkerPoint = (player: 1 | 2, markerType: MarkerType, index: number) => {
+    if (player === 1) {
+      if (markerType === 'positive') {
+        setPlayer1PositivePoints((prev) => prev.filter((_, i) => i !== index));
+      } else {
+        setPlayer1NegativePoints((prev) => prev.filter((_, i) => i !== index));
+      }
+    } else {
+      if (markerType === 'positive') {
+        setPlayer2PositivePoints((prev) => prev.filter((_, i) => i !== index));
+      } else {
+        setPlayer2NegativePoints((prev) => prev.filter((_, i) => i !== index));
+      }
+    }
+  };
+
   // Clear marker points for a specific player and marker type
   const handleClearPlayerMarkerPoints = (player: 1 | 2, markerType: 'positive' | 'negative') => {
     if (player === 1) {
@@ -636,20 +592,36 @@ const VideoDetailPage: React.FC = () => {
               ref={videoPlayerRef}
               customOverlay={
                 activeStage === 'segmentation' ? (
-                  <SegmentationOverlay
-                    width={1280}
-                    height={720}
-                    activePlayer={activePlayer}
-                    activeMarkerType={activeMarkerType}
-                    player1PositivePoints={player1PositivePoints}
-                    player1NegativePoints={player1NegativePoints}
-                    player2PositivePoints={player2PositivePoints}
-                    player2NegativePoints={player2NegativePoints}
-                    player1Points={player1Points}
-                    player2Points={player2Points}
-                    segmentationModel={segmentationModel}
-                    onAddPoint={handleAddMarkerPoint}
-                  />
+                  <>
+                    {/* Render masks first (lower z-index) */}
+                    {(player1Mask || player2Mask) && (
+                      <MaskLayer
+                        width={1280}
+                        height={720}
+                        player1Mask={player1Mask}
+                        player2Mask={player2Mask}
+                        player1Color={[255, 0, 0, 0.4]} // Red with 40% opacity
+                        player2Color={[0, 0, 255, 0.4]} // Blue with 40% opacity
+                      />
+                    )}
+
+                    {/* Render interaction points on top (higher z-index) */}
+                    <SegmentationOverlay
+                      width={1280}
+                      height={720}
+                      activePlayer={activePlayer}
+                      activeMarkerType={activeMarkerType}
+                      player1PositivePoints={player1PositivePoints}
+                      player1NegativePoints={player1NegativePoints}
+                      player2PositivePoints={player2PositivePoints}
+                      player2NegativePoints={player2NegativePoints}
+                      player1Points={player1Points}
+                      player2Points={player2Points}
+                      segmentationModel={segmentationModel}
+                      onAddPoint={handleAddMarkerPoint}
+                      onRemovePoint={handleRemoveMarkerPoint}
+                    />
+                  </>
                 ) : null
               }
             />

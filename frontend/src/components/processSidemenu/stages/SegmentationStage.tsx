@@ -27,6 +27,17 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
   onPreviousFrame,
   onNextFrame,
 }) => {
+  // Handler to clear all points for a player (both regular and marker points)
+  const handleClearPlayerAllPoints = (playerId: 1 | 2) => {
+    if (onClearPlayerMarkerPoints) {
+      onClearPlayerMarkerPoints(playerId, 'positive');
+      onClearPlayerMarkerPoints(playerId, 'negative');
+    }
+    if (onClearPlayerPoints) {
+      onClearPlayerPoints(playerId);
+    }
+  };
+
   if (isProcessing) {
     return (
       <ProcessingIndicator
@@ -73,7 +84,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             >
               <User className='h-3 w-3' />
               Player 1 {player1Points.length > 0 && `(${player1Points.length})`}
-              {segmentationModel === 'SAM2' && ` (${player1PositivePoints.length}+/${player1NegativePoints.length}-)`}
+              {` (${player1PositivePoints.length}+/${player1NegativePoints.length}-)`}
             </button>
 
             <button
@@ -86,13 +97,13 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             >
               <UserRound className='h-3 w-3' />
               Player 2 {player2Points.length > 0 && `(${player2Points.length})`}
-              {segmentationModel === 'SAM2' && ` (${player2PositivePoints.length}+/${player2NegativePoints.length}-)`}
+              {` (${player2PositivePoints.length}+/${player2NegativePoints.length}-)`}
             </button>
           </div>
         )}
 
-        {/* SAM2 Marker Type Selection */}
-        {segmentationModel === 'SAM2' && setActiveMarkerType && (
+        {/* Marker Type Selection - Available for all models */}
+        {setActiveMarkerType && (
           <div className='mb-3'>
             <h5 className='mb-1 text-xs font-medium text-gray-700'>Marker Type</h5>
             <div className='flex space-x-2'>
@@ -124,90 +135,40 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         )}
 
         <p className='mb-2 text-xs text-gray-600'>
-          {segmentationModel === 'SAM2'
-            ? 'Add markers by clicking on the video frame. Use positive markers to include areas and negative markers to exclude areas.'
-            : 'Mark players by clicking on the video frame. Select a player above first, then add points.'}
+          Add markers by clicking on the video frame. Use positive markers to include areas and negative markers to
+          exclude areas.
         </p>
 
-        {/* Clear points buttons */}
-        {segmentationModel === 'SAM2' && onClearPlayerMarkerPoints ? (
-          <div className='space-y-2'>
-            <div className='flex space-x-2'>
-              <button
-                onClick={() => onClearPlayerMarkerPoints(1, 'positive')}
-                disabled={player1PositivePoints.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player1PositivePoints.length > 0
-                    ? 'text-green-600 hover:bg-green-50'
-                    : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear P1 Positive
-              </button>
+        {/* Simplified clear points buttons - One button per player */}
+        <div className='flex space-x-2'>
+          <button
+            onClick={() => handleClearPlayerAllPoints(1)}
+            disabled={!player1Points?.length && !player1PositivePoints?.length && !player1NegativePoints?.length}
+            className={`flex-1 rounded py-1 text-xs ${
+              player1Points?.length || player1PositivePoints?.length || player1NegativePoints?.length
+                ? 'text-red-600 hover:bg-red-50'
+                : 'cursor-not-allowed text-gray-400'
+            }`}
+          >
+            Clear Player 1
+          </button>
 
-              <button
-                onClick={() => onClearPlayerMarkerPoints(1, 'negative')}
-                disabled={player1NegativePoints.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player1NegativePoints.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear P1 Negative
-              </button>
-            </div>
-            <div className='flex space-x-2'>
-              <button
-                onClick={() => onClearPlayerMarkerPoints(2, 'positive')}
-                disabled={player2PositivePoints.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player2PositivePoints.length > 0
-                    ? 'text-green-600 hover:bg-green-50'
-                    : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear P2 Positive
-              </button>
-
-              <button
-                onClick={() => onClearPlayerMarkerPoints(2, 'negative')}
-                disabled={player2NegativePoints.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player2NegativePoints.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear P2 Negative
-              </button>
-            </div>
-          </div>
-        ) : (
-          onClearPlayerPoints && (
-            <div className='flex space-x-2'>
-              <button
-                onClick={() => onClearPlayerPoints(1)}
-                disabled={player1Points.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player1Points.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear Player 1
-              </button>
-
-              <button
-                onClick={() => onClearPlayerPoints(2)}
-                disabled={player2Points.length === 0}
-                className={`flex-1 rounded py-1 text-xs ${
-                  player2Points.length > 0 ? 'text-blue-600 hover:bg-blue-50' : 'cursor-not-allowed text-gray-400'
-                }`}
-              >
-                Clear Player 2
-              </button>
-            </div>
-          )
-        )}
+          <button
+            onClick={() => handleClearPlayerAllPoints(2)}
+            disabled={!player2Points?.length && !player2PositivePoints?.length && !player2NegativePoints?.length}
+            className={`flex-1 rounded py-1 text-xs ${
+              player2Points?.length || player2PositivePoints?.length || player2NegativePoints?.length
+                ? 'text-blue-600 hover:bg-blue-50'
+                : 'cursor-not-allowed text-gray-400'
+            }`}
+          >
+            Clear Player 2
+          </button>
+        </div>
       </div>
 
       <div className='flex flex-col gap-2'>
-        {segmentationModel !== 'SAM2' && (
+        {onMarkPlayers && (
           <button
             onClick={onMarkPlayers}
             disabled={isProcessing || !player1Points?.length || !player2Points?.length}
@@ -223,10 +184,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
 
         <button
           onClick={onStartSegmentation}
-          disabled={
-            isProcessing ||
-            (segmentationModel === 'SAM2' && player1PositivePoints.length === 0 && player2PositivePoints.length === 0)
-          }
+          disabled={isProcessing || (player1PositivePoints.length === 0 && player2PositivePoints.length === 0)}
           className='flex items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
         >
           Start Segmentation

@@ -177,10 +177,18 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           />
 
           {/* Overlay content */}
-          {overlay && <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>{overlay}</div>}
+          {overlay && <div className='absolute top-0 left-0 h-full w-full'>{overlay}</div>}
 
           {/* Play/Pause overlay button */}
-          <div className='absolute inset-0 flex items-center justify-center' onClick={togglePlay}>
+          <div
+            className='absolute inset-0 flex items-center justify-center z-10'
+            onClick={(e) => {
+              // Only toggle play if the click is directly on this div (not on overlay elements)
+              if (e.currentTarget === e.target) {
+                togglePlay();
+              }
+            }}
+          >
             {!playing && (
               <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
                 <Play size={36} fill='white' />
@@ -227,15 +235,6 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
         <div className='bg-gray-100 px-3 pt-1 pb-2'>
           <div className='flex items-center justify-between text-gray-800'>
             <div className='flex items-center space-x-2'>
-              {/* Play/Pause button */}
-              <button
-                onClick={togglePlay}
-                className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
-                title={playing ? 'Pause' : 'Play'}
-              >
-                {playing ? <Pause size={18} /> : <Play size={18} />}
-              </button>
-
               {/* 5 seconds backward */}
               <button
                 onClick={() => seekByTime(-5)}
@@ -252,6 +251,15 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                 title='Previous frame'
               >
                 <SkipBack size={16} />
+              </button>
+
+              {/* Play/Pause button */}
+              <button
+                onClick={togglePlay}
+                className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
+                title={playing ? 'Pause' : 'Play'}
+              >
+                {playing ? <Pause size={18} /> : <Play size={18} />}
               </button>
 
               {/* Frame forward */}
