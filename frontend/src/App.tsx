@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import Sidebar from '@/layout/Sidebar';
+import MainContent from '@/layout/MainContent';
 import { getUploadedFiles, FileInfo } from '@/services/api/video';
-import AppLayout from '@/layout/AppLayout';
 import VideoDetailPage from '@/pages/VideoDetailPage';
 import UploadPage from '@/pages/UploadPage';
 import './App.css';
@@ -97,29 +98,25 @@ function App() {
       )}
 
       {!error && (
-        <Routes>
-          <Route
-            path='/'
-            element={
-              <AppLayout uploadedFiles={uploadedFiles}>
-                <UploadPage
-                  uploadedFiles={uploadedFiles}
-                  setCompletedSteps={setCompletedSteps}
-                  completedSteps={completedSteps}
-                  fetchUploadedFiles={fetchUploadedFiles}
-                />
-              </AppLayout>
-            }
-          />
-          <Route
-            path='/:uuid'
-            element={
-              <AppLayout uploadedFiles={uploadedFiles}>
-                <VideoDetailPage />
-              </AppLayout>
-            }
-          />
-        </Routes>
+        <div className='flex h-screen w-full flex-row overflow-hidden'>
+          <Sidebar uploadedFiles={uploadedFiles} />
+          <MainContent>
+            <Routes>
+              <Route
+                path='/'
+                element={
+                  <UploadPage
+                    uploadedFiles={uploadedFiles}
+                    setCompletedSteps={setCompletedSteps}
+                    completedSteps={completedSteps}
+                    fetchUploadedFiles={fetchUploadedFiles}
+                  />
+                }
+              />
+              <Route path='/:uuid' element={<VideoDetailPage />} />
+            </Routes>
+          </MainContent>
+        </div>
       )}
     </div>
   );
