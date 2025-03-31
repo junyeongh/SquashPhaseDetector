@@ -5,13 +5,6 @@ import VideoPlayerSection, {
   VideoPlayerSectionRef,
 } from '@/components/video/VideoPlayerSection';
 import {
-  PreprocessContent,
-  SegmentationContent,
-  PoseContent,
-  GameStateContent,
-  ExportContent,
-} from '@/components/StageContent';
-import {
   getMainviewTimestamps,
   MainviewTimestamp,
   generateMainView,
@@ -32,7 +25,41 @@ import {
 } from '@/services/api/pose';
 import ProcessSidemenu, {
   ProcessingStage,
+  StageConfig,
 } from '@/components/ProcessSidemenu';
+
+// Shared stage configuration
+export const processingStages: StageConfig[] = [
+  {
+    id: 'preprocess',
+    label: 'Video Preprocessing',
+    description:
+      'Analyze the video to detect main view angles and prepare it for player segmentation.',
+  },
+  {
+    id: 'segmentation',
+    label: 'Player Segmentation',
+    description:
+      'Mark players in the frame and generate segmentation masks for tracking.',
+  },
+  {
+    id: 'pose',
+    label: 'Pose Detection',
+    description:
+      'Detect player body positions and movements throughout the video.',
+  },
+  {
+    id: 'game_state',
+    label: 'Game State Analysis',
+    description:
+      'Analyze the game state based on player positions and movements.',
+  },
+  {
+    id: 'export',
+    label: 'Export Results',
+    description: 'Export the analysis results in various formats.',
+  },
+];
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -55,15 +82,22 @@ const VideoDetailPage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentTime, setCurrentTime] = useState<number>(0);
 
+  // Maintained for UI display and future integration with ProcessSidemenu
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mainviewTimestamps, setMainviewTimestamps] = useState<
     MainviewTimestamp[]
   >([]);
 
   // State for segmentation
+  // Used by the ProcessSidemenu component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [frameUrl, setFrameUrl] = useState<string>('');
   const [frameIndex, setFrameIndex] = useState<number>(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [player1Points, setPlayer1Points] = useState<Point[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [player2Points, setPlayer2Points] = useState<Point[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [segmentationResults, setSegmentationResults] = useState<
     SegmentationResult[] | null
   >(null);
@@ -71,6 +105,7 @@ const VideoDetailPage: React.FC = () => {
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(
     null
   );
@@ -568,72 +603,26 @@ const VideoDetailPage: React.FC = () => {
     setFrameIndex((prev) => Math.max(0, prev - 1));
   };
 
-  // Render stage-specific content
-  const renderStageContent = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        return (
-          <PreprocessContent
-            mainviewTimestamps={mainviewTimestamps}
-            currentStage={activeStage}
-            onNextStage={moveToNextStage}
-          />
-        );
-      case 'segmentation':
-        return (
-          <SegmentationContent
-            frameUrl={frameUrl}
-            frameIndex={frameIndex}
-            player1Points={player1Points}
-            player2Points={player2Points}
-            onPlayer1PointsChange={setPlayer1Points}
-            onPlayer2PointsChange={setPlayer2Points}
-            segmentationResults={segmentationResults}
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-            onNextStage={moveToNextStage}
-          />
-        );
-      case 'pose':
-        return (
-          <PoseContent
-            frameUrl={frameUrl}
-            frameIndex={frameIndex}
-            poseResults={poseResults}
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-            onNextStage={moveToNextStage}
-          />
-        );
-      case 'game_state':
-        return (
-          <GameStateContent
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-            onNextStage={moveToNextStage}
-          />
-        );
-      case 'export':
-        return (
-          <ExportContent
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className='flex h-full flex-col'>
       {/* New layout with content, video player and progress sidebar */}
-      <div className='flex flex-1 h-full'>
+      <div className='flex h-full flex-1'>
         {/* Main content area with stage content and video player */}
-        <div className='flex-1 flex flex-col overflow-hidden'>
+        <div className='flex flex-1 flex-col overflow-hidden'>
           {/* Stage content - shows only stage-specific information */}
-          <div className='mb-4'>
-            {renderStageContent()}
+          <div className='mb-2 rounded-lg border border-gray-200'>
+            <div className='rounded-t-lg border-b border-gray-200 bg-gray-50 p-4'>
+              <div className='flex-1'>
+                <h2 className='text-lg font-medium text-gray-800'>
+                  {processingStages.find((stage) => stage.id === activeStage)
+                    ?.label || ''}
+                </h2>
+                <p className='text-sm text-gray-500'>
+                  {processingStages.find((stage) => stage.id === activeStage)
+                    ?.description || ''}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Video player section */}
@@ -650,36 +639,32 @@ const VideoDetailPage: React.FC = () => {
         </div>
 
         {/* Processing progress sidebar - now includes processing interfaces */}
-        <div className='h-full w-[350px]'>
+        <div className='h-full w-[480px]'>
           <ProcessSidemenu
             activeStage={activeStage}
             completedStages={completedStages}
             isProcessing={isProcessing}
             processingStatus={processingStatus}
             onStageSelect={handleStageSelect}
-
+            stageConfig={processingStages}
             // Process buttons
             onProcess={handleProcessVideo}
             onMarkPlayers={handleMarkPlayers}
             onStartSegmentation={handleStartSegmentation}
             onStartPoseDetection={handleStartPoseDetection}
-
             // Skip controls
             showSkipButton={showSkipButton}
             onSkipStage={skipCurrentStage}
-
             // Stage-specific controls
             modelType={modelType}
             confidenceThreshold={confidenceThreshold}
             setModelType={setModelType}
             setConfidenceThreshold={setConfidenceThreshold}
-
             // Navigation controls
             onPreviousFrame={handlePreviousFrame}
             onNextFrame={handleNextFrame}
             onPreviousStage={moveToPreviousStage}
             onNextStage={moveToNextStage}
-
             // Player points for segmentation stage
             player1Points={player1Points}
             player2Points={player2Points}
