@@ -3,13 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, Upload, Video } from 'lucide-react';
 import { FileInfo } from '@/services/api/video';
 
-export type PipelineStep =
-  | 'upload'
-  | 'preprocess'
-  | 'segmentation'
-  | 'pose'
-  | 'game_state'
-  | 'export';
+export type PipelineStep = 'upload' | 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';
 
 // Create context for the sidebar state
 interface SidebarContextType {
@@ -43,9 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
       <aside
         className='flex h-screen flex-col bg-white shadow-sm transition-all'
         style={{
-          width: collapsed
-            ? 'var(--spacing-sidebar-collasped)'
-            : 'var(--spacing-sidebar)',
+          width: collapsed ? 'var(--spacing-sidebar-collasped)' : 'var(--spacing-sidebar)',
         }}
       >
         {/* Collapse button */}
@@ -76,18 +68,14 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
                 <span className='flex flex-shrink-0 items-center justify-center'>
                   <Upload size={16} className='text-gray-500' />
                 </span>
-                {!collapsed && (
-                  <span className='truncate text-sm'>Upload Video</span>
-                )}
+                {!collapsed && <span className='truncate text-sm'>Upload Video</span>}
               </Link>
             </div>
 
             {/* Recent Uploads Section */}
             {uploadedFiles.length > 0 && (
               <div className='py-2'>
-                <div className='px-4 py-1 text-xs font-medium text-gray-500'>
-                  {!collapsed ? 'Recent Uploads' : ''}
-                </div>
+                <div className='px-4 py-1 text-xs font-medium text-gray-500'>{!collapsed ? 'Recent Uploads' : ''}</div>
                 <div className='space-y-1 px-2'>
                   {uploadedFiles.slice(0, 5).map((file, index) => (
                     <Link
@@ -101,9 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
                       </span>
                       {!collapsed && (
                         <div className='flex flex-col overflow-hidden'>
-                          <span className='truncate text-xs'>
-                            {file.filename}
-                          </span>
+                          <span className='truncate text-xs'>{file.filename}</span>
                           <span className='truncate text-xs text-gray-400'>
                             {new Date(file.created * 1000).toLocaleDateString()}
                           </span>

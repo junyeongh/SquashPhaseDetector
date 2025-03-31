@@ -115,9 +115,7 @@ export const startSegmentation = async (
 /**
  * Get segmentation status and results for a session
  */
-export const getSegmentationStatus = async (
-  sessionId: string
-): Promise<SegmentationStatus> => {
+export const getSegmentationStatus = async (sessionId: string): Promise<SegmentationStatus> => {
   try {
     const response = await axios.get(`${API_URL}/status/${sessionId}`);
     return response.data;
@@ -130,14 +128,9 @@ export const getSegmentationStatus = async (
 /**
  * Get segmentation mask for a specific frame
  */
-export const getSegmentationMask = async (
-  sessionId: string,
-  frameIndex: number
-): Promise<SegmentationResult> => {
+export const getSegmentationMask = async (sessionId: string, frameIndex: number): Promise<SegmentationResult> => {
   try {
-    const response = await axios.get(
-      `${API_URL}/mask/${sessionId}/${frameIndex}`
-    );
+    const response = await axios.get(`${API_URL}/mask/${sessionId}/${frameIndex}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching segmentation mask:', error);

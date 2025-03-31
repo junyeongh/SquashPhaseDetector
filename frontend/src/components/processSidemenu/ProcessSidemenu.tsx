@@ -1,13 +1,7 @@
 import React from 'react';
 import { ProcessSidemenuProps, ProcessingStage } from './types';
 import { StageHeader, StageNavigator } from './ui';
-import {
-  PreprocessStage,
-  SegmentationStage,
-  PoseStage,
-  GameStateStage,
-  ExportStage,
-} from './stages';
+import { PreprocessStage, SegmentationStage, PoseStage, GameStateStage, ExportStage } from './stages';
 
 const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   activeStage,
@@ -66,17 +60,13 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   const getPreviousStage = (): ProcessingStage | null => {
     const stageIds = stageConfig.map((s) => s.id);
     const currentIndex = stageIds.indexOf(activeStage);
-    return currentIndex > 0
-      ? (stageIds[currentIndex - 1] as ProcessingStage)
-      : null;
+    return currentIndex > 0 ? (stageIds[currentIndex - 1] as ProcessingStage) : null;
   };
 
   const getNextStage = (): ProcessingStage | null => {
     const stageIds = stageConfig.map((s) => s.id);
     const currentIndex = stageIds.indexOf(activeStage);
-    return currentIndex < stageIds.length - 1
-      ? (stageIds[currentIndex + 1] as ProcessingStage)
-      : null;
+    return currentIndex < stageIds.length - 1 ? (stageIds[currentIndex + 1] as ProcessingStage) : null;
   };
 
   const prevStage = getPreviousStage();
@@ -86,9 +76,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   const currentStage = stageConfig.find((stage) => stage.id === activeStage);
 
   // Find current stage index
-  const currentStageIndex = stageConfig.findIndex(
-    (stage) => stage.id === activeStage
-  );
+  const currentStageIndex = stageConfig.findIndex((stage) => stage.id === activeStage);
   const totalStages = stageConfig.length;
 
   // Render the appropriate stage component based on the active stage

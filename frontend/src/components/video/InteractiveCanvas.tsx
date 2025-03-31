@@ -69,11 +69,7 @@ const InteractiveCanvas = ({
     drawPoints(ctx, player2Points, activePlayer === 2);
   };
 
-  const drawPoints = (
-    ctx: CanvasRenderingContext2D,
-    points: Point[],
-    isActive: boolean
-  ) => {
+  const drawPoints = (ctx: CanvasRenderingContext2D, points: Point[], isActive: boolean) => {
     points.forEach((point) => {
       ctx.beginPath();
       ctx.arc(point.x, point.y, isActive ? 6 : 5, 0, Math.PI * 2);
@@ -137,22 +133,14 @@ const InteractiveCanvas = ({
       />
       <div className='absolute bottom-4 left-4 flex gap-2'>
         <button
-          className={`rounded-full p-2 ${
-            activePlayer === 1
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-200 text-gray-800'
-          }`}
+          className={`rounded-full p-2 ${activePlayer === 1 ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-800'}`}
           onClick={() => setActivePlayer(1)}
           disabled={disabled}
         >
           Player 1
         </button>
         <button
-          className={`rounded-full p-2 ${
-            activePlayer === 2
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-800'
-          }`}
+          className={`rounded-full p-2 ${activePlayer === 2 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}
           onClick={() => setActivePlayer(2)}
           disabled={disabled}
         >

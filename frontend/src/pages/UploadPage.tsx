@@ -25,9 +25,7 @@ export default function UploadPage({
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Handler for file upload
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -79,9 +77,7 @@ export default function UploadPage({
             >
               <div className='space-y-2'>
                 <div className='text-gray-400'>📤</div>
-                <div className='text-sm font-medium text-gray-700'>
-                  Drag & drop your video here
-                </div>
+                <div className='text-sm font-medium text-gray-700'>Drag & drop your video here</div>
                 <div className='text-xs text-gray-500'>or click to browse</div>
               </div>
               <input
@@ -109,48 +105,30 @@ export default function UploadPage({
 
           {uploadedFiles.length > 0 && (
             <div className='mt-6 w-full'>
-              <h3 className='mb-2 text-sm font-medium text-gray-700'>
-                Recent Uploads
-              </h3>
+              <h3 className='mb-2 text-sm font-medium text-gray-700'>Recent Uploads</h3>
               <div className='overflow-x-auto'>
                 <table className='min-w-full border border-gray-200 bg-white'>
                   <thead className='bg-gray-50'>
                     <tr>
-                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
-                        Filename
-                      </th>
-                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
-                        Size
-                      </th>
-                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
-                        Created
-                      </th>
-                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>
-                        Actions
-                      </th>
+                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>Filename</th>
+                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>Size</th>
+                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>Created</th>
+                      <th className='px-3 py-2 text-left text-xs font-medium text-gray-500'>Actions</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-gray-200'>
                     {uploadedFiles.slice(0, 5).map((file, index) => (
                       <tr key={index} className='hover:bg-gray-50'>
+                        <td className='px-3 py-2 text-left text-xs text-gray-700'>{file.filename}</td>
+                        <td className='px-3 py-2 text-left text-xs text-gray-700'>{formatFileSize(file.size)}</td>
                         <td className='px-3 py-2 text-left text-xs text-gray-700'>
-                          {file.filename}
-                        </td>
-                        <td className='px-3 py-2 text-left text-xs text-gray-700'>
-                          {formatFileSize(file.size)}
-                        </td>
-                        <td className='px-3 py-2 text-left text-xs text-gray-700'>
-                          {dayjs(file.created * 1000).format(
-                            'YYYY-MM-DD HH:mm'
-                          )}
+                          {dayjs(file.created * 1000).format('YYYY-MM-DD HH:mm')}
                         </td>
                         <td className='px-3 py-2 text-left text-xs'>
                           <button
                             onClick={() => {
                               // Mark upload step as completed
-                              const updatedCompletedSteps = new Set(
-                                completedSteps
-                              );
+                              const updatedCompletedSteps = new Set(completedSteps);
                               updatedCompletedSteps.add('upload');
                               setCompletedSteps(updatedCompletedSteps);
 

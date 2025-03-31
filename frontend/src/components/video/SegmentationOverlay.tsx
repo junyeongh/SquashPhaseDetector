@@ -100,12 +100,7 @@ const SegmentationOverlay = ({
   ]);
 
   // Draw a point with label
-  const drawPoint = (
-    ctx: CanvasRenderingContext2D,
-    point: Point,
-    color: string,
-    label?: string
-  ) => {
+  const drawPoint = (ctx: CanvasRenderingContext2D, point: Point, color: string, label?: string) => {
     const { x, y } = point;
 
     // Draw circle

@@ -10,18 +10,14 @@ export interface MainviewTimestamp {
   end_frame: number;
 }
 
-export const getMainviewTimestamps = async (
-  videoUuid: string
-): Promise<MainviewTimestamp[]> => {
+export const getMainviewTimestamps = async (videoUuid: string): Promise<MainviewTimestamp[]> => {
   try {
     const response = await axios.get(`${API_URL}/mainview/${videoUuid}`);
     return response.data.timestamps || [];
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error fetching mainview timestamps:', error.response.data);
-      throw new Error(
-        error.response.data.detail || 'Failed to fetch mainview timestamps'
-      );
+      throw new Error(error.response.data.detail || 'Failed to fetch mainview timestamps');
     } else {
       console.error('Error fetching mainview timestamps:', error);
       throw error;
@@ -29,18 +25,14 @@ export const getMainviewTimestamps = async (
   }
 };
 
-export const generateMainView = async (
-  videoUuid: string
-): Promise<{ status: string; video_uuid: string }> => {
+export const generateMainView = async (videoUuid: string): Promise<{ status: string; video_uuid: string }> => {
   try {
     const response = await axios.post(`${API_URL}/mainview/${videoUuid}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error generating main view:', error.response.data);
-      throw new Error(
-        error.response.data.detail || 'Failed to generate main view'
-      );
+      throw new Error(error.response.data.detail || 'Failed to generate main view');
     } else {
       console.error('Error generating main view:', error);
       throw error;
@@ -93,9 +85,7 @@ export const getUploadedFiles = async (): Promise<FileInfo[]> => {
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error fetching uploaded files:', error.response.data);
-      throw new Error(
-        error.response.data.detail || 'Failed to fetch uploaded files'
-      );
+      throw new Error(error.response.data.detail || 'Failed to fetch uploaded files');
     } else {
       console.error('Error fetching uploaded files:', error);
       throw error;
@@ -110,18 +100,14 @@ export interface ProcessingStatus {
   video_uuid: string;
 }
 
-export const getProcessingStatus = async (
-  videoUuid: string
-): Promise<ProcessingStatus> => {
+export const getProcessingStatus = async (videoUuid: string): Promise<ProcessingStatus> => {
   try {
     const response = await axios.get(`${API_URL}/mainview/${videoUuid}/status`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error('Error checking processing status:', error.response.data);
-      throw new Error(
-        error.response.data.detail || 'Failed to check processing status'
-      );
+      throw new Error(error.response.data.detail || 'Failed to check processing status');
     } else {
       console.error('Error checking processing status:', error);
       throw error;
@@ -131,9 +117,7 @@ export const getProcessingStatus = async (
 
 // Add an SSE function for live processing updates
 export const createProcessingEventSource = (videoUuid: string): EventSource => {
-  const eventSource = new EventSource(
-    `${API_URL}/mainview/${videoUuid}/events`
-  );
+  const eventSource = new EventSource(`${API_URL}/mainview/${videoUuid}/events`);
   console.log(`Created SSE connection for video: ${videoUuid}`);
   return eventSource;
 };

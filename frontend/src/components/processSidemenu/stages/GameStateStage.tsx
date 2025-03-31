@@ -24,12 +24,8 @@ const GameStateStage: React.FC<GameStateStageProps> = ({
   return (
     <div className='space-y-3'>
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-        <h4 className='mb-2 text-xs font-medium text-gray-700'>
-          Game State Analysis
-        </h4>
-        <p className='text-xs text-gray-600'>
-          Analyze game state based on detected poses and player movements.
-        </p>
+        <h4 className='mb-2 text-xs font-medium text-gray-700'>Game State Analysis</h4>
+        <p className='text-xs text-gray-600'>Analyze game state based on detected poses and player movements.</p>
       </div>
       <button
         onClick={onProcess}

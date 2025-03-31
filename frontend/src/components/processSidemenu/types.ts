@@ -1,12 +1,7 @@
 import { Point } from '@/services/api/segmentation';
 
 // Define the types of processing stages
-export type ProcessingStage =
-  | 'preprocess'
-  | 'segmentation'
-  | 'pose'
-  | 'game_state'
-  | 'export';
+export type ProcessingStage = 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';
 
 // Stage configuration type
 export interface StageConfig {
@@ -30,8 +25,7 @@ export interface BaseStageProps {
 }
 
 // Preprocess stage specific props
-export interface PreprocessStageProps
-  extends Omit<BaseStageProps, 'onProcess'> {
+export interface PreprocessStageProps extends Omit<BaseStageProps, 'onProcess'> {
   onProcess: () => void;
 }
 

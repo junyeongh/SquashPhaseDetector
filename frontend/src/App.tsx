@@ -24,9 +24,7 @@ function App() {
         setLoading(true);
         setError(null);
       } catch (err) {
-        setError(
-          'Failed to connect to the API server. Please ensure the backend is running.'
-        );
+        setError('Failed to connect to the API server. Please ensure the backend is running.');
         console.error(err);
       } finally {
         setLoading(false);
@@ -52,9 +50,7 @@ function App() {
     return (
       <div className='flex h-screen items-center justify-center bg-gray-200'>
         <div className='rounded bg-gray-100 p-8 text-center'>
-          <p className='text-xl text-gray-600'>
-            Connecting to backend server...
-          </p>
+          <p className='text-xl text-gray-600'>Connecting to backend server...</p>
         </div>
       </div>
     );
@@ -65,14 +61,9 @@ function App() {
     return (
       <div className='flex h-screen items-center justify-center bg-gray-200'>
         <div className='max-w-2xl rounded bg-gray-100 p-8'>
-          <h1 className='mb-4 text-2xl font-bold text-gray-700'>
-            Connection Error
-          </h1>
+          <h1 className='mb-4 text-2xl font-bold text-gray-700'>Connection Error</h1>
           <p className='mb-4 text-gray-600'>{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className='rounded bg-gray-500 px-4 py-2 text-gray-200'
-          >
+          <button onClick={() => window.location.reload()} className='rounded bg-gray-500 px-4 py-2 text-gray-200'>
             Retry Connection
           </button>
         </div>

@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { BASE_API_URL } from '@/services/api/config';
-import VideoPlayerSection, {
-  VideoPlayerSectionRef,
-} from '@/components/video/VideoPlayerSection';
+import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/VideoPlayerSection';
 import {
   getMainviewTimestamps,
   MainviewTimestamp,
@@ -19,15 +17,8 @@ import {
   startSegmentation,
   getSegmentationStatus,
 } from '@/services/api/segmentation';
-import {
-  FramePoseResult,
-  startPoseDetection,
-  getPoseDetectionStatus,
-} from '@/services/api/pose';
-import ProcessSidemenu, {
-  ProcessingStage,
-  StageConfig,
-} from '@/components/ProcessSidemenu';
+import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
+import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/ProcessSidemenu';
 import SegmentationOverlay from '@/components/video/SegmentationOverlay';
 
 // Shared stage configuration
@@ -35,26 +26,22 @@ export const processingStages: StageConfig[] = [
   {
     id: 'preprocess',
     label: 'Video Preprocessing',
-    description:
-      'Analyze the video to detect main view angles and prepare it for player segmentation.',
+    description: 'Analyze the video to detect main view angles and prepare it for player segmentation.',
   },
   {
     id: 'segmentation',
     label: 'Player Segmentation',
-    description:
-      'Mark players in the frame and generate segmentation masks for tracking.',
+    description: 'Mark players in the frame and generate segmentation masks for tracking.',
   },
   {
     id: 'pose',
     label: 'Pose Detection',
-    description:
-      'Detect player body positions and movements throughout the video.',
+    description: 'Detect player body positions and movements throughout the video.',
   },
   {
     id: 'game_state',
     label: 'Game State Analysis',
-    description:
-      'Analyze the game state based on player positions and movements.',
+    description: 'Analyze the game state based on player positions and movements.',
   },
   {
     id: 'export',
@@ -66,9 +53,7 @@ export const processingStages: StageConfig[] = [
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
   const [activeStage, setActiveStage] = useState<ProcessingStage>('preprocess');
-  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(
-    new Set()
-  );
+  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(new Set());
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showSkipButton, setShowSkipButton] = useState<boolean>(false);
@@ -86,9 +71,7 @@ const VideoDetailPage: React.FC = () => {
 
   // Maintained for UI display and future integration with ProcessSidemenu
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [mainviewTimestamps, setMainviewTimestamps] = useState<
-    MainviewTimestamp[]
-  >([]);
+  const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
 
   // State for segmentation
   // Used by the ProcessSidemenu component
@@ -100,36 +83,22 @@ const VideoDetailPage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [player2Points, setPlayer2Points] = useState<Point[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [segmentationResults, setSegmentationResults] = useState<
-    SegmentationResult[] | null
-  >(null);
+  const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
 
   // SAM2 specific state
   const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
-  const [activeMarkerType, setActiveMarkerType] = useState<
-    'positive' | 'negative'
-  >('positive');
-  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Point[]>(
-    []
-  );
-  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Point[]>(
-    []
-  );
-  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Point[]>(
-    []
-  );
-  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Point[]>(
-    []
-  );
+  const [activeMarkerType, setActiveMarkerType] = useState<'positive' | 'negative'>('positive');
+  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Point[]>([]);
+  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Point[]>([]);
+  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Point[]>([]);
+  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Point[]>([]);
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
 
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(
-    null
-  );
+  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(null);
 
   // Set a default frame URL for the current video
   useEffect(() => {
@@ -145,17 +114,11 @@ const VideoDetailPage: React.FC = () => {
       getMainviewTimestamps(uuid)
         .then((timestamps) => {
           setMainviewTimestamps(timestamps);
-          console.log(
-            'VideoDetail: Loaded timestamps for video:',
-            uuid,
-            timestamps.length
-          );
+          console.log('VideoDetail: Loaded timestamps for video:', uuid, timestamps.length);
 
           // If mainview segments already exist, mark preprocess as completed and advance to segmentation
           if (timestamps && timestamps.length > 0) {
-            console.log(
-              'Main view segments already exist, advancing to segmentation stage'
-            );
+            console.log('Main view segments already exist, advancing to segmentation stage');
 
             const updatedCompletedStages = new Set(completedStages);
             updatedCompletedStages.add('preprocess');
@@ -179,11 +142,7 @@ const VideoDetailPage: React.FC = () => {
   }, [currentFrame]);
 
   // Update frame and player info
-  const handleFrameUpdate = (
-    frame: number,
-    newDuration: number,
-    newCurrentTime: number
-  ) => {
+  const handleFrameUpdate = (frame: number, newDuration: number, newCurrentTime: number) => {
     setCurrentFrame(frame);
     setDuration(newDuration);
     setCurrentTime(newCurrentTime);
@@ -219,10 +178,7 @@ const VideoDetailPage: React.FC = () => {
           // Fetch the timestamps after processing is complete
           const timestamps = await getMainviewTimestamps(videoId);
           setMainviewTimestamps(timestamps);
-          console.log(
-            'Fetched timestamps after completion:',
-            timestamps.length
-          );
+          console.log('Fetched timestamps after completion:', timestamps.length);
 
           // Mark current stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -243,9 +199,7 @@ const VideoDetailPage: React.FC = () => {
           }, 1000);
         } catch (error) {
           console.error('Error fetching results after completion:', error);
-          setProcessingStatus(
-            `Error fetching results: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
+          setProcessingStatus(`Error fetching results: ${error instanceof Error ? error.message : 'Unknown error'}`);
           if (eventSource) eventSource.close();
           setIsProcessing(false);
         }
@@ -268,9 +222,7 @@ const VideoDetailPage: React.FC = () => {
       };
     } catch (error) {
       console.error('Error setting up SSE:', error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Failed to connect to server'}`
-      );
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Failed to connect to server'}`);
       if (eventSource) eventSource.close();
       setIsProcessing(false);
     }
@@ -342,12 +294,8 @@ const VideoDetailPage: React.FC = () => {
 
           if (statusResponse.is_processing) {
             // If already processing, just start listening for updates
-            setProcessingStatus(
-              `Main view detection already in progress: ${statusResponse.status}`
-            );
-            console.log(
-              'Video already being processed, starting SSE connection'
-            );
+            setProcessingStatus(`Main view detection already in progress: ${statusResponse.status}`);
+            console.log('Video already being processed, starting SSE connection');
           } else if (statusResponse.has_mainview) {
             // If already has results, load them
             const timestamps = await getMainviewTimestamps(uuid);
@@ -368,10 +316,7 @@ const VideoDetailPage: React.FC = () => {
           }
         } catch (statusError) {
           // If status endpoint doesn't exist yet, proceed with normal flow
-          console.log(
-            'Status endpoint not available, proceeding with processing',
-            statusError
-          );
+          console.log('Status endpoint not available, proceeding with processing', statusError);
           await generateMainView(uuid);
           setProcessingStatus('Detecting main view segments...');
         }
@@ -402,9 +347,7 @@ const VideoDetailPage: React.FC = () => {
       }
     } catch (error) {
       console.error(`Error during ${activeStage} processing:`, error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsProcessing(false);
 
       // Show skip button immediately on error for preprocess stage
@@ -547,9 +490,7 @@ const VideoDetailPage: React.FC = () => {
       return () => clearInterval(statusCheckInterval);
     } catch (error) {
       console.error('Error starting segmentation:', error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsProcessing(false);
       setShowSkipButton(true);
     }
@@ -598,9 +539,7 @@ const VideoDetailPage: React.FC = () => {
       return () => clearInterval(statusCheckInterval);
     } catch (error) {
       console.error('Error starting pose detection:', error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsProcessing(false);
       setShowSkipButton(true);
     }
@@ -642,10 +581,7 @@ const VideoDetailPage: React.FC = () => {
   };
 
   // Clear marker points for a specific player and marker type
-  const handleClearPlayerMarkerPoints = (
-    player: 1 | 2,
-    markerType: 'positive' | 'negative'
-  ) => {
+  const handleClearPlayerMarkerPoints = (player: 1 | 2, markerType: 'positive' | 'negative') => {
     if (player === 1) {
       if (markerType === 'positive') {
         setPlayer1PositivePoints([]);
@@ -681,12 +617,10 @@ const VideoDetailPage: React.FC = () => {
             <div className='rounded-t-lg border-b border-gray-200 bg-gray-50 p-4'>
               <div className='flex-1'>
                 <h2 className='text-lg font-medium text-gray-800'>
-                  {processingStages.find((stage) => stage.id === activeStage)
-                    ?.label || ''}
+                  {processingStages.find((stage) => stage.id === activeStage)?.label || ''}
                 </h2>
                 <p className='text-sm text-gray-500'>
-                  {processingStages.find((stage) => stage.id === activeStage)
-                    ?.description || ''}
+                  {processingStages.find((stage) => stage.id === activeStage)?.description || ''}
                 </p>
               </div>
             </div>

@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  User,
-  UserRound,
-  Plus,
-  Minus,
-  ArrowLeft,
-  ArrowRight,
-} from 'lucide-react';
+import { User, UserRound, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-react';
 import { SegmentationStageProps } from '../types';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
 
@@ -50,9 +43,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
       {/* Segmentation Model Selection */}
       {setSegmentationModel && (
         <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-          <h4 className='mb-2 text-xs font-medium text-gray-700'>
-            Segmentation Model
-          </h4>
+          <h4 className='mb-2 text-xs font-medium text-gray-700'>Segmentation Model</h4>
           <select
             id='segmentation-model'
             value={segmentationModel}
@@ -67,9 +58,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
       )}
 
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-        <h4 className='mb-2 text-xs font-medium text-gray-700'>
-          Player Selection
-        </h4>
+        <h4 className='mb-2 text-xs font-medium text-gray-700'>Player Selection</h4>
 
         {/* Player selection toggle */}
         {setActivePlayer && (
@@ -84,8 +73,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             >
               <User className='h-3 w-3' />
               Player 1 {player1Points.length > 0 && `(${player1Points.length})`}
-              {segmentationModel === 'SAM2' &&
-                ` (${player1PositivePoints.length}+/${player1NegativePoints.length}-)`}
+              {segmentationModel === 'SAM2' && ` (${player1PositivePoints.length}+/${player1NegativePoints.length}-)`}
             </button>
 
             <button
@@ -98,8 +86,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             >
               <UserRound className='h-3 w-3' />
               Player 2 {player2Points.length > 0 && `(${player2Points.length})`}
-              {segmentationModel === 'SAM2' &&
-                ` (${player2PositivePoints.length}+/${player2NegativePoints.length}-)`}
+              {segmentationModel === 'SAM2' && ` (${player2PositivePoints.length}+/${player2NegativePoints.length}-)`}
             </button>
           </div>
         )}
@@ -107,9 +94,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         {/* SAM2 Marker Type Selection */}
         {segmentationModel === 'SAM2' && setActiveMarkerType && (
           <div className='mb-3'>
-            <h5 className='mb-1 text-xs font-medium text-gray-700'>
-              Marker Type
-            </h5>
+            <h5 className='mb-1 text-xs font-medium text-gray-700'>Marker Type</h5>
             <div className='flex space-x-2'>
               <button
                 onClick={() => setActiveMarkerType('positive')}
@@ -164,9 +149,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                 onClick={() => onClearPlayerMarkerPoints(1, 'negative')}
                 disabled={player1NegativePoints.length === 0}
                 className={`flex-1 rounded py-1 text-xs ${
-                  player1NegativePoints.length > 0
-                    ? 'text-red-600 hover:bg-red-50'
-                    : 'cursor-not-allowed text-gray-400'
+                  player1NegativePoints.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
                 }`}
               >
                 Clear P1 Negative
@@ -189,9 +172,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                 onClick={() => onClearPlayerMarkerPoints(2, 'negative')}
                 disabled={player2NegativePoints.length === 0}
                 className={`flex-1 rounded py-1 text-xs ${
-                  player2NegativePoints.length > 0
-                    ? 'text-red-600 hover:bg-red-50'
-                    : 'cursor-not-allowed text-gray-400'
+                  player2NegativePoints.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
                 }`}
               >
                 Clear P2 Negative
@@ -205,9 +186,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                 onClick={() => onClearPlayerPoints(1)}
                 disabled={player1Points.length === 0}
                 className={`flex-1 rounded py-1 text-xs ${
-                  player1Points.length > 0
-                    ? 'text-red-600 hover:bg-red-50'
-                    : 'cursor-not-allowed text-gray-400'
+                  player1Points.length > 0 ? 'text-red-600 hover:bg-red-50' : 'cursor-not-allowed text-gray-400'
                 }`}
               >
                 Clear Player 1
@@ -217,9 +196,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                 onClick={() => onClearPlayerPoints(2)}
                 disabled={player2Points.length === 0}
                 className={`flex-1 rounded py-1 text-xs ${
-                  player2Points.length > 0
-                    ? 'text-blue-600 hover:bg-blue-50'
-                    : 'cursor-not-allowed text-gray-400'
+                  player2Points.length > 0 ? 'text-blue-600 hover:bg-blue-50' : 'cursor-not-allowed text-gray-400'
                 }`}
               >
                 Clear Player 2
@@ -233,9 +210,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         {segmentationModel !== 'SAM2' && (
           <button
             onClick={onMarkPlayers}
-            disabled={
-              isProcessing || !player1Points?.length || !player2Points?.length
-            }
+            disabled={isProcessing || !player1Points?.length || !player2Points?.length}
             className={`flex items-center justify-center gap-2 rounded px-4 py-2 text-sm transition-colors ${
               isProcessing || !player1Points?.length || !player2Points?.length
                 ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
@@ -250,9 +225,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
           onClick={onStartSegmentation}
           disabled={
             isProcessing ||
-            (segmentationModel === 'SAM2' &&
-              player1PositivePoints.length === 0 &&
-              player2PositivePoints.length === 0)
+            (segmentationModel === 'SAM2' && player1PositivePoints.length === 0 && player2PositivePoints.length === 0)
           }
           className='flex items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
         >

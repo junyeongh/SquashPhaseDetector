@@ -37,9 +37,7 @@ const StageHeader: React.FC<StageHeaderProps> = ({
       <div className='mb-4'>
         <div className='mb-1 flex items-center gap-2'>
           <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-100'>
-            <span className='text-xs font-medium text-blue-700'>
-              {currentStageIndex + 1}
-            </span>
+            <span className='text-xs font-medium text-blue-700'>{currentStageIndex + 1}</span>
           </div>
           <span className='text-sm font-medium'>
             Stage {currentStageIndex + 1}/{totalStages}: {currentStage.label}
@@ -47,9 +45,7 @@ const StageHeader: React.FC<StageHeaderProps> = ({
         </div>
 
         <div className='ml-8'>
-          <p className='mb-3 text-xs text-gray-600'>
-            {currentStage.description}
-          </p>
+          <p className='mb-3 text-xs text-gray-600'>{currentStage.description}</p>
 
           {/* Stage status */}
           <div className='mb-4 flex items-center gap-2 text-xs text-gray-500'>

@@ -26,12 +26,8 @@ const ExportStage: React.FC<ExportStageProps> = ({
   return (
     <div className='space-y-3'>
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-        <h4 className='mb-2 text-xs font-medium text-gray-700'>
-          Export Options
-        </h4>
-        <p className='mb-3 text-xs text-gray-600'>
-          Export your analysis results in various formats.
-        </p>
+        <h4 className='mb-2 text-xs font-medium text-gray-700'>Export Options</h4>
+        <p className='mb-3 text-xs text-gray-600'>Export your analysis results in various formats.</p>
 
         <div className='space-y-2'>
           <button
@@ -65,8 +61,8 @@ const ExportStage: React.FC<ExportStageProps> = ({
 
       <div className='rounded-lg border border-blue-100 bg-blue-50 p-3'>
         <p className='text-xs text-blue-700'>
-          <span className='font-medium'>Note:</span> Export functionality is
-          currently in development and will be available soon.
+          <span className='font-medium'>Note:</span> Export functionality is currently in development and will be
+          available soon.
         </p>
       </div>
     </div>

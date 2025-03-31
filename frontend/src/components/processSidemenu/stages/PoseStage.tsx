@@ -30,17 +30,12 @@ const PoseStage: React.FC<PoseStageProps> = ({
   return (
     <div className='space-y-3'>
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-        <h4 className='mb-2 text-xs font-medium text-gray-700'>
-          Pose Detection Settings
-        </h4>
+        <h4 className='mb-2 text-xs font-medium text-gray-700'>Pose Detection Settings</h4>
 
         {/* Model selection */}
         {setModelType && (
           <div className='mb-3 space-y-2'>
-            <label
-              htmlFor='model-type'
-              className='block text-xs font-medium text-gray-700'
-            >
+            <label htmlFor='model-type' className='block text-xs font-medium text-gray-700'>
               Pose Model
             </label>
             <select
@@ -60,10 +55,7 @@ const PoseStage: React.FC<PoseStageProps> = ({
         {setConfidenceThreshold && (
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
-              <label
-                htmlFor='confidence'
-                className='block text-xs font-medium text-gray-700'
-              >
+              <label htmlFor='confidence' className='block text-xs font-medium text-gray-700'>
                 Confidence Threshold: {confidenceThreshold}%
               </label>
             </div>

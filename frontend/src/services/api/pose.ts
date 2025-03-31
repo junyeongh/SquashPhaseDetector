@@ -36,9 +36,7 @@ export interface PoseDetectionStatus {
  * Start pose detection for a session
  * This will use the segmentation masks to focus on the players
  */
-export const startPoseDetection = async (
-  sessionId: string
-): Promise<{ success: boolean; message: string }> => {
+export const startPoseDetection = async (sessionId: string): Promise<{ success: boolean; message: string }> => {
   try {
     const response = await axios.post(`${API_URL}/start-detection`, {
       sessionId,
@@ -53,9 +51,7 @@ export const startPoseDetection = async (
 /**
  * Get pose detection status and results for a session
  */
-export const getPoseDetectionStatus = async (
-  sessionId: string
-): Promise<PoseDetectionStatus> => {
+export const getPoseDetectionStatus = async (sessionId: string): Promise<PoseDetectionStatus> => {
   try {
     const response = await axios.get(`${API_URL}/status/${sessionId}`);
     return response.data;
@@ -68,14 +64,9 @@ export const getPoseDetectionStatus = async (
 /**
  * Get pose results for a specific frame
  */
-export const getFramePoseResults = async (
-  sessionId: string,
-  frameIndex: number
-): Promise<FramePoseResult> => {
+export const getFramePoseResults = async (sessionId: string, frameIndex: number): Promise<FramePoseResult> => {
   try {
-    const response = await axios.get(
-      `${API_URL}/results/${sessionId}/${frameIndex}`
-    );
+    const response = await axios.get(`${API_URL}/results/${sessionId}/${frameIndex}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching frame pose results:', error);
@@ -86,9 +77,7 @@ export const getFramePoseResults = async (
 /**
  * Get pose results for all frames in a session
  */
-export const getAllPoseResults = async (
-  sessionId: string
-): Promise<FramePoseResult[]> => {
+export const getAllPoseResults = async (sessionId: string): Promise<FramePoseResult[]> => {
   try {
     const response = await axios.get(`${API_URL}/results/${sessionId}`);
     return response.data;

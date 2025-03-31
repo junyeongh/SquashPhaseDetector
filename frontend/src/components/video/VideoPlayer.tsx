@@ -1,17 +1,7 @@
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import ReactPlayer from 'react-player';
 import { MainviewTimestamp } from '@/services/api/video';
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  RotateCcw,
-  RotateCw,
-  Check,
-} from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, RotateCcw, RotateCw, Check } from 'lucide-react';
 
 interface ReactPlayerWrapperProps {
   src: string;
@@ -24,18 +14,7 @@ interface ReactPlayerWrapperProps {
 }
 
 const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  (
-    {
-      src,
-      onFrameChange,
-      fps = 30,
-      overlay,
-      onPlayerUpdates,
-      mainviewTimestamps,
-      onSeek,
-    },
-    ref
-  ) => {
+  ({ src, onFrameChange, fps = 30, overlay, onPlayerUpdates, mainviewTimestamps, onSeek }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -63,8 +42,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     });
 
     // Extract state variables for convenience
-    const { playing, played, loaded, duration, volume, playbackRate, muted } =
-      state;
+    const { playing, played, loaded, duration, volume, playbackRate, muted } = state;
 
     // Calculate current frame based on played percentage and duration
     const currentFrame = Math.round(played * duration * fps);
@@ -109,10 +87,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     // Frame navigation
     const seekByFrame = (frameOffset: number) => {
       const frameTime = 1 / fps;
-      const newTime = Math.max(
-        0,
-        Math.min(duration, (currentFrame + frameOffset) * frameTime)
-      );
+      const newTime = Math.max(0, Math.min(duration, (currentFrame + frameOffset) * frameTime));
 
       // Calculate new played value
       const newPlayed = newTime / duration;
@@ -124,10 +99,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
 
     // Seek by time (seconds)
     const seekByTime = (secondsOffset: number) => {
-      const newTime = Math.max(
-        0,
-        Math.min(duration, played * duration + secondsOffset)
-      );
+      const newTime = Math.max(0, Math.min(duration, played * duration + secondsOffset));
 
       // Calculate new played value
       const newPlayed = newTime / duration;
@@ -205,17 +177,10 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           />
 
           {/* Overlay content */}
-          {overlay && (
-            <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>
-              {overlay}
-            </div>
-          )}
+          {overlay && <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>{overlay}</div>}
 
           {/* Play/Pause overlay button */}
-          <div
-            className='absolute inset-0 flex items-center justify-center'
-            onClick={togglePlay}
-          >
+          <div className='absolute inset-0 flex items-center justify-center' onClick={togglePlay}>
             {!playing && (
               <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
                 <Play size={36} fill='white' />
@@ -404,18 +369,13 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
         {/* MainviewTimeline component */}
         <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3'>
           <div className='mb-3 flex items-center justify-between'>
-            <div className='text-sm font-medium text-gray-700'>
-              Main View Segments
-            </div>
+            <div className='text-sm font-medium text-gray-700'>Main View Segments</div>
             <div className='text-xs text-gray-500'>
               {mainviewTimestamps && mainviewTimestamps.length > 0 ? (
                 <span className='flex items-center gap-1'>
                   <Check className='h-3 w-3 text-green-500' />
                   <span>
-                    <span className='font-medium'>
-                      {mainviewTimestamps.length}
-                    </span>{' '}
-                    segments detected
+                    <span className='font-medium'>{mainviewTimestamps.length}</span> segments detected
                   </span>
                 </span>
               ) : (
@@ -429,8 +389,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
             {mainviewTimestamps && mainviewTimestamps.length > 0
               ? mainviewTimestamps.map((segment, index) => {
                   const startPercent = (segment.start / duration) * 100;
-                  const widthPercent =
-                    ((segment.end - segment.start) / duration) * 100;
+                  const widthPercent = ((segment.end - segment.start) / duration) * 100;
 
                   return (
                     <div
@@ -449,10 +408,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
 
             {/* Playhead - only show if we have a duration */}
             {duration > 0 && (
-              <div
-                className='absolute top-0 h-full w-1 bg-gray-600'
-                style={{ left: `${played * 100}%` }}
-              />
+              <div className='absolute top-0 h-full w-1 bg-gray-600' style={{ left: `${played * 100}%` }} />
             )}
           </div>
 

@@ -25,11 +25,7 @@ const StageNavigator: React.FC<StageNavigatorProps> = ({
     <div className='border-t border-gray-200 bg-gray-50 p-3'>
       <div className='flex items-center justify-between'>
         <button
-          onClick={
-            prevStage && onPreviousStage
-              ? () => onPreviousStage(prevStage)
-              : undefined
-          }
+          onClick={prevStage && onPreviousStage ? () => onPreviousStage(prevStage) : undefined}
           disabled={!prevStage || !onPreviousStage || isProcessing}
           className={`flex items-center gap-1 rounded px-3 py-1.5 text-sm ${
             prevStage && onPreviousStage && !isProcessing
@@ -46,9 +42,7 @@ const StageNavigator: React.FC<StageNavigatorProps> = ({
         </div>
 
         <button
-          onClick={
-            nextStage && onNextStage ? () => onNextStage(nextStage) : undefined
-          }
+          onClick={nextStage && onNextStage ? () => onNextStage(nextStage) : undefined}
           disabled={!nextStage || !onNextStage || isProcessing}
           className={`flex items-center gap-1 rounded px-3 py-1.5 text-sm ${
             nextStage && onNextStage && !isProcessing
