@@ -1,16 +1,7 @@
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import ReactPlayer from 'react-player';
 import { MainviewTimestamp } from '@/services/api/video';
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  RotateCcw,
-  RotateCw,
-} from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, RotateCcw, RotateCw, Check } from 'lucide-react';
 
 interface ReactPlayerWrapperProps {
   src: string;
@@ -19,10 +10,11 @@ interface ReactPlayerWrapperProps {
   overlay?: React.ReactNode;
   mainviewTimestamps?: MainviewTimestamp[];
   onPlayerUpdates?: (currentTime: number, duration: number) => void;
+  onSeek?: (time: number) => void;
 }
 
 const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  ({ src, onFrameChange, fps = 30, overlay, onPlayerUpdates }, ref) => {
+  ({ src, onFrameChange, fps = 30, overlay, onPlayerUpdates, mainviewTimestamps, onSeek }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -50,8 +42,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     });
 
     // Extract state variables for convenience
-    const { playing, played, loaded, duration, volume, playbackRate, muted } =
-      state;
+    const { playing, played, loaded, duration, volume, playbackRate, muted } = state;
 
     // Calculate current frame based on played percentage and duration
     const currentFrame = Math.round(played * duration * fps);
@@ -96,10 +87,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     // Frame navigation
     const seekByFrame = (frameOffset: number) => {
       const frameTime = 1 / fps;
-      const newTime = Math.max(
-        0,
-        Math.min(duration, (currentFrame + frameOffset) * frameTime)
-      );
+      const newTime = Math.max(0, Math.min(duration, (currentFrame + frameOffset) * frameTime));
 
       // Calculate new played value
       const newPlayed = newTime / duration;
@@ -111,10 +99,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
 
     // Seek by time (seconds)
     const seekByTime = (secondsOffset: number) => {
-      const newTime = Math.max(
-        0,
-        Math.min(duration, played * duration + secondsOffset)
-      );
+      const newTime = Math.max(0, Math.min(duration, played * duration + secondsOffset));
 
       // Calculate new played value
       const newPlayed = newTime / duration;
@@ -192,16 +177,17 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           />
 
           {/* Overlay content */}
-          {overlay && (
-            <div className='pointer-events-none absolute top-0 left-0 h-full w-full'>
-              {overlay}
-            </div>
-          )}
+          {overlay && <div className='absolute top-0 left-0 h-full w-full'>{overlay}</div>}
 
           {/* Play/Pause overlay button */}
           <div
-            className='absolute inset-0 flex items-center justify-center'
-            onClick={togglePlay}
+            className='absolute inset-0 z-10 flex items-center justify-center'
+            onClick={(e) => {
+              // Only toggle play if the click is directly on this div (not on overlay elements)
+              if (e.currentTarget === e.target) {
+                togglePlay();
+              }
+            }}
           >
             {!playing && (
               <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
@@ -249,15 +235,6 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
         <div className='bg-gray-100 px-3 pt-1 pb-2'>
           <div className='flex items-center justify-between text-gray-800'>
             <div className='flex items-center space-x-2'>
-              {/* Play/Pause button */}
-              <button
-                onClick={togglePlay}
-                className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
-                title={playing ? 'Pause' : 'Play'}
-              >
-                {playing ? <Pause size={18} /> : <Play size={18} />}
-              </button>
-
               {/* 5 seconds backward */}
               <button
                 onClick={() => seekByTime(-5)}
@@ -274,6 +251,15 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                 title='Previous frame'
               >
                 <SkipBack size={16} />
+              </button>
+
+              {/* Play/Pause button */}
+              <button
+                onClick={togglePlay}
+                className='rounded border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50'
+                title={playing ? 'Pause' : 'Play'}
+              >
+                {playing ? <Pause size={18} /> : <Play size={18} />}
               </button>
 
               {/* Frame forward */}
@@ -385,6 +371,59 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* MainviewTimeline component */}
+        <div className='mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3'>
+          <div className='mb-3 flex items-center justify-between'>
+            <div className='text-sm font-medium text-gray-700'>Main View Segments</div>
+            <div className='text-xs text-gray-500'>
+              {mainviewTimestamps && mainviewTimestamps.length > 0 ? (
+                <span className='flex items-center gap-1'>
+                  <Check className='h-3 w-3 text-green-500' />
+                  <span>
+                    <span className='font-medium'>{mainviewTimestamps.length}</span> segments detected
+                  </span>
+                </span>
+              ) : (
+                <span>No segments detected yet</span>
+              )}
+            </div>
+          </div>
+
+          <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
+            {/* Timeline segments */}
+            {mainviewTimestamps && mainviewTimestamps.length > 0
+              ? mainviewTimestamps.map((segment, index) => {
+                  const startPercent = (segment.start / duration) * 100;
+                  const widthPercent = ((segment.end - segment.start) / duration) * 100;
+
+                  return (
+                    <div
+                      key={index}
+                      className='absolute h-full cursor-pointer bg-blue-200 transition-colors hover:bg-blue-300'
+                      style={{
+                        left: `${startPercent}%`,
+                        width: `${widthPercent}%`,
+                      }}
+                      onClick={() => onSeek && onSeek(segment.start)}
+                      title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s`}
+                    />
+                  );
+                })
+              : null}
+
+            {/* Playhead - only show if we have a duration */}
+            {duration > 0 && (
+              <div className='absolute top-0 h-full w-1 bg-gray-600' style={{ left: `${played * 100}%` }} />
+            )}
+          </div>
+
+          <div className='mt-2 text-xs text-gray-500'>
+            {mainviewTimestamps && mainviewTimestamps.length > 0
+              ? 'Click on a segment to jump to that position in the video'
+              : 'Process the video to detect main view segments'}
           </div>
         </div>
       </div>

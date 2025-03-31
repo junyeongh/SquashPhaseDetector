@@ -25,12 +25,7 @@ const KEYPOINT_CONNECTIONS = [
   [14, 16], // left knee to left ankle
 ];
 
-const PoseOverlay = ({
-  width,
-  height,
-  player1Pose,
-  player2Pose,
-}: PoseOverlayProps) => {
+const PoseOverlay = ({ width, height, player1Pose, player2Pose }: PoseOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -54,11 +49,7 @@ const PoseOverlay = ({
     }
   }, [width, height, player1Pose, player2Pose]);
 
-  const drawPose = (
-    ctx: CanvasRenderingContext2D,
-    pose: PlayerPose,
-    color: string
-  ) => {
+  const drawPose = (ctx: CanvasRenderingContext2D, pose: PlayerPose, color: string) => {
     const keypoints = pose.keypoints;
 
     // Draw connections (limbs)
@@ -86,11 +77,7 @@ const PoseOverlay = ({
     });
   };
 
-  const drawKeypoint = (
-    ctx: CanvasRenderingContext2D,
-    keypoint: PoseKeypoint,
-    color: string
-  ) => {
+  const drawKeypoint = (ctx: CanvasRenderingContext2D, keypoint: PoseKeypoint, color: string) => {
     const { x, y } = keypoint;
 
     ctx.fillStyle = color;
@@ -106,12 +93,7 @@ const PoseOverlay = ({
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      className='pointer-events-none absolute top-0 left-0 z-10'
-    />
+    <canvas ref={canvasRef} width={width} height={height} className='pointer-events-none absolute top-0 left-0 z-10' />
   );
 };
 

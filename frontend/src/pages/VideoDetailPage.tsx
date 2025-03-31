@@ -1,46 +1,62 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Play, Scissors, Activity, Zap, Download } from 'lucide-react';
 import { BASE_API_URL } from '@/services/api/config';
-import VideoPlayerSection, {
-  VideoPlayerSectionRef,
-} from '@/components/video/VideoPlayerSection';
-import {
-  PreprocessContent,
-  SegmentationContent,
-  PoseContent,
-  GameStateContent,
-  ExportContent,
-} from '@/components/StageContent';
+import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/VideoPlayerSection';
 import {
   getMainviewTimestamps,
   MainviewTimestamp,
   generateMainView,
-  getProcessingStatus,
   createProcessingEventSource,
 } from '@/services/api/video';
 import {
   Point,
   SegmentationResult,
+  SegmentationMask,
   markPlayers,
+  markPlayersSAM2,
   startSegmentation,
-  getSegmentationStatus
+  getSegmentationStatus,
+  getSegmentationMask,
 } from '@/services/api/segmentation';
-import {
-  FramePoseResult,
-  startPoseDetection,
-  getPoseDetectionStatus
-} from '@/services/api/pose';
-import ProcessingProgressSidemenu, {
-  ProcessingStage,
-} from '@/components/ProcessingProgressSidemenu';
+import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
+import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/ProcessSidemenu';
+import SegmentationOverlay from '@/components/video/SegmentationOverlay';
+import MaskLayer from '@/components/video/MaskLayer';
+import { MarkerType } from '@/components/ProcessSidemenu';
+
+// Shared stage configuration
+export const processingStages: StageConfig[] = [
+  {
+    id: 'preprocess',
+    label: 'Video Preprocessing',
+    description: 'Analyze the video to detect main view angles and prepare it for player segmentation.',
+  },
+  {
+    id: 'segmentation',
+    label: 'Player Segmentation',
+    description: 'Mark players in the frame and generate segmentation masks for tracking.',
+  },
+  {
+    id: 'pose',
+    label: 'Pose Detection',
+    description: 'Detect player body positions and movements throughout the video.',
+  },
+  {
+    id: 'game_state',
+    label: 'Game State Analysis',
+    description: 'Analyze the game state based on player positions and movements.',
+  },
+  {
+    id: 'export',
+    label: 'Export Results',
+    description: 'Export the analysis results in various formats.',
+  },
+];
 
 const VideoDetailPage: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
   const [activeStage, setActiveStage] = useState<ProcessingStage>('preprocess');
-  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(
-    new Set()
-  );
+  const [completedStages, setCompletedStages] = useState<Set<ProcessingStage>>(new Set());
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingStatus, setProcessingStatus] = useState<string>('');
   const [showSkipButton, setShowSkipButton] = useState<boolean>(false);
@@ -48,22 +64,45 @@ const VideoDetailPage: React.FC = () => {
 
   // State for video player data
   const [currentFrame, setCurrentFrame] = useState<number>(0);
+
+  // These values are updated by handleFrameUpdate and are used by the VideoPlayerSection component
+  // They provide time-based information for UI components that need to know the video position
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [duration, setDuration] = useState<number>(0);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [mainviewTimestamps, setMainviewTimestamps] = useState<
-    MainviewTimestamp[]
-  >([]);
+
+  // Maintained for UI display and future integration with ProcessSidemenu
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
 
   // State for segmentation
+  // Used by the ProcessSidemenu component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [frameUrl, setFrameUrl] = useState<string>('');
   const [frameIndex, setFrameIndex] = useState<number>(0);
-  const [player1Points, setPlayer1Points] = useState<Point[]>([]);
-  const [player2Points, setPlayer2Points] = useState<Point[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
+
+  // SAM2 specific state
+  const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
+  const [activeMarkerType, setActiveMarkerType] = useState<'positive' | 'negative'>('positive');
+  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player1Points, setPlayer1Points] = useState<Map<number, Point[]>>(new Map());
+  const [player2Points, setPlayer2Points] = useState<Map<number, Point[]>>(new Map());
+  const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
+
+  // Mask state for current frame
+  const [player1Mask, setPlayer1Mask] = useState<SegmentationMask | null>(null);
+  const [player2Mask, setPlayer2Mask] = useState<SegmentationMask | null>(null);
 
   // State for pose detection
   const [modelType, setModelType] = useState<string>('YOLOv8');
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(70);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(null);
 
   // Set a default frame URL for the current video
@@ -80,11 +119,7 @@ const VideoDetailPage: React.FC = () => {
       getMainviewTimestamps(uuid)
         .then((timestamps) => {
           setMainviewTimestamps(timestamps);
-          console.log(
-            'VideoDetail: Loaded timestamps for video:',
-            uuid,
-            timestamps.length
-          );
+          console.log('VideoDetail: Loaded timestamps for video:', uuid, timestamps.length);
 
           // If mainview segments already exist, mark preprocess as completed and advance to segmentation
           if (timestamps && timestamps.length > 0) {
@@ -106,17 +141,41 @@ const VideoDetailPage: React.FC = () => {
     }
   }, [uuid, activeStage]);
 
+  // Fetch segmentation masks when frame changes
+  useEffect(() => {
+    if (uuid && activeStage === 'segmentation' && completedStages.has('segmentation')) {
+      // Try to fetch masks for the current frame
+      fetchFrameMasks();
+    } else {
+      // Clear masks when changing frames before segmentation is completed
+      setPlayer1Mask(null);
+      setPlayer2Mask(null);
+    }
+  }, [uuid, frameIndex, activeStage, completedStages]);
+
+  // Fetch masks for the current frame
+  const fetchFrameMasks = async () => {
+    if (!uuid) return;
+
+    try {
+      const result = await getSegmentationMask(uuid, frameIndex);
+      console.log('Fetched masks for frame:', frameIndex, result);
+      setPlayer1Mask(result.player1Mask);
+      setPlayer2Mask(result.player2Mask);
+    } catch (error) {
+      console.error('Error fetching segmentation masks:', error);
+      setPlayer1Mask(null);
+      setPlayer2Mask(null);
+    }
+  };
+
   // Log frame updates for debugging purposes
   useEffect(() => {
     console.debug(`Current frame updated: ${currentFrame}`);
   }, [currentFrame]);
 
   // Update frame and player info
-  const handleFrameUpdate = (
-    frame: number,
-    newDuration: number,
-    newCurrentTime: number
-  ) => {
+  const handleFrameUpdate = (frame: number, newDuration: number, newCurrentTime: number) => {
     setCurrentFrame(frame);
     setDuration(newDuration);
     setCurrentTime(newCurrentTime);
@@ -152,10 +211,7 @@ const VideoDetailPage: React.FC = () => {
           // Fetch the timestamps after processing is complete
           const timestamps = await getMainviewTimestamps(videoId);
           setMainviewTimestamps(timestamps);
-          console.log(
-            'Fetched timestamps after completion:',
-            timestamps.length
-          );
+          console.log('Fetched timestamps after completion:', timestamps.length);
 
           // Mark current stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -175,11 +231,7 @@ const VideoDetailPage: React.FC = () => {
             moveToNextStage();
           }, 1000);
         } catch (error) {
-          console.error('Error fetching results after completion:', error);
-          setProcessingStatus(
-            `Error fetching results: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
-          if (eventSource) eventSource.close();
+          console.error('Error fetching timestamps after completion:', error);
           setIsProcessing(false);
         }
       });
@@ -187,287 +239,126 @@ const VideoDetailPage: React.FC = () => {
       // Handle errors
       eventSource.addEventListener('error', (event) => {
         console.error('SSE error:', event);
-        setProcessingStatus('Connection error. Please try again.');
-        if (eventSource) eventSource.close();
+        if (eventSource) {
+          eventSource.close();
+        }
         setIsProcessing(false);
+        setShowSkipButton(true);
       });
 
-      // Standard error event
-      eventSource.onerror = () => {
-        console.error('SSE connection error');
-        setProcessingStatus('Lost connection to server. Please try again.');
-        if (eventSource) eventSource.close();
-        setIsProcessing(false);
-      };
+      // Return the event source for cleanup
+      return eventSource;
     } catch (error) {
-      console.error('Error setting up SSE:', error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Failed to connect to server'}`
-      );
-      if (eventSource) eventSource.close();
-      setIsProcessing(false);
+      console.error('Error creating SSE connection:', error);
+      return null;
     }
-
-    // Return cleanup function
-    return () => {
-      if (eventSource) {
-        console.log('Cleaning up SSE connection');
-        eventSource.close();
-      }
-    };
   };
 
   const skipCurrentStage = () => {
-    if (isProcessing) {
-      // Close any ongoing connections
-      setIsProcessing(false);
-      setProcessingStatus('Skipped current stage');
-    }
+    // Reset skip button state
+    setShowSkipButton(false);
 
-    // Mark current stage as completed (even though it was skipped)
+    // Mark current stage as completed even though we're skipping it
     const updatedCompletedStages = new Set(completedStages);
     updatedCompletedStages.add(activeStage);
     setCompletedStages(updatedCompletedStages);
 
-    // Move to the next stage
+    // Move to next stage
     moveToNextStage();
-    setShowSkipButton(false);
   };
 
-  // Function for processing video
+  // Handler for processing video (main view detection)
   const handleProcessVideo = async () => {
-    // Prevent starting if already processing
-    if (isProcessing) {
-      console.log('Already processing, ignoring request');
-      return;
-    }
+    if (!uuid) return;
 
     setIsProcessing(true);
-    setProcessingStatus(`${activeStage} in progress...`);
-
-    // Show skip button after a delay for preprocess stage
-    if (activeStage === 'preprocess') {
-      setShowSkipButton(false);
-      setTimeout(() => {
-        setShowSkipButton(true);
-      }, 5000); // Show skip button after 5 seconds
-    } else {
-      // For other stages, don't show skip button initially
-      setShowSkipButton(false);
-      // But show it after a longer delay
-      setTimeout(() => {
-        setShowSkipButton(true);
-      }, 15000); // Show skip button after 15 seconds for other stages
-    }
+    setProcessingStatus('Starting main view detection...');
 
     try {
-      // Execute different processing based on the current stage
-      if (activeStage === 'preprocess') {
-        setProcessingStatus('Starting main view detection...');
+      // Start the main view detection process
+      const response = await generateMainView(uuid);
+      console.log('Started main view detection:', response);
 
-        if (!uuid) {
-          throw new Error('Video UUID is missing');
+      // Listen for updates using SSE
+      const eventSource = listenForProcessingUpdates(uuid);
+
+      // Set up cleanup function to close the event source if component unmounts
+      return () => {
+        if (eventSource) {
+          eventSource.close();
         }
-
-        // Check if video is already being processed or has results
-        try {
-          const statusResponse = await getProcessingStatus(uuid);
-
-          if (statusResponse.is_processing) {
-            // If already processing, just start listening for updates
-            setProcessingStatus(
-              `Main view detection already in progress: ${statusResponse.status}`
-            );
-            console.log(
-              'Video already being processed, starting SSE connection'
-            );
-          } else if (statusResponse.has_mainview) {
-            // If already has results, load them
-            const timestamps = await getMainviewTimestamps(uuid);
-            setMainviewTimestamps(timestamps);
-            setProcessingStatus('Main view detection already complete!');
-
-            // Mark current stage as completed
-            const updatedCompletedSteps = new Set(completedStages);
-            updatedCompletedSteps.add(activeStage);
-            setCompletedStages(updatedCompletedSteps);
-
-            setIsProcessing(false);
-            return;
-          } else {
-            // If not processing and no results, start a new processing task
-            await generateMainView(uuid);
-            setProcessingStatus('Detecting main view segments...');
-          }
-        } catch (statusError) {
-          // If status endpoint doesn't exist yet, proceed with normal flow
-          console.log(
-            'Status endpoint not available, proceeding with processing',
-            statusError
-          );
-          await generateMainView(uuid);
-          setProcessingStatus('Detecting main view segments...');
-        }
-
-        // Start listening for updates with SSE
-        listenForProcessingUpdates(uuid);
-      } else {
-        // Simulate processing with timeout for other stages
-        setTimeout(() => {
-          setProcessingStatus(`${activeStage} processing step 2...`);
-
-          setTimeout(() => {
-            setProcessingStatus(`${activeStage} finalizing...`);
-
-            setTimeout(() => {
-              setIsProcessing(false);
-
-              // Mark current stage as completed
-              const updatedCompletedStages = new Set(completedStages);
-              updatedCompletedStages.add(activeStage);
-              setCompletedStages(updatedCompletedStages);
-
-              // Move to next stage
-              moveToNextStage();
-            }, 2000);
-          }, 2000);
-        }, 2000);
-      }
+      };
     } catch (error) {
-      console.error(`Error during ${activeStage} processing:`, error);
-      setProcessingStatus(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      console.error('Error starting main view detection:', error);
+      setProcessingStatus('Error starting main view detection. Try again or skip this step.');
+      setIsProcessing(false);
+      setShowSkipButton(true);
+    }
+  };
+
+  // Move to next stage in the processing pipeline
+  const moveToNextStage = () => {
+    const currentIndex = processingStages.findIndex((stage) => stage.id === activeStage);
+    if (currentIndex < processingStages.length - 1) {
+      const nextStage = processingStages[currentIndex + 1].id as ProcessingStage;
+      setActiveStage(nextStage);
       setIsProcessing(false);
 
-      // Show skip button immediately on error for preprocess stage
-      if (activeStage === 'preprocess') {
-        setShowSkipButton(true);
+      // Reset stage-specific state when moving to next stage
+      if (nextStage === 'segmentation') {
+        // Reset segmentation state
+        setPlayer1Points(new Map());
+        setPlayer2Points(new Map());
+        setPlayer1PositivePoints(new Map());
+        setPlayer1NegativePoints(new Map());
+        setPlayer2PositivePoints(new Map());
+        setPlayer2NegativePoints(new Map());
       }
     }
   };
 
-  const moveToNextStage = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        setActiveStage('segmentation');
-        break;
-      case 'segmentation':
-        setActiveStage('pose');
-        break;
-      case 'pose':
-        setActiveStage('game_state');
-        break;
-      case 'game_state':
-        setActiveStage('export');
-        break;
-      case 'export':
-        // This is the final stage
-        break;
-    }
-  };
-
+  // Move to previous stage in the processing pipeline
   const moveToPreviousStage = () => {
-    switch (activeStage) {
-      case 'segmentation':
-        setActiveStage('preprocess');
-        break;
-      case 'pose':
-        setActiveStage('segmentation');
-        break;
-      case 'game_state':
-        setActiveStage('pose');
-        break;
-      case 'export':
-        setActiveStage('game_state');
-        break;
-      case 'preprocess':
-        // This is the first stage
-        break;
+    const currentIndex = processingStages.findIndex((stage) => stage.id === activeStage);
+    if (currentIndex > 0) {
+      const previousStage = processingStages[currentIndex - 1].id as ProcessingStage;
+      setActiveStage(previousStage);
+      setIsProcessing(false);
+
+      // Reset stage-specific state when moving to previous stage
+      if (previousStage === 'segmentation') {
+        // Reset segmentation state but keep any completed work
+        // Do not clear points or results that might be useful
+      }
     }
   };
 
-  // Function to handle direct stage selection from the sidebar
+  // Handler for selecting a specific stage
   const handleStageSelect = (stage: ProcessingStage) => {
-    if (isProcessing) return; // Don't allow changing stages during processing
-    setActiveStage(stage);
-  };
+    // Only allow selecting stages that are either completed or the next one to do
+    const currentIndex = processingStages.findIndex((s) => s.id === activeStage);
+    const targetIndex = processingStages.findIndex((s) => s.id === stage);
+    const isCompleted = completedStages.has(stage);
+    const isNextStage = targetIndex === currentIndex + 1;
 
-  // Get button text and icon based on the active stage
-  const getButtonConfig = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        return { label: 'Process Video', icon: <Play className='h-3 w-3' /> };
-      case 'segmentation':
-        return {
-          label: 'Run Segmentation',
-          icon: <Scissors className='h-3 w-3' />,
-        };
-      case 'pose':
-        return {
-          label: 'Detect Poses',
-          icon: <Activity className='h-3 w-3' />,
-        };
-      case 'game_state':
-        return { label: 'Analyze Game', icon: <Zap className='h-3 w-3' /> };
-      case 'export':
-        return {
-          label: 'Export Results',
-          icon: <Download className='h-3 w-3' />,
-        };
-      default:
-        return { label: 'Process', icon: <Play className='h-3 w-3' /> };
+    if (isCompleted || isNextStage || stage === activeStage) {
+      setActiveStage(stage);
     }
   };
 
-  // Get stage-specific overlay
-  const getStageOverlay = () => {
-    switch (activeStage) {
-      case 'segmentation':
-        return (
-          <div className='pointer-events-none absolute top-1/4 left-1/4 h-1/2 w-1/2 border-2 border-dashed border-red-500 opacity-50'>
-            <div className='absolute -top-6 left-0 rounded bg-red-500 px-2 py-1 text-xs text-white'>
-              Segmentation Area
-            </div>
-          </div>
-        );
-      case 'pose':
-        return (
-          <div className='pointer-events-none absolute flex h-full w-full items-center justify-center'>
-            <div className='relative h-1/2 w-1/2'>
-              <div className='absolute h-full w-full border-2 border-dashed border-blue-500 opacity-50'></div>
-              <div className='absolute -top-6 left-0 rounded bg-blue-500 px-2 py-1 text-xs text-white'>
-                Pose Detection Area
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  // Handle seek in the timeline
-  const handleSeek = (time: number) => {
-    console.log('Seeking to time:', time);
-    if (videoPlayerRef.current) {
-      videoPlayerRef.current.seekToTime(time);
-    }
-  };
-
-  // Handler for segmentation
+  // Handler for player marking
   const handleMarkPlayers = async () => {
-    if (!uuid || player1Points.length === 0 || player2Points.length === 0) return;
+    if (!uuid) return;
 
     try {
-      await markPlayers(uuid, frameIndex, player1Points, player2Points);
-      setProcessingStatus('Players marked successfully');
+      await markPlayers(uuid, frameIndex, player1Points.get(frameIndex) || [], player2Points.get(frameIndex) || []);
+      console.log('Players marked successfully');
     } catch (error) {
       console.error('Error marking players:', error);
-      setProcessingStatus(`Error marking players: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
+  // Handler for SAM2 marking and segmentation
   const handleStartSegmentation = async () => {
     if (!uuid) return;
 
@@ -475,13 +366,48 @@ const VideoDetailPage: React.FC = () => {
     setProcessingStatus('Starting segmentation...');
 
     try {
-      await startSegmentation(uuid);
+      // If using SAM2 model, send SAM2 markers
+      if (segmentationModel === 'SAM2') {
+        try {
+          // Get the points for the current frame
+          const p1Positive = player1PositivePoints.get(frameIndex) || [];
+          const p1Negative = player1NegativePoints.get(frameIndex) || [];
+          const p2Positive = player2PositivePoints.get(frameIndex) || [];
+          const p2Negative = player2NegativePoints.get(frameIndex) || [];
+
+          // First mark the players with SAM2 points
+          await markPlayersSAM2(uuid, frameIndex, p1Positive, p1Negative, p2Positive, p2Negative);
+          console.log('SAM2 markers set successfully');
+        } catch (error) {
+          console.error('Error setting SAM2 markers:', error);
+          setProcessingStatus('Error setting SAM2 markers');
+          setIsProcessing(false);
+          return;
+        }
+      } else {
+        // Handle legacy model
+        try {
+          const p1Points = player1Points.get(frameIndex) || [];
+          const p2Points = player2Points.get(frameIndex) || [];
+
+          await markPlayers(uuid, frameIndex, p1Points, p2Points);
+          console.log('Players marked successfully');
+        } catch (error) {
+          console.error('Error marking players:', error);
+          setProcessingStatus('Error marking players');
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // Start segmentation with selected model
+      await startSegmentation(uuid, segmentationModel);
 
       // Poll for status updates
       const statusCheckInterval = setInterval(async () => {
         try {
           const status = await getSegmentationStatus(uuid);
-          setProcessingStatus(`Segmentation: ${status.message}`);
+          setProcessingStatus(`Segmentation: ${status.message} (${Math.round(status.progress)}%)`);
 
           if (status.status === 'completed') {
             clearInterval(statusCheckInterval);
@@ -492,6 +418,9 @@ const VideoDetailPage: React.FC = () => {
             const updatedCompletedStages = new Set(completedStages);
             updatedCompletedStages.add('segmentation');
             setCompletedStages(updatedCompletedStages);
+
+            // Fetch masks for the current frame
+            await fetchFrameMasks();
 
             // Move to next stage after a delay
             setTimeout(() => moveToNextStage(), 1000);
@@ -567,155 +496,330 @@ const VideoDetailPage: React.FC = () => {
 
   // Update frame navigation
   const handleNextFrame = () => {
-    setFrameIndex(prev => prev + 1);
+    setFrameIndex((prev) => prev + 1);
   };
 
   const handlePreviousFrame = () => {
-    setFrameIndex(prev => Math.max(0, prev - 1));
+    setFrameIndex((prev) => Math.max(0, prev - 1));
   };
 
-  // Render stage-specific content
-  const renderStageContent = () => {
-    switch (activeStage) {
-      case 'preprocess':
-        return (
-          <>
-            <PreprocessContent
-              onProcess={handleProcessVideo}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              mainviewTimestamps={mainviewTimestamps}
-              duration={duration}
-              currentTime={currentTime}
-              onSeek={handleSeek}
-              buttonConfig={getButtonConfig()}
-              currentStage={activeStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
-        );
-      case 'segmentation':
-        return (
-          <>
-            <SegmentationContent
-              frameUrl={frameUrl}
-              frameIndex={frameIndex}
-              player1Points={player1Points}
-              player2Points={player2Points}
-              onPlayer1PointsChange={setPlayer1Points}
-              onPlayer2PointsChange={setPlayer2Points}
-              onMarkPlayers={handleMarkPlayers}
-              onStartSegmentation={handleStartSegmentation}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              segmentationResults={segmentationResults}
-              onNextFrame={handleNextFrame}
-              onPreviousFrame={handlePreviousFrame}
-              currentStage={activeStage}
-              onPreviousStage={moveToPreviousStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
-        );
-      case 'pose':
-        return (
-          <>
-            <PoseContent
-              frameUrl={frameUrl}
-              frameIndex={frameIndex}
-              onStartPoseDetection={handleStartPoseDetection}
-              isProcessing={isProcessing}
-              processingStatus={processingStatus}
-              poseResults={poseResults}
-              modelType={modelType}
-              setModelType={setModelType}
-              confidenceThreshold={confidenceThreshold}
-              setConfidenceThreshold={setConfidenceThreshold}
-              onNextFrame={handleNextFrame}
-              onPreviousFrame={handlePreviousFrame}
-              currentStage={activeStage}
-              onPreviousStage={moveToPreviousStage}
-              onNextStage={moveToNextStage}
-            />
-            {isProcessing && showSkipButton && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={skipCurrentStage}
-                  className="flex items-center gap-2 rounded border border-orange-300 bg-orange-100 px-4 py-1.5 text-sm text-orange-700 hover:bg-orange-200 transition-colors"
-                >
-                  Skip to Next Stage
-                </button>
-              </div>
-            )}
-          </>
-        );
-      case 'game_state':
-        return (
-          <GameStateContent
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-            onNextStage={moveToNextStage}
-          />
-        );
-      case 'export':
-        return (
-          <ExportContent
-            currentStage={activeStage}
-            onPreviousStage={moveToPreviousStage}
-          />
-        );
-      default:
-        return null;
+  // Add marker points based on active player and marker type
+  const handleAddMarkerPoint = (point: Point) => {
+    if (segmentationModel === 'SAM2') {
+      if (activePlayer === 1) {
+        if (activeMarkerType === 'positive') {
+          setPlayer1PositivePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
+        } else {
+          setPlayer1NegativePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
+        }
+      } else {
+        if (activeMarkerType === 'positive') {
+          setPlayer2PositivePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
+        } else {
+          setPlayer2NegativePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
+        }
+      }
+    } else {
+      // Legacy player point handling
+      if (activePlayer === 1) {
+        setPlayer1Points((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(frameIndex, [...currentPoints, point]);
+          return newMap;
+        });
+      } else {
+        setPlayer2Points((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(frameIndex, [...currentPoints, point]);
+          return newMap;
+        });
+      }
+    }
+  };
+
+  // Remove marker point at a specific index
+  const handleRemoveMarkerPoint = (player: 1 | 2, markerType: MarkerType, index: number) => {
+    if (player === 1) {
+      if (markerType === 'positive') {
+        setPlayer1PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
+      } else {
+        setPlayer1NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
+      }
+    } else {
+      if (markerType === 'positive') {
+        setPlayer2PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
+      } else {
+        setPlayer2NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
+      }
+    }
+  };
+
+  // Clear marker points for a specific player and marker type
+  const handleClearPlayerMarkerPoints = (player: 1 | 2, markerType: 'positive' | 'negative') => {
+    if (player === 1) {
+      if (markerType === 'positive') {
+        setPlayer1PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
+      } else {
+        setPlayer1NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
+      }
+    } else {
+      if (markerType === 'positive') {
+        setPlayer2PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
+      } else {
+        setPlayer2NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
+      }
+    }
+  };
+
+  // Check if the current frame has any markers
+  const hasMarkersForCurrentFrame = (): boolean => {
+    const hasPlayer1Positive = (player1PositivePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer1Negative = (player1NegativePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer2Positive = (player2PositivePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer2Negative = (player2NegativePoints.get(frameIndex)?.length || 0) > 0;
+    const hasLegacyPlayer1 = (player1Points.get(frameIndex)?.length || 0) > 0;
+    const hasLegacyPlayer2 = (player2Points.get(frameIndex)?.length || 0) > 0;
+
+    return (
+      hasPlayer1Positive ||
+      hasPlayer1Negative ||
+      hasPlayer2Positive ||
+      hasPlayer2Negative ||
+      hasLegacyPlayer1 ||
+      hasLegacyPlayer2
+    );
+  };
+
+  // Get all frames that have markers
+  const getFramesWithMarkers = (): number[] => {
+    const frames = new Set<number>();
+
+    // Add frames from all marker collections
+    for (const frameIdx of player1PositivePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player1NegativePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2PositivePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2NegativePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player1Points.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2Points.keys()) frames.add(frameIdx);
+
+    return Array.from(frames).sort((a, b) => a - b);
+  };
+
+  // Clear all points for a specific player
+  const handleClearPlayerPoints = (player: 1 | 2) => {
+    if (player === 1) {
+      setPlayer1Points((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(frameIndex);
+        return newMap;
+      });
+    } else {
+      setPlayer2Points((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(frameIndex);
+        return newMap;
+      });
     }
   };
 
   return (
     <div className='flex h-full flex-col'>
-      {/* Stage-specific content */}
-      {renderStageContent()}
+      {/* New layout with content, video player and progress sidebar */}
+      <div className='flex h-full flex-1'>
+        {/* Main content area with stage content and video player */}
+        <div className='flex flex-1 flex-col overflow-hidden'>
+          {/* Stage content - shows only stage-specific information */}
+          <div className='mb-2 rounded-lg border border-gray-200'>
+            <div className='rounded-t-lg border-b border-gray-200 bg-gray-50 p-4'>
+              <div className='flex-1'>
+                <h2 className='text-lg font-medium text-gray-800'>
+                  {processingStages.find((stage) => stage.id === activeStage)?.label || ''}
+                </h2>
+                <p className='text-sm text-gray-500'>
+                  {processingStages.find((stage) => stage.id === activeStage)?.description || ''}
+                </p>
+              </div>
+            </div>
+          </div>
 
-      {/* New layout with video player and progress sidebar */}
-      <div className='flex flex-1'>
-        {/* Video player section - now with fixed width */}
-        <div className='max-w-[70%] flex-1 overflow-hidden'>
-          <VideoPlayerSection
-            videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
-            stage={activeStage}
-            videoId={uuid || ''}
-            customOverlay={getStageOverlay()}
-            onFrameUpdate={handleFrameUpdate}
-            ref={videoPlayerRef}
-          />
+          {/* Video player section */}
+          <div className='flex-1 overflow-hidden'>
+            <VideoPlayerSection
+              videoUrl={`${BASE_API_URL}/video/stream/${uuid}`}
+              stage={activeStage}
+              videoId={uuid || ''}
+              onFrameUpdate={handleFrameUpdate}
+              ref={videoPlayerRef}
+              customOverlay={
+                activeStage === 'segmentation' ? (
+                  <>
+                    {/* Render masks first (lower z-index) */}
+                    {(player1Mask || player2Mask) && (
+                      <MaskLayer
+                        width={1280}
+                        height={720}
+                        player1Mask={player1Mask}
+                        player2Mask={player2Mask}
+                        player1Color={[255, 0, 0, 0.4]} // Red with 40% opacity
+                        player2Color={[0, 0, 255, 0.4]} // Blue with 40% opacity
+                      />
+                    )}
+
+                    {/* Render interaction points on top (higher z-index) */}
+                    <SegmentationOverlay
+                      width={1280}
+                      height={720}
+                      activePlayer={activePlayer}
+                      activeMarkerType={activeMarkerType}
+                      player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
+                      player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
+                      player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
+                      player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
+                      player1Points={player1Points.get(frameIndex) || []}
+                      player2Points={player2Points.get(frameIndex) || []}
+                      segmentationModel={segmentationModel}
+                      onAddPoint={handleAddMarkerPoint}
+                      onRemovePoint={handleRemoveMarkerPoint}
+                    />
+                  </>
+                ) : null
+              }
+            />
+          </div>
         </div>
-
-        {/* Processing progress sidebar */}
-        <div className='h-full w-[30%]'>
-          <ProcessingProgressSidemenu
+        {/* Frame marker indicator */}
+        {/* {getFramesWithMarkers().length > 0 && (
+          <div className='mt-4 rounded-md bg-gray-100 p-3'>
+            <h3 className='mb-2 text-sm font-medium'>
+              Frames with markers: {getFramesWithMarkers().length}
+              {hasMarkersForCurrentFrame() && ' (Current frame has markers)'}
+            </h3>
+            <div className='flex flex-wrap gap-2'>
+              {getFramesWithMarkers().map((frameIdx) => (
+                <button
+                  key={frameIdx}
+                  className={`rounded-md px-2 py-1 text-xs ${frameIdx === frameIndex ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setFrameIndex(frameIdx)}
+                >
+                  {frameIdx}
+                </button>
+              ))}
+            </div>
+          </div>
+        )} */}
+        {/* Processing progress sidebar - now includes processing interfaces */}
+        <div className='h-full w-[480px]'>
+          <ProcessSidemenu
+            stageConfig={processingStages}
             activeStage={activeStage}
             completedStages={completedStages}
             isProcessing={isProcessing}
             processingStatus={processingStatus}
             onStageSelect={handleStageSelect}
+            // Process buttons
+            onProcess={handleProcessVideo}
+            onMarkPlayers={handleMarkPlayers}
+            onStartSegmentation={handleStartSegmentation}
+            onStartPoseDetection={handleStartPoseDetection}
+            // Skip controls
+            showSkipButton={showSkipButton}
+            onSkipStage={skipCurrentStage}
+            // Stage-specific controls
+            modelType={modelType}
+            confidenceThreshold={confidenceThreshold}
+            setModelType={setModelType}
+            setConfidenceThreshold={setConfidenceThreshold}
+            // Navigation controls
+            onPreviousFrame={handlePreviousFrame}
+            onNextFrame={handleNextFrame}
+            onPreviousStage={moveToPreviousStage}
+            onNextStage={moveToNextStage}
+            // Player points for segmentation stage
+            player1Points={player1Points.get(frameIndex) || []}
+            player2Points={player2Points.get(frameIndex) || []}
+            // SAM2 specific controls
+            segmentationModel={segmentationModel}
+            activeMarkerType={activeMarkerType}
+            setSegmentationModel={setSegmentationModel}
+            setActiveMarkerType={setActiveMarkerType}
+            player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
+            player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
+            player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
+            player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
+            activePlayer={activePlayer}
+            setActivePlayer={setActivePlayer}
+            onClearPlayerMarkerPoints={handleClearPlayerMarkerPoints}
+            onClearPlayerPoints={handleClearPlayerPoints}
           />
         </div>
       </div>
