@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, UserRound, Plus, Minus, ArrowLeft, ArrowRight } from 'lucide-react';
+import { User, UserRound, Plus, Minus } from 'lucide-react';
 import { SegmentationStageProps } from '../types';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
 
@@ -167,51 +167,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         </div>
       </div>
 
-      <div className='flex flex-col gap-2'>
-        {onMarkPlayers && (
-          <button
-            onClick={onMarkPlayers}
-            disabled={isProcessing || !player1Points?.length || !player2Points?.length}
-            className={`flex items-center justify-center gap-2 rounded px-4 py-2 text-sm transition-colors ${
-              isProcessing || !player1Points?.length || !player2Points?.length
-                ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
-                : 'border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Mark Players
-          </button>
-        )}
-
-        <button
-          onClick={onStartSegmentation}
-          disabled={isProcessing || (player1PositivePoints.length === 0 && player2PositivePoints.length === 0)}
-          className='flex items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
-        >
-          Start Segmentation
-        </button>
-      </div>
-
-      {(onPreviousFrame || onNextFrame) && (
-        <div className='mt-2 flex items-center justify-center gap-2'>
-          <button
-            onClick={onPreviousFrame}
-            disabled={isProcessing}
-            className='flex items-center justify-center rounded-md border border-gray-300 p-1 text-gray-700 hover:bg-gray-100'
-            aria-label='Previous frame'
-          >
-            <ArrowLeft className='h-4 w-4' />
-          </button>
-          <span className='text-xs text-gray-500'>Navigate Frames</span>
-          <button
-            onClick={onNextFrame}
-            disabled={isProcessing}
-            className='flex items-center justify-center rounded-md border border-gray-300 p-1 text-gray-700 hover:bg-gray-100'
-            aria-label='Next frame'
-          >
-            <ArrowRight className='h-4 w-4' />
-          </button>
-        </div>
-      )}
+      {/* Button removed - will be placed above StageNavigator */}
     </div>
   );
 };

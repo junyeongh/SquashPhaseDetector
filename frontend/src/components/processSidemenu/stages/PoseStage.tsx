@@ -1,5 +1,4 @@
 import React from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { PoseStageProps } from '../types';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
 
@@ -73,35 +72,7 @@ const PoseStage: React.FC<PoseStageProps> = ({
         )}
       </div>
 
-      <button
-        onClick={onStartPoseDetection}
-        disabled={isProcessing}
-        className='flex w-full items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200'
-      >
-        Start Pose Detection
-      </button>
-
-      {(onPreviousFrame || onNextFrame) && (
-        <div className='mt-2 flex items-center justify-center gap-2'>
-          <button
-            onClick={onPreviousFrame}
-            disabled={isProcessing}
-            className='flex items-center justify-center rounded-md border border-gray-300 p-1 text-gray-700 hover:bg-gray-100'
-            aria-label='Previous frame'
-          >
-            <ArrowLeft className='h-4 w-4' />
-          </button>
-          <span className='text-xs text-gray-500'>Navigate Frames</span>
-          <button
-            onClick={onNextFrame}
-            disabled={isProcessing}
-            className='flex items-center justify-center rounded-md border border-gray-300 p-1 text-gray-700 hover:bg-gray-100'
-            aria-label='Next frame'
-          >
-            <ArrowRight className='h-4 w-4' />
-          </button>
-        </div>
-      )}
+      {/* Button removed - will be placed above StageNavigator */}
     </div>
   );
 };

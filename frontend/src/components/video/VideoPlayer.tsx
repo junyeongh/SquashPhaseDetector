@@ -181,7 +181,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
 
           {/* Play/Pause overlay button */}
           <div
-            className='absolute inset-0 flex items-center justify-center z-10'
+            className='absolute inset-0 z-10 flex items-center justify-center'
             onClick={(e) => {
               // Only toggle play if the click is directly on this div (not on overlay elements)
               if (e.currentTarget === e.target) {

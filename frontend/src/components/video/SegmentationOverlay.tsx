@@ -44,27 +44,27 @@ const SegmentationOverlay = ({
   const findClickedPoint = (x: number, y: number): { player: 1 | 2; type: MarkerType; index: number } | null => {
     if (segmentationModel === 'SAM2') {
       // Check player 1 positive points
-      const p1PosIndex = player1PositivePoints.findIndex(point => isNearPoint(x, y, point));
+      const p1PosIndex = player1PositivePoints.findIndex((point) => isNearPoint(x, y, point));
       if (p1PosIndex !== -1) return { player: 1, type: 'positive', index: p1PosIndex };
 
       // Check player 1 negative points
-      const p1NegIndex = player1NegativePoints.findIndex(point => isNearPoint(x, y, point));
+      const p1NegIndex = player1NegativePoints.findIndex((point) => isNearPoint(x, y, point));
       if (p1NegIndex !== -1) return { player: 1, type: 'negative', index: p1NegIndex };
 
       // Check player 2 positive points
-      const p2PosIndex = player2PositivePoints.findIndex(point => isNearPoint(x, y, point));
+      const p2PosIndex = player2PositivePoints.findIndex((point) => isNearPoint(x, y, point));
       if (p2PosIndex !== -1) return { player: 2, type: 'positive', index: p2PosIndex };
 
       // Check player 2 negative points
-      const p2NegIndex = player2NegativePoints.findIndex(point => isNearPoint(x, y, point));
+      const p2NegIndex = player2NegativePoints.findIndex((point) => isNearPoint(x, y, point));
       if (p2NegIndex !== -1) return { player: 2, type: 'negative', index: p2NegIndex };
     } else {
       // Check player 1 points
-      const p1Index = player1Points.findIndex(point => isNearPoint(x, y, point));
+      const p1Index = player1Points.findIndex((point) => isNearPoint(x, y, point));
       if (p1Index !== -1) return { player: 1, type: 'positive', index: p1Index };
 
       // Check player 2 points
-      const p2Index = player2Points.findIndex(point => isNearPoint(x, y, point));
+      const p2Index = player2Points.findIndex((point) => isNearPoint(x, y, point));
       if (p2Index !== -1) return { player: 2, type: 'positive', index: p2Index };
     }
 
@@ -184,7 +184,7 @@ const SegmentationOverlay = ({
       height={height}
       className='absolute top-0 left-0 z-20 cursor-crosshair hover:opacity-95'
       onClick={handleCanvasClick}
-      aria-label="Interactive segmentation overlay"
+      aria-label='Interactive segmentation overlay'
       tabIndex={0}
     />
   );
