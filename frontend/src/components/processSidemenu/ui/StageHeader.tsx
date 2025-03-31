@@ -46,15 +46,15 @@ const StageHeader: React.FC<StageHeaderProps> = ({
   return (
     <>
       {/* Stages dropdown */}
-      <div className="relative mb-3" ref={dropdownRef}>
+      <div className='relative mb-3' ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           disabled={isProcessing}
           className='flex w-full items-center justify-between gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100'
           aria-expanded={isDropdownOpen}
-          aria-haspopup="true"
+          aria-haspopup='true'
         >
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <ListChecks className='h-4 w-4' />
             <span>View All Stages</span>
           </div>
@@ -63,24 +63,24 @@ const StageHeader: React.FC<StageHeaderProps> = ({
 
         {/* Dropdown menu */}
         {isDropdownOpen && (
-          <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+          <div className='absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-lg'>
             {allStages.map((stage, index) => (
               <button
                 key={stage.id}
                 onClick={() => handleStageSelect(stage.id)}
                 disabled={isProcessing}
-                className="flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                className='flex w-full items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100'
               >
-                <div className="flex items-center gap-2">
-                  <div className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300">
-                    <span className="text-xs">{index + 1}</span>
+                <div className='flex items-center gap-2'>
+                  <div className='flex h-5 w-5 items-center justify-center rounded-full border border-gray-300'>
+                    <span className='text-xs'>{index + 1}</span>
                   </div>
                   <span>{stage.label}</span>
                 </div>
                 {completedStages.has(stage.id) ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className='h-4 w-4 text-green-500' />
                 ) : stage.id === activeStage ? (
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <div className='h-2 w-2 rounded-full bg-blue-500'></div>
                 ) : null}
               </button>
             ))}

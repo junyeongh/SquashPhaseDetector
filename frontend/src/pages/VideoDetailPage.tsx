@@ -6,7 +6,6 @@ import {
   getMainviewTimestamps,
   MainviewTimestamp,
   generateMainView,
-  getProcessingStatus,
   createProcessingEventSource,
 } from '@/services/api/video';
 import {
@@ -83,19 +82,17 @@ const VideoDetailPage: React.FC = () => {
   const [frameUrl, setFrameUrl] = useState<string>('');
   const [frameIndex, setFrameIndex] = useState<number>(0);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [player1Points, setPlayer1Points] = useState<Point[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [player2Points, setPlayer2Points] = useState<Point[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
 
   // SAM2 specific state
   const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
   const [activeMarkerType, setActiveMarkerType] = useState<'positive' | 'negative'>('positive');
-  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Point[]>([]);
-  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Point[]>([]);
-  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Point[]>([]);
-  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Point[]>([]);
+  const [player1PositivePoints, setPlayer1PositivePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player1NegativePoints, setPlayer1NegativePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player2PositivePoints, setPlayer2PositivePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player2NegativePoints, setPlayer2NegativePoints] = useState<Map<number, Point[]>>(new Map());
+  const [player1Points, setPlayer1Points] = useState<Map<number, Point[]>>(new Map());
+  const [player2Points, setPlayer2Points] = useState<Map<number, Point[]>>(new Map());
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
 
   // Mask state for current frame
@@ -310,12 +307,12 @@ const VideoDetailPage: React.FC = () => {
       // Reset stage-specific state when moving to next stage
       if (nextStage === 'segmentation') {
         // Reset segmentation state
-        setPlayer1Points([]);
-        setPlayer2Points([]);
-        setPlayer1PositivePoints([]);
-        setPlayer1NegativePoints([]);
-        setPlayer2PositivePoints([]);
-        setPlayer2NegativePoints([]);
+        setPlayer1Points(new Map());
+        setPlayer2Points(new Map());
+        setPlayer1PositivePoints(new Map());
+        setPlayer1NegativePoints(new Map());
+        setPlayer2PositivePoints(new Map());
+        setPlayer2NegativePoints(new Map());
       }
     }
   };
@@ -354,7 +351,7 @@ const VideoDetailPage: React.FC = () => {
     if (!uuid) return;
 
     try {
-      await markPlayers(uuid, frameIndex, player1Points, player2Points);
+      await markPlayers(uuid, frameIndex, player1Points.get(frameIndex) || [], player2Points.get(frameIndex) || []);
       console.log('Players marked successfully');
     } catch (error) {
       console.error('Error marking players:', error);
@@ -372,19 +369,32 @@ const VideoDetailPage: React.FC = () => {
       // If using SAM2 model, send SAM2 markers
       if (segmentationModel === 'SAM2') {
         try {
+          // Get the points for the current frame
+          const p1Positive = player1PositivePoints.get(frameIndex) || [];
+          const p1Negative = player1NegativePoints.get(frameIndex) || [];
+          const p2Positive = player2PositivePoints.get(frameIndex) || [];
+          const p2Negative = player2NegativePoints.get(frameIndex) || [];
+
           // First mark the players with SAM2 points
-          await markPlayersSAM2(
-            uuid,
-            frameIndex,
-            player1PositivePoints,
-            player1NegativePoints,
-            player2PositivePoints,
-            player2NegativePoints
-          );
+          await markPlayersSAM2(uuid, frameIndex, p1Positive, p1Negative, p2Positive, p2Negative);
           console.log('SAM2 markers set successfully');
         } catch (error) {
           console.error('Error setting SAM2 markers:', error);
           setProcessingStatus('Error setting SAM2 markers');
+          setIsProcessing(false);
+          return;
+        }
+      } else {
+        // Handle legacy model
+        try {
+          const p1Points = player1Points.get(frameIndex) || [];
+          const p2Points = player2Points.get(frameIndex) || [];
+
+          await markPlayers(uuid, frameIndex, p1Points, p2Points);
+          console.log('Players marked successfully');
+        } catch (error) {
+          console.error('Error marking players:', error);
+          setProcessingStatus('Error marking players');
           setIsProcessing(false);
           return;
         }
@@ -498,23 +508,53 @@ const VideoDetailPage: React.FC = () => {
     if (segmentationModel === 'SAM2') {
       if (activePlayer === 1) {
         if (activeMarkerType === 'positive') {
-          setPlayer1PositivePoints((prev) => [...prev, point]);
+          setPlayer1PositivePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
         } else {
-          setPlayer1NegativePoints((prev) => [...prev, point]);
+          setPlayer1NegativePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
         }
       } else {
         if (activeMarkerType === 'positive') {
-          setPlayer2PositivePoints((prev) => [...prev, point]);
+          setPlayer2PositivePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
         } else {
-          setPlayer2NegativePoints((prev) => [...prev, point]);
+          setPlayer2NegativePoints((prev) => {
+            const newMap = new Map(prev);
+            const currentPoints = prev.get(frameIndex) || [];
+            newMap.set(frameIndex, [...currentPoints, point]);
+            return newMap;
+          });
         }
       }
     } else {
       // Legacy player point handling
       if (activePlayer === 1) {
-        setPlayer1Points((prev) => [...prev, point]);
+        setPlayer1Points((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(frameIndex, [...currentPoints, point]);
+          return newMap;
+        });
       } else {
-        setPlayer2Points((prev) => [...prev, point]);
+        setPlayer2Points((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(frameIndex, [...currentPoints, point]);
+          return newMap;
+        });
       }
     }
   };
@@ -523,15 +563,47 @@ const VideoDetailPage: React.FC = () => {
   const handleRemoveMarkerPoint = (player: 1 | 2, markerType: MarkerType, index: number) => {
     if (player === 1) {
       if (markerType === 'positive') {
-        setPlayer1PositivePoints((prev) => prev.filter((_, i) => i !== index));
+        setPlayer1PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
       } else {
-        setPlayer1NegativePoints((prev) => prev.filter((_, i) => i !== index));
+        setPlayer1NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
       }
     } else {
       if (markerType === 'positive') {
-        setPlayer2PositivePoints((prev) => prev.filter((_, i) => i !== index));
+        setPlayer2PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
       } else {
-        setPlayer2NegativePoints((prev) => prev.filter((_, i) => i !== index));
+        setPlayer2NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          const currentPoints = prev.get(frameIndex) || [];
+          newMap.set(
+            frameIndex,
+            currentPoints.filter((_, i) => i !== index)
+          );
+          return newMap;
+        });
       }
     }
   };
@@ -540,25 +612,83 @@ const VideoDetailPage: React.FC = () => {
   const handleClearPlayerMarkerPoints = (player: 1 | 2, markerType: 'positive' | 'negative') => {
     if (player === 1) {
       if (markerType === 'positive') {
-        setPlayer1PositivePoints([]);
+        setPlayer1PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
       } else {
-        setPlayer1NegativePoints([]);
+        setPlayer1NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
       }
     } else {
       if (markerType === 'positive') {
-        setPlayer2PositivePoints([]);
+        setPlayer2PositivePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
       } else {
-        setPlayer2NegativePoints([]);
+        setPlayer2NegativePoints((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(frameIndex);
+          return newMap;
+        });
       }
     }
+  };
+
+  // Check if the current frame has any markers
+  const hasMarkersForCurrentFrame = (): boolean => {
+    const hasPlayer1Positive = (player1PositivePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer1Negative = (player1NegativePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer2Positive = (player2PositivePoints.get(frameIndex)?.length || 0) > 0;
+    const hasPlayer2Negative = (player2NegativePoints.get(frameIndex)?.length || 0) > 0;
+    const hasLegacyPlayer1 = (player1Points.get(frameIndex)?.length || 0) > 0;
+    const hasLegacyPlayer2 = (player2Points.get(frameIndex)?.length || 0) > 0;
+
+    return (
+      hasPlayer1Positive ||
+      hasPlayer1Negative ||
+      hasPlayer2Positive ||
+      hasPlayer2Negative ||
+      hasLegacyPlayer1 ||
+      hasLegacyPlayer2
+    );
+  };
+
+  // Get all frames that have markers
+  const getFramesWithMarkers = (): number[] => {
+    const frames = new Set<number>();
+
+    // Add frames from all marker collections
+    for (const frameIdx of player1PositivePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player1NegativePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2PositivePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2NegativePoints.keys()) frames.add(frameIdx);
+    for (const frameIdx of player1Points.keys()) frames.add(frameIdx);
+    for (const frameIdx of player2Points.keys()) frames.add(frameIdx);
+
+    return Array.from(frames).sort((a, b) => a - b);
   };
 
   // Clear all points for a specific player
   const handleClearPlayerPoints = (player: 1 | 2) => {
     if (player === 1) {
-      setPlayer1Points([]);
+      setPlayer1Points((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(frameIndex);
+        return newMap;
+      });
     } else {
-      setPlayer2Points([]);
+      setPlayer2Points((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(frameIndex);
+        return newMap;
+      });
     }
   };
 
@@ -611,12 +741,12 @@ const VideoDetailPage: React.FC = () => {
                       height={720}
                       activePlayer={activePlayer}
                       activeMarkerType={activeMarkerType}
-                      player1PositivePoints={player1PositivePoints}
-                      player1NegativePoints={player1NegativePoints}
-                      player2PositivePoints={player2PositivePoints}
-                      player2NegativePoints={player2NegativePoints}
-                      player1Points={player1Points}
-                      player2Points={player2Points}
+                      player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
+                      player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
+                      player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
+                      player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
+                      player1Points={player1Points.get(frameIndex) || []}
+                      player2Points={player2Points.get(frameIndex) || []}
                       segmentationModel={segmentationModel}
                       onAddPoint={handleAddMarkerPoint}
                       onRemovePoint={handleRemoveMarkerPoint}
@@ -627,16 +757,35 @@ const VideoDetailPage: React.FC = () => {
             />
           </div>
         </div>
-
+        {/* Frame marker indicator */}
+        {/* {getFramesWithMarkers().length > 0 && (
+          <div className='mt-4 rounded-md bg-gray-100 p-3'>
+            <h3 className='mb-2 text-sm font-medium'>
+              Frames with markers: {getFramesWithMarkers().length}
+              {hasMarkersForCurrentFrame() && ' (Current frame has markers)'}
+            </h3>
+            <div className='flex flex-wrap gap-2'>
+              {getFramesWithMarkers().map((frameIdx) => (
+                <button
+                  key={frameIdx}
+                  className={`rounded-md px-2 py-1 text-xs ${frameIdx === frameIndex ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setFrameIndex(frameIdx)}
+                >
+                  {frameIdx}
+                </button>
+              ))}
+            </div>
+          </div>
+        )} */}
         {/* Processing progress sidebar - now includes processing interfaces */}
         <div className='h-full w-[480px]'>
           <ProcessSidemenu
+            stageConfig={processingStages}
             activeStage={activeStage}
             completedStages={completedStages}
             isProcessing={isProcessing}
             processingStatus={processingStatus}
             onStageSelect={handleStageSelect}
-            stageConfig={processingStages}
             // Process buttons
             onProcess={handleProcessVideo}
             onMarkPlayers={handleMarkPlayers}
@@ -656,17 +805,17 @@ const VideoDetailPage: React.FC = () => {
             onPreviousStage={moveToPreviousStage}
             onNextStage={moveToNextStage}
             // Player points for segmentation stage
-            player1Points={player1Points}
-            player2Points={player2Points}
+            player1Points={player1Points.get(frameIndex) || []}
+            player2Points={player2Points.get(frameIndex) || []}
             // SAM2 specific controls
             segmentationModel={segmentationModel}
             activeMarkerType={activeMarkerType}
             setSegmentationModel={setSegmentationModel}
             setActiveMarkerType={setActiveMarkerType}
-            player1PositivePoints={player1PositivePoints}
-            player1NegativePoints={player1NegativePoints}
-            player2PositivePoints={player2PositivePoints}
-            player2NegativePoints={player2NegativePoints}
+            player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
+            player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
+            player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
+            player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
             activePlayer={activePlayer}
             setActivePlayer={setActivePlayer}
             onClearPlayerMarkerPoints={handleClearPlayerMarkerPoints}
