@@ -1,6 +1,15 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+import logging
+import cv2
+import os
+import time
+import asyncio
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/segmentation",
@@ -33,7 +42,10 @@ class SAM2MarkersRequest(BaseModel):
 
 class ProcessSegmentationRequest(BaseModel):
     sessionId: str
-    model: str = "Basic"
+    model: str = "Basic"  # Options: "Basic", "SAM2"
+    startFrame: Optional[int] = None
+    endFrame: Optional[int] = None
+    frameInterval: Optional[int] = None
 
 
 @router.post("/mark-players")
@@ -77,16 +89,16 @@ async def mark_players_sam2(request: SAM2MarkersRequest):
     session = sessions[request.sessionId]
 
     # Convert points to format expected by SAM2
-    player1_positive = [[p.x, p.y, 1] for p in request.player1PositivePoints]
-    player1_negative = [[p.x, p.y, 0] for p in request.player1NegativePoints]
-    player2_positive = [[p.x, p.y, 1] for p in request.player2PositivePoints]
-    player2_negative = [[p.x, p.y, 0] for p in request.player2NegativePoints]
+    player1_positive = [[p.x, p.y] for p in request.player1PositivePoints]
+    player1_negative = [[p.x, p.y] for p in request.player1NegativePoints]
+    player2_positive = [[p.x, p.y] for p in request.player2PositivePoints]
+    player2_negative = [[p.x, p.y] for p in request.player2NegativePoints]
 
     # Store points in session
     if "sam2_markers" not in session:
         session["sam2_markers"] = {}
 
-    session["sam2_markers"][request.frameIndex] = {
+    session["sam2_markers"][str(request.frameIndex)] = {
         "player1_positive": player1_positive,
         "player1_negative": player1_negative,
         "player2_positive": player2_positive,
@@ -111,9 +123,18 @@ async def process_segmentation(request: ProcessSegmentationRequest, background_t
 
     session = sessions[request.sessionId]
 
-    # Update session with model choice
+    # Update session with model choice and segmentation parameters
     session["segmentation_model"] = request.model
     session["segmentation_status"] = "processing"
+    session["segmentation_progress"] = 0
+    
+    # Store frame range parameters
+    if request.startFrame is not None:
+        session["segmentation_start_frame"] = request.startFrame
+    if request.endFrame is not None:
+        session["segmentation_end_frame"] = request.endFrame
+    if request.frameInterval is not None:
+        session["segmentation_frame_interval"] = request.frameInterval
 
     # Check if we have the right markers for the selected model
     if request.model == "SAM2":
@@ -225,14 +246,24 @@ async def run_segmentation_pipeline(session: Dict[str, Any], sessionId: str):
     if "masks" not in session:
         session["masks"] = {}
 
+    # Get video dimensions to create proper-sized masks
+    try:
+        cap = cv2.VideoCapture(video_path)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        cap.release()
+    except Exception as e:
+        logger.error(f"Error getting video dimensions: {str(e)}")
+        width, height = 1920, 1080  # Default dimensions
+
     # Process each frame with markers
     for i, (frame_idx, frame_markers) in enumerate(markers.items()):
         # Update progress
         session["segmentation_progress"] = (i + 1) / len(markers) * 100
 
         # Placeholder - In real implementation, this would call a segmentation model
-        player1_mask = generate_dummy_mask(1920, 1080)  # Replace with actual dimensions
-        player2_mask = generate_dummy_mask(1920, 1080)  # Replace with actual dimensions
+        player1_mask = generate_dummy_mask(width, height)
+        player2_mask = generate_dummy_mask(width, height)
 
         # Store masks
         session["masks"][frame_idx] = {"player1": player1_mask, "player2": player2_mask}
@@ -245,44 +276,105 @@ async def run_sam2_segmentation_pipeline(session: Dict[str, Any], sessionId: str
     """
     Background task to run SAM2 segmentation
     """
-    # In a real implementation, this would:
-    # 1. Load the SAM2 model
-    # 2. Process each frame with positive/negative markers
-    # 3. Generate masks for both players
-    # 4. Store masks in the session
-
-    # Placeholder implementation
-    video_path = session["video_path"]
-    sam2_markers = session["sam2_markers"]
-
-    # Initialize masks dictionary if not exists
-    if "masks" not in session:
-        session["masks"] = {}
-
-    # Process each frame with markers
-    for i, (frame_idx, frame_markers) in enumerate(sam2_markers.items()):
-        # Update progress
-        session["segmentation_progress"] = (i + 1) / len(sam2_markers) * 100
-
-        # In a real implementation, we would:
-        # 1. Get player1 positive and negative points
-        player1_positive = frame_markers["player1_positive"]
-        player1_negative = frame_markers["player1_negative"]
-
-        # 2. Get player2 positive and negative points
-        player2_positive = frame_markers["player2_positive"]
-        player2_negative = frame_markers["player2_negative"]
-
-        # 3. Call SAM2 model with these points
-        # For now, generate dummy masks
-        player1_mask = generate_dummy_mask(1920, 1080)  # Replace with actual dimensions
-        player2_mask = generate_dummy_mask(1920, 1080)  # Replace with actual dimensions
-
-        # Store masks
-        session["masks"][frame_idx] = {"player1": player1_mask, "player2": player2_mask}
-
-    # Update session status
-    session["segmentation_status"] = "completed"
+    from models.sam2_model import get_sam2_predictor
+    
+    try:
+        # Get the SAM2 predictor instance
+        sam2_predictor = get_sam2_predictor()
+        
+        # Get session data
+        video_path = session["video_path"]
+        sam2_markers = session["sam2_markers"]
+        
+        # Get frame range parameters
+        start_frame = session.get("segmentation_start_frame", None)
+        end_frame = session.get("segmentation_end_frame", None)
+        frame_interval = session.get("segmentation_frame_interval", 1)
+        
+        # Initialize masks dictionary if not exists
+        if "masks" not in session:
+            session["masks"] = {}
+        
+        # Find the frames to process
+        if start_frame is not None and end_frame is not None:
+            # Process specified frame range
+            frames_to_process = range(start_frame, end_frame + 1, frame_interval)
+        else:
+            # Process only frames with markers
+            frames_to_process = [int(frame_idx) for frame_idx in sam2_markers.keys()]
+        
+        # Track progress
+        total_frames = len(frames_to_process)
+        processed_frames = 0
+        
+        # Process each frame
+        for frame_idx in frames_to_process:
+            frame_idx_str = str(frame_idx)
+            
+            # Get markers for this frame (if available)
+            if frame_idx_str in sam2_markers:
+                frame_markers = sam2_markers[frame_idx_str]
+                player1_positive = frame_markers["player1_positive"]
+                player1_negative = frame_markers["player1_negative"]
+                player2_positive = frame_markers["player2_positive"]
+                player2_negative = frame_markers["player2_negative"]
+                
+                # Call SAM2 model to generate masks
+                player1_mask, player2_mask = sam2_predictor.generate_masks(
+                    video_path=video_path,
+                    frame_idx=frame_idx,
+                    player1_positive_points=player1_positive,
+                    player1_negative_points=player1_negative,
+                    player2_positive_points=player2_positive,
+                    player2_negative_points=player2_negative
+                )
+                
+                # Store masks
+                session["masks"][frame_idx_str] = {
+                    "player1": player1_mask,
+                    "player2": player2_mask
+                }
+            else:
+                # If no markers for this frame, use SAM2 to track masks from nearby frames
+                # This would require SAM2VideoPredictor implementation for tracking
+                # For now, we'll just create dummy masks
+                logger.warning(f"No markers found for frame {frame_idx}, using dummy masks")
+                
+                # Get video dimensions
+                try:
+                    cap = cv2.VideoCapture(video_path)
+                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    cap.release()
+                except Exception as e:
+                    logger.error(f"Error getting video dimensions: {str(e)}")
+                    width, height = 1920, 1080  # Default dimensions
+                
+                # Generate dummy masks for now
+                # In a full implementation, this would use SAM2VideoPredictor for tracking
+                player1_mask = generate_dummy_mask(width, height)
+                player2_mask = generate_dummy_mask(width, height)
+                
+                session["masks"][frame_idx_str] = {
+                    "player1": player1_mask,
+                    "player2": player2_mask
+                }
+            
+            # Update progress
+            processed_frames += 1
+            session["segmentation_progress"] = (processed_frames / total_frames) * 100
+            
+            # Add a small delay to prevent hogging resources
+            await asyncio.sleep(0.01)
+        
+        # Update session status
+        session["segmentation_status"] = "completed"
+        logger.info(f"SAM2 segmentation completed for session {sessionId}")
+        
+    except Exception as e:
+        logger.error(f"Error in SAM2 segmentation pipeline: {str(e)}")
+        session["segmentation_status"] = "error"
+        session["segmentation_error"] = str(e)
 
 
 def generate_dummy_mask(width: int, height: int):
