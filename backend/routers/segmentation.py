@@ -16,23 +16,23 @@ class Point(BaseModel):
 
 
 class MarkPlayersRequest(BaseModel):
-    session_id: str
-    frame_index: int
-    player1_points: List[Point]
-    player2_points: List[Point]
+    sessionId: str
+    frameIndex: int
+    player1Points: List[Point]
+    player2Points: List[Point]
 
 
 class SAM2MarkersRequest(BaseModel):
-    session_id: str
-    frame_index: int
-    player1_positive_points: List[Point]
-    player1_negative_points: List[Point]
-    player2_positive_points: List[Point]
-    player2_negative_points: List[Point]
+    sessionId: str
+    frameIndex: int
+    player1PositivePoints: List[Point]
+    player1NegativePoints: List[Point]
+    player2PositivePoints: List[Point]
+    player2NegativePoints: List[Point]
 
 
 class ProcessSegmentationRequest(BaseModel):
-    session_id: str
+    sessionId: str
     model: str = "Basic"
 
 
@@ -43,20 +43,20 @@ async def mark_players(request: MarkPlayersRequest):
     """
     from app import sessions
 
-    if request.session_id not in sessions:
+    if request.sessionId not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[request.session_id]
+    session = sessions[request.sessionId]
 
     # Convert points to format expected by SAM2
-    player1_points = [[p.x, p.y] for p in request.player1_points]
-    player2_points = [[p.x, p.y] for p in request.player2_points]
+    player1_points = [[p.x, p.y] for p in request.player1Points]
+    player2_points = [[p.x, p.y] for p in request.player2Points]
 
     # Store points in session
     if "markers" not in session:
         session["markers"] = {}
 
-    session["markers"][request.frame_index] = {
+    session["markers"][request.frameIndex] = {
         "player1": player1_points,
         "player2": player2_points,
     }
@@ -71,22 +71,22 @@ async def mark_players_sam2(request: SAM2MarkersRequest):
     """
     from app import sessions
 
-    if request.session_id not in sessions:
+    if request.sessionId not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[request.session_id]
+    session = sessions[request.sessionId]
 
     # Convert points to format expected by SAM2
-    player1_positive = [[p.x, p.y, 1] for p in request.player1_positive_points]
-    player1_negative = [[p.x, p.y, 0] for p in request.player1_negative_points]
-    player2_positive = [[p.x, p.y, 1] for p in request.player2_positive_points]
-    player2_negative = [[p.x, p.y, 0] for p in request.player2_negative_points]
+    player1_positive = [[p.x, p.y, 1] for p in request.player1PositivePoints]
+    player1_negative = [[p.x, p.y, 0] for p in request.player1NegativePoints]
+    player2_positive = [[p.x, p.y, 1] for p in request.player2PositivePoints]
+    player2_negative = [[p.x, p.y, 0] for p in request.player2NegativePoints]
 
     # Store points in session
     if "sam2_markers" not in session:
         session["sam2_markers"] = {}
 
-    session["sam2_markers"][request.frame_index] = {
+    session["sam2_markers"][request.frameIndex] = {
         "player1_positive": player1_positive,
         "player1_negative": player1_negative,
         "player2_positive": player2_positive,
@@ -94,29 +94,22 @@ async def mark_players_sam2(request: SAM2MarkersRequest):
     }
 
     # Calculate total markers count for response
-    total_markers = (
-        len(player1_positive) +
-        len(player1_negative) +
-        len(player2_positive) +
-        len(player2_negative)
-    )
+    total_markers = len(player1_positive) + len(player1_negative) + len(player2_positive) + len(player2_negative)
 
     return {"success": True, "markers_count": total_markers}
 
 
 @router.post("/start-segmentation")
-async def process_segmentation(
-    request: ProcessSegmentationRequest, background_tasks: BackgroundTasks
-):
+async def process_segmentation(request: ProcessSegmentationRequest, background_tasks: BackgroundTasks):
     """
     Process player segmentation using the specified model based on markers
     """
     from app import sessions
 
-    if request.session_id not in sessions:
+    if request.sessionId not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[request.session_id]
+    session = sessions[request.sessionId]
 
     # Update session with model choice
     session["segmentation_model"] = request.model
@@ -125,34 +118,30 @@ async def process_segmentation(
     # Check if we have the right markers for the selected model
     if request.model == "SAM2":
         if "sam2_markers" not in session or not session["sam2_markers"]:
-            raise HTTPException(
-                status_code=400, detail="No SAM2 player markers found in session"
-            )
+            raise HTTPException(status_code=400, detail="No SAM2 player markers found in session")
         # Start segmentation as a background task with SAM2 model
-        background_tasks.add_task(run_sam2_segmentation_pipeline, session, request.session_id)
+        background_tasks.add_task(run_sam2_segmentation_pipeline, session, request.sessionId)
     else:
         # Legacy model handling
         if "markers" not in session or not session["markers"]:
-            raise HTTPException(
-                status_code=400, detail="No player markers found in session"
-            )
+            raise HTTPException(status_code=400, detail="No player markers found in session")
         # Start segmentation as a background task with basic model
-        background_tasks.add_task(run_segmentation_pipeline, session, request.session_id)
+        background_tasks.add_task(run_segmentation_pipeline, session, request.sessionId)
 
     return {"success": True, "message": "Segmentation processing started"}
 
 
-@router.get("/status/{session_id}")
-async def get_segmentation_status(session_id: str):
+@router.get("/status/{sessionId}")
+async def get_segmentation_status(sessionId: str):
     """
     Get the current status of segmentation processing
     """
     from app import sessions
 
-    if session_id not in sessions:
+    if sessionId not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[session_id]
+    session = sessions[sessionId]
 
     # Default status values
     status = session.get("segmentation_status", "pending")
@@ -191,34 +180,34 @@ async def get_segmentation_status(session_id: str):
     }
 
 
-@router.get("/mask/{session_id}/{frame_index}")
-async def get_frame_mask(session_id: str, frame_index: int):
+@router.get("/mask/{sessionId}/{frameIndex}")
+async def get_frame_mask(sessionId: str, frameIndex: int):
     """
     Get segmentation mask for a specific frame
     """
     from app import sessions
 
-    if session_id not in sessions:
+    if sessionId not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    session = sessions[session_id]
+    session = sessions[sessionId]
 
     if "masks" not in session or not session["masks"]:
         raise HTTPException(status_code=404, detail="No masks found for session")
 
-    if str(frame_index) not in session["masks"]:
-        raise HTTPException(status_code=404, detail=f"No mask found for frame {frame_index}")
+    if str(frameIndex) not in session["masks"]:
+        raise HTTPException(status_code=404, detail=f"No mask found for frame {frameIndex}")
 
-    frame_masks = session["masks"][str(frame_index)]
+    frame_masks = session["masks"][str(frameIndex)]
 
     return {
-        "frameIndex": frame_index,
+        "frameIndex": frameIndex,
         "player1Mask": frame_masks["player1"],
         "player2Mask": frame_masks["player2"],
     }
 
 
-async def run_segmentation_pipeline(session: Dict[str, Any], session_id: str):
+async def run_segmentation_pipeline(session: Dict[str, Any], sessionId: str):
     """
     Background task to run basic segmentation
     """
@@ -252,7 +241,7 @@ async def run_segmentation_pipeline(session: Dict[str, Any], session_id: str):
     session["segmentation_status"] = "completed"
 
 
-async def run_sam2_segmentation_pipeline(session: Dict[str, Any], session_id: str):
+async def run_sam2_segmentation_pipeline(session: Dict[str, Any], sessionId: str):
     """
     Background task to run SAM2 segmentation
     """

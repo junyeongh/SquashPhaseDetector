@@ -29,9 +29,7 @@ class YOLOPosePredictor:
         # from ultralytics import YOLO
         # self.model = YOLO(checkpoint_path)
 
-    def detect_landmarks(
-        self, video_path: str, frame_idx: int, player_mask: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def detect_landmarks(self, video_path: str, frame_idx: int, player_mask: Dict[str, Any]) -> Dict[str, Any]:
         """
         Detect body landmarks for a player in a specific frame
 
@@ -78,9 +76,7 @@ def get_yolo_pose_predictor() -> YOLOPosePredictor:
     global yolo_pose_predictor
 
     if yolo_pose_predictor is None:
-        checkpoint_path = os.environ.get(
-            "YOLO_POSE_CHECKPOINT_PATH", "/app/checkpoints/yolov8x-pose.pt"
-        )
+        checkpoint_path = os.environ.get("YOLO_POSE_CHECKPOINT_PATH", "/app/checkpoints/yolov8x-pose.pt")
         yolo_pose_predictor = YOLOPosePredictor(checkpoint_path)
 
     return yolo_pose_predictor

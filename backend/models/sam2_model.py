@@ -85,9 +85,7 @@ def get_sam2_predictor() -> SAM2Predictor:
     global sam2_predictor
 
     if sam2_predictor is None:
-        checkpoint_path = os.environ.get(
-            "SAM2_CHECKPOINT_PATH", "/app/checkpoints/sam2.1_hiera_base_plus.pt"
-        )
+        checkpoint_path = os.environ.get("SAM2_CHECKPOINT_PATH", "/app/checkpoints/sam2.1_hiera_base_plus.pt")
         sam2_predictor = SAM2Predictor(checkpoint_path)
 
     return sam2_predictor

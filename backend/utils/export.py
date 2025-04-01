@@ -10,9 +10,7 @@ import csv
 from typing import Dict, List, Any
 
 
-def export_game_states_to_csv(
-    game_states: List[Dict[str, Any]], output_path: str
-) -> None:
+def export_game_states_to_csv(game_states: List[Dict[str, Any]], output_path: str) -> None:
     """
     Export game states to CSV format
 
