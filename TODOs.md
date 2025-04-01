@@ -1,0 +1,11 @@
+- [ ] Complete sam2 segmentation
+  - [ ] send segmentation points to beckend
+  - [ ] run sam2 at backend and send mask and box back to frontend
+  - [ ] render mask and box in frontend
+- [ ] Use the box from segementation to run pose model
+  - [ ] run yolo pose at backend and send the confident, pose landmarks back to frontend
+  - [ ] render landmarks in frontend
+- [ ] Use landmarks from pose detection to run custom ML model
+  - [ ] run ML model to classify the phase detection and send result back to frontend
+  - [ ] render classification result back to frontend
+  - [ ] allow user to download each data format
