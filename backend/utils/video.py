@@ -21,18 +21,7 @@ def extract_frames(video_file_path: str, video_file_dir: str):
     frame_dir = os.path.join(video_file_dir, "frames/")
     os.makedirs(frame_dir, exist_ok=True)
 
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-i",
-            video_file_path,
-            "-q:v",
-            "2",
-            "-start_number",
-            "0",
-            f"{temp_dir}/%06d.jpg",
-        ]
-    )
+    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "2", "-start_number", "0", f"{temp_dir}/%06d.jpg", ])  # fmt: skip
 
 
 #####
