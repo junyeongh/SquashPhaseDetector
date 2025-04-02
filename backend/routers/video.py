@@ -65,13 +65,8 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
             indent=2,
         )
 
-    # Create subdirectory for each frames for future use
-    frame_dir = os.path.join(video_file_dir, "frames/")
-    os.makedirs(frame_dir, exist_ok=True)
-
     # Add frame extraction and main view timestamp generation as background tasks
-    background_tasks.add_task(extract_frames, video_file_path, frame_dir)
-    # background_tasks.add_task(generate_mainview_timestamp, video_file_path, video_file_dir)
+    background_tasks.add_task(extract_frames, video_file_path, video_file_dir)
 
     return {
         "UUID": video_file_id,

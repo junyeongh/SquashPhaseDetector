@@ -114,16 +114,32 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
         return None
 
     print(f"Main view timestamps: {timestamps}")
-
-    # Write timestamps incrementally instead of storing them all
     mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.csv")
     with open(mainview_file_path, "w") as f:
         f.write("Start,End,StartFrame,EndFrame\n")
-        # Write the already processed timestamps directly
         for onset, offset, onset_frame, offset_frame in timestamps:
             f.write(f"{onset:.2f},{offset:.2f},{onset_frame},{offset_frame}\n")
-
     print(f"Timestamps saved to: {mainview_file_path}")
+
+    temp_dir = os.path.join(video_file_dir, "temp/")
+    frame_dir = os.path.join(video_file_dir, "frames/")
+
+    # import csv
+    # def frame_generator(timestamp_path):
+    #     with open(timestamp_path, "r") as f:
+    #         reader = csv.DictReader(f)
+    #         for row in reader:
+    #             start_frame = int(row['StartFrame'])
+    #             end_frame = int(row['EndFrame'])
+    #             for frame in range(start_frame, end_frame + 1):
+    #                 yield frame
+    # frame_names = sorted([f for f in os.listdir(temp_dir) if f.endswith(('.jpg', '.jpeg', '.png'))])
+    # for frame in frame_generator(timestamp_path):
+    #     original_path = os.path.join(uuid, "frames", frame_names[frame])
+    #     new_path = os.path.join(new_frames_dir, frame_names[frame])
+    #     # print(original_path, new_path)
+    #     os.rename(original_path, new_path)
+
     return mainview_file_path
 
 
