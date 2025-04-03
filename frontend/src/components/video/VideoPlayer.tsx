@@ -10,10 +10,11 @@ interface ReactPlayerWrapperProps {
   mainviewTimestamps?: MainviewTimestamp[];
   onPlayerUpdates?: (currentTime: number, duration: number, playing: boolean) => void;
   onSeek?: (time: number) => void;
+  currentStage: string;
 }
 
 const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewTimestamps, onSeek }, ref) => {
+  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewTimestamps, onSeek, currentStage }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -182,8 +183,9 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           {/* This is where I want the overlay. */}
 
           {/* Play/Pause overlay button */}
-          <div
-            className='absolute inset-0 z-10 flex items-center justify-center'
+          {currentStage === 'segmentation' || currentStage === 'pose' && (
+            <div
+              className='absolute inset-0 z-10 flex items-center justify-center'
             onClick={(e) => {
               // Only toggle play if the click is directly on this div (not on overlay elements)
               if (e.currentTarget === e.target) {
@@ -193,10 +195,11 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           >
             {!playing && (
               <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
-                <Play size={36} fill='white' />
-              </div>
-            )}
-          </div>
+                  <Play size={36} fill='white' />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Progress bar section */}

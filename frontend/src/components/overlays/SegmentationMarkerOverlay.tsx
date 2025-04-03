@@ -1,6 +1,6 @@
 import { useRef, useEffect, MouseEvent } from 'react';
 import { Point } from '@/services/api/segmentation';
-import { MarkerType } from '@/components/ProcessSidemenu';
+import { MarkerType } from '@/components/processSidemenu';
 
 interface SegmentationMarkerOverlayProps {
   width: number;

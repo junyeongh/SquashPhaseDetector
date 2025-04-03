@@ -19,8 +19,7 @@ import {
   getSegmentationMask,
 } from '@/services/api/segmentation';
 import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
-import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/ProcessSidemenu';
-import { MarkerType } from '@/components/ProcessSidemenu';
+import ProcessSidemenu, { ProcessingStage, StageConfig, MarkerType } from '@/components/processSidemenu';
 
 // Shared stage configuration
 export const processingStages: StageConfig[] = [
