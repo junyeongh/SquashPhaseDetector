@@ -1,21 +1,10 @@
 import { useRef, useEffect, MouseEvent } from 'react';
-import { Point } from '@/services/api/segmentation';
-import { MarkerType } from '@/components/processSidemenu';
+import { Point, MarkerType } from '@/types/segmentation';
+import useSegmentationStore from '@/store/segmentationStore';
 
 interface SegmentationMarkerOverlayProps {
   width: number;
   height: number;
-  activePlayer: 1 | 2;
-  activeMarkerType: MarkerType;
-  player1PositivePoints: Point[];
-  player1NegativePoints: Point[];
-  player2PositivePoints: Point[];
-  player2NegativePoints: Point[];
-  player1Points: Point[];
-  player2Points: Point[];
-  segmentationModel: string;
-  onAddPoint: (point: Point) => void;
-  onRemovePoint?: (player: 1 | 2, markerType: MarkerType, pointIndex: number) => void;
   isPlaying?: boolean;
   isInMainView?: boolean;
 }
@@ -23,19 +12,27 @@ interface SegmentationMarkerOverlayProps {
 const SegmentationMarkerOverlay = ({
   width,
   height,
-  player1PositivePoints,
-  player1NegativePoints,
-  player2PositivePoints,
-  player2NegativePoints,
-  player1Points,
-  player2Points,
-  segmentationModel,
-  onAddPoint,
-  onRemovePoint,
   isPlaying = false,
   isInMainView = true,
 }: SegmentationMarkerOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Get state and actions from the store
+  const { segmentationModel, markedFrames, currentFrameIndex, addPoint, removePoint } = useSegmentationStore();
+
+  // Get current frame data from marked frames
+  const frameData = markedFrames.get(currentFrameIndex) || {
+    player1PositivePoints: [],
+    player1NegativePoints: [],
+    player2PositivePoints: [],
+    player2NegativePoints: [],
+  };
+
+  const { player1PositivePoints, player1NegativePoints, player2PositivePoints, player2NegativePoints } = frameData;
+
+  // For backward compatibility with Basic segmentation model
+  const player1Points = player1PositivePoints || [];
+  const player2Points = player2PositivePoints || [];
 
   // Check if a point is near another point (for click removal)
   const isNearPoint = (x: number, y: number, point: Point, threshold = 10): boolean => {
@@ -94,12 +91,12 @@ const SegmentationMarkerOverlay = ({
     // Check if user clicked on an existing point
     const clickedPoint = findClickedPoint(x, y);
 
-    if (clickedPoint && onRemovePoint) {
+    if (clickedPoint) {
       // Remove the clicked point
-      onRemovePoint(clickedPoint.player, clickedPoint.type, clickedPoint.index);
+      removePoint(clickedPoint.player, clickedPoint.type, clickedPoint.index);
     } else {
       // Add a new point
-      onAddPoint({ x, y });
+      addPoint({ x, y });
     }
   };
 
@@ -185,17 +182,17 @@ const SegmentationMarkerOverlay = ({
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      className={`absolute top-0 left-0 z-20 ${
-        isPlaying || !isInMainView ? 'cursor-default' : 'cursor-crosshair hover:opacity-95'
-      }`}
-      onClick={handleCanvasClick}
-      aria-label='Interactive segmentation overlay'
-      tabIndex={0}
-    />
+    <div className='absolute inset-0 z-20 flex items-center justify-center'>
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        className={`${isPlaying || !isInMainView ? 'cursor-default' : 'cursor-crosshair hover:opacity-95'}`}
+        onClick={handleCanvasClick}
+        aria-label='Interactive segmentation overlay'
+        tabIndex={0}
+      />
+    </div>
   );
 };
 

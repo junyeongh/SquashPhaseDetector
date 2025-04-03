@@ -1,47 +1,48 @@
 import React, { useState } from 'react';
 import { User, UserRound, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
-import { SegmentationStageProps } from '../types';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
-import { Point } from '@/services/api/segmentation';
+import { Point } from '@/types/segmentation';
+import useSegmentationStore from '@/store/segmentationStore';
 
-interface FrameData {
-  player1PositivePoints?: Point[];
-  player1NegativePoints?: Point[];
-  player2PositivePoints?: Point[];
-  player2NegativePoints?: Point[];
+// Simplified props interface - remove state-related props
+interface SimplifiedSegmentationStageProps {
+  isProcessing: boolean;
+  processingStatus: string;
+  showSkipButton: boolean;
+  onSkipStage: () => void;
+  currentFrameIndex?: number;
 }
 
-const SegmentationStage: React.FC<SegmentationStageProps> = ({
+const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
   isProcessing,
   processingStatus,
   showSkipButton,
   onSkipStage,
-  segmentationModel = 'Basic',
-  setSegmentationModel,
-  activeMarkerType = 'positive',
-  setActiveMarkerType,
-  player1PositivePoints = [],
-  player1NegativePoints = [],
-  player2PositivePoints = [],
-  player2NegativePoints = [],
-  activePlayer = 1,
-  setActivePlayer,
-  onClearPlayerPoints,
-  onClearPlayerMarkerPoints,
   currentFrameIndex = 0,
-  markedFrames,
 }) => {
   const [isMarkersDropdownOpen, setIsMarkersDropdownOpen] = useState(false);
 
+  // Get state and actions from store
+  const {
+    segmentationModel,
+    setSegmentationModel,
+    activeMarkerType,
+    setActiveMarkerType,
+    activePlayer,
+    setActivePlayer,
+    markedFrames,
+    clearPlayerPoints,
+    setCurrentFrameIndex,
+  } = useSegmentationStore();
+
+  // Update currentFrameIndex in store when it changes
+  React.useEffect(() => {
+    setCurrentFrameIndex(currentFrameIndex);
+  }, [currentFrameIndex, setCurrentFrameIndex]);
+
   // Handler to clear all points for a player (both regular and marker points)
   const handleClearPlayerAllPoints = (playerId: 1 | 2) => {
-    if (onClearPlayerMarkerPoints) {
-      onClearPlayerMarkerPoints(playerId, 'positive');
-      onClearPlayerMarkerPoints(playerId, 'negative');
-    }
-    if (onClearPlayerPoints) {
-      onClearPlayerPoints(playerId);
-    }
+    clearPlayerPoints(playerId);
   };
 
   // Count total markers for all frames
@@ -68,42 +69,21 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
       };
     }
 
-    // If we only have the current frame's data
+    // If no frames are marked
     return {
-      p1PositivePoints: player1PositivePoints.length,
-      p1NegativePoints: player1NegativePoints.length,
-      p2PositivePoints: player2PositivePoints.length,
-      p2NegativePoints: player2NegativePoints.length,
+      p1PositivePoints: 0,
+      p1NegativePoints: 0,
+      p2PositivePoints: 0,
+      p2NegativePoints: 0,
     };
   };
 
   const totalMarkers = countTotalMarkers();
 
   // Create a structure for frames that have markers
-  const getMarkedFramesData = (): Array<[number, FrameData]> => {
-    // If markedFrames is provided, use it directly
-    if (markedFrames && markedFrames.size > 0) {
-      return Array.from(markedFrames.entries()).sort(([frameA], [frameB]) => frameA - frameB);
-    }
-
-    // Otherwise, use the current frame's data
-    const frameData: FrameData = {};
-
-    if (player1PositivePoints.length > 0) {
-      frameData.player1PositivePoints = player1PositivePoints;
-    }
-    if (player1NegativePoints.length > 0) {
-      frameData.player1NegativePoints = player1NegativePoints;
-    }
-    if (player2PositivePoints.length > 0) {
-      frameData.player2PositivePoints = player2PositivePoints;
-    }
-    if (player2NegativePoints.length > 0) {
-      frameData.player2NegativePoints = player2NegativePoints;
-    }
-
-    // Return array with current frame if it has any points
-    return Object.keys(frameData).length > 0 ? [[currentFrameIndex, frameData]] : [];
+  const getMarkedFramesData = () => {
+    // Convert Map to sorted array
+    return Array.from(markedFrames.entries()).sort(([frameA], [frameB]) => frameA - frameB);
   };
 
   const markedFramesData = getMarkedFramesData();
@@ -123,89 +103,83 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
   return (
     <div className='space-y-3'>
       {/* Segmentation Model Selection */}
-      {setSegmentationModel && (
-        <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-          <h4 className='mb-2 text-xs font-medium text-gray-700'>Segmentation Model</h4>
-          <select
-            id='segmentation-model'
-            value={segmentationModel}
-            onChange={(e) => setSegmentationModel(e.target.value)}
-            disabled={isProcessing}
-            className='w-full rounded-md border border-gray-300 py-1 pr-10 pl-3 text-xs text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none'
-          >
-            <option value='SAM2'>SAM2 (Recommended)</option>
-            <option value='Basic'>Basic Segmentation</option>
-          </select>
-        </div>
-      )}
+      <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
+        <h4 className='mb-2 text-xs font-medium text-gray-700'>Segmentation Model</h4>
+        <select
+          id='segmentation-model'
+          value={segmentationModel}
+          onChange={(e) => setSegmentationModel(e.target.value)}
+          disabled={isProcessing}
+          className='w-full rounded-md border border-gray-300 py-1 pr-10 pl-3 text-xs text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none'
+        >
+          <option value='SAM2'>SAM2 (Recommended)</option>
+          <option value='Basic'>Basic Segmentation</option>
+        </select>
+      </div>
 
       {/* Marker Interface Selection */}
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
         {/* Marker Type Selection - Available for all models */}
-        {setActiveMarkerType && (
-          <div className='mb-3'>
-            <h5 className='mb-1 text-xs font-medium text-gray-700'>Marker Type</h5>
-            <p className='mb-2 text-xs text-gray-600'>
-              Add markers by clicking on the video frame. Use positive markers to include areas and negative markers to
-              exclude areas.
-            </p>
-            <div className='flex space-x-2'>
-              <button
-                onClick={() => setActiveMarkerType('positive')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
-                  activeMarkerType === 'positive'
-                    ? 'border border-green-300 bg-green-100 text-green-700'
-                    : 'border border-gray-200 bg-gray-100 text-gray-600'
-                }`}
-              >
-                <Plus className='h-3 w-3' />
-                Positive
-              </button>
+        <div className='mb-3'>
+          <h5 className='mb-1 text-xs font-medium text-gray-700'>Marker Type</h5>
+          <p className='mb-2 text-xs text-gray-600'>
+            Add markers by clicking on the video frame. Use positive markers to include areas and negative markers to
+            exclude areas.
+          </p>
+          <div className='flex space-x-2'>
+            <button
+              onClick={() => setActiveMarkerType('positive')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
+                activeMarkerType === 'positive'
+                  ? 'border border-green-300 bg-green-100 text-green-700'
+                  : 'border border-gray-200 bg-gray-100 text-gray-600'
+              }`}
+            >
+              <Plus className='h-3 w-3' />
+              Positive
+            </button>
 
-              <button
-                onClick={() => setActiveMarkerType('negative')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
-                  activeMarkerType === 'negative'
-                    ? 'border border-red-300 bg-red-100 text-red-700'
-                    : 'border border-gray-200 bg-gray-100 text-gray-600'
-                }`}
-              >
-                <Minus className='h-3 w-3' />
-                Negative
-              </button>
-            </div>
+            <button
+              onClick={() => setActiveMarkerType('negative')}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
+                activeMarkerType === 'negative'
+                  ? 'border border-red-300 bg-red-100 text-red-700'
+                  : 'border border-gray-200 bg-gray-100 text-gray-600'
+              }`}
+            >
+              <Minus className='h-3 w-3' />
+              Negative
+            </button>
           </div>
-        )}
+        </div>
         <h4 className='mb-2 text-xs font-medium text-gray-700'>Player Selection</h4>
 
         {/* Player selection toggle - Now shows total markers across all frames */}
-        {setActivePlayer && (
-          <div className='mb-3 flex space-x-2'>
-            <button
-              onClick={() => setActivePlayer(1)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
-                activePlayer === 1
-                  ? 'border border-blue-300 bg-blue-100 text-blue-700'
-                  : 'border border-gray-200 bg-gray-100 text-gray-600'
-              }`}
-            >
-              <User className='h-3 w-3' />
-              Player 1{` (+${totalMarkers.p1PositivePoints} / -${totalMarkers.p1NegativePoints})`}
-            </button>
+        <div className='mb-3 flex space-x-2'>
+          <button
+            onClick={() => setActivePlayer(1)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
+              activePlayer === 1
+                ? 'border border-blue-300 bg-blue-100 text-blue-700'
+                : 'border border-gray-200 bg-gray-100 text-gray-600'
+            }`}
+          >
+            <User className='h-3 w-3' />
+            Player 1{` (+${totalMarkers.p1PositivePoints} / -${totalMarkers.p1NegativePoints})`}
+          </button>
 
-            <button
-              onClick={() => setActivePlayer(2)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
-                activePlayer === 2
-                  ? 'border border-yellow-300 bg-yellow-100 text-yellow-700'
-                  : 'border border-gray-200 bg-gray-100 text-gray-600'
-              }`}
-            >
-              <UserRound className='h-3 w-3' />
-              Player 2{` (+${totalMarkers.p2PositivePoints} / -${totalMarkers.p2NegativePoints})`}
-            </button>
-          </div>
-        )}
+          <button
+            onClick={() => setActivePlayer(2)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded py-1.5 text-xs font-medium ${
+              activePlayer === 2
+                ? 'border border-yellow-300 bg-yellow-100 text-yellow-700'
+                : 'border border-gray-200 bg-gray-100 text-gray-600'
+            }`}
+          >
+            <UserRound className='h-3 w-3' />
+            Player 2{` (+${totalMarkers.p2PositivePoints} / -${totalMarkers.p2NegativePoints})`}
+          </button>
+        </div>
 
         {/* Simplified clear points buttons - One button per player */}
         <div className='flex space-x-2'>

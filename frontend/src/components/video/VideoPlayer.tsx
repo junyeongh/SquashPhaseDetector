@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import ReactPlayer from 'react-player';
 import { MainviewTimestamp } from '@/services/api/video';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, RotateCcw, RotateCw, Check } from 'lucide-react';
+import SegmentationMarkerOverlay from '@/components/overlays/SegmentationMarkerOverlay';
 
 interface ReactPlayerWrapperProps {
   src: string;
@@ -157,7 +158,7 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     return (
       <div className='flex w-full flex-col'>
         {/* Video container */}
-        <div className='relative aspect-video max-h-[calc(100vh-350px)] w-full overflow-hidden bg-black'>
+        <div className='relative aspect-video max-h-[calc(100vh-350px)] w-full overflow-hidden bg-white'>
           {/* ReactPlayer */}
           <div className='absolute inset-0 flex items-center justify-center'>
             <ReactPlayer
@@ -180,7 +181,14 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           </div>
 
           {/* Overlay content */}
-          {/* This is where I want the overlay. */}
+          {currentStage === 'segmentation' && (
+            <SegmentationMarkerOverlay
+              width={playerRef.current?.getInternalPlayer()?.parentElement?.clientWidth || 0}
+              height={playerRef.current?.getInternalPlayer()?.parentElement?.clientHeight || 0}
+              isPlaying={playing}
+              isInMainView={true}
+            />
+          )}
 
           {/* Play/Pause overlay button */}
           {currentStage === 'segmentation' ||
