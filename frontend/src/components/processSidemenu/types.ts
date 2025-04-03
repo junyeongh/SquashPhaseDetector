@@ -76,7 +76,7 @@ export interface PoseStageProps extends BaseStageProps {
 
 // Game state analysis stage specific props
 export interface GameStateStageProps extends BaseStageProps {
-  onProcess?: () => void;
+  onStartGameStateAnalysis?: () => void;
 }
 
 // Export stage specific props
@@ -146,6 +146,9 @@ export interface ProcessSidemenuProps {
   setModelType?: (type: string) => void;
   setConfidenceThreshold?: (threshold: number) => void;
   onStartPoseDetection?: () => void;
+
+  // Game state props
+  onStartGameStateAnalysis?: () => void;
 
   // Frame navigation
   onPreviousFrame?: () => void;

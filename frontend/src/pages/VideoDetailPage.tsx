@@ -22,7 +22,7 @@ import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/s
 import ProcessSidemenu, { ProcessingStage, StageConfig, MarkerType } from '@/components/processSidemenu';
 
 // Shared stage configuration
-export const processingStages: StageConfig[] = [
+const processingStages: StageConfig[] = [
   {
     id: 'preprocess',
     label: 'Video Preprocessing',
@@ -754,6 +754,13 @@ const VideoDetailPage: React.FC = () => {
     return combinedMap;
   };
 
+  const handleStartGameStateAnalysis = async () => {
+    if (!urlUuid) return;
+
+    setIsProcessing(true);
+    setProcessingStatus('Starting game state analysis...');
+  };
+
   return (
     <div className='flex h-full flex-col'>
       {/* New layout with content, video player and progress sidebar */}
@@ -798,6 +805,7 @@ const VideoDetailPage: React.FC = () => {
             onProcess={handleProcessVideo}
             onStartSegmentation={handleStartSegmentation}
             onStartPoseDetection={handleStartPoseDetection}
+            onStartGameStateAnalysis={handleStartGameStateAnalysis}
             // Skip controls
             showSkipButton={showSkipButton}
             onSkipStage={skipCurrentStage}

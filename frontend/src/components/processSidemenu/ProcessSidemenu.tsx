@@ -53,6 +53,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   setConfidenceThreshold,
   onStartPoseDetection,
 
+  // Game state props
+  onStartGameStateAnalysis,
+
   // Export props
   onExportJson,
   onExportVideo,
@@ -166,7 +169,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             processingStatus={processingStatus}
             showSkipButton={showSkipButton}
             onSkipStage={onSkipStage}
-            onProcess={onProcess}
+            onStartGameStateAnalysis={onStartGameStateAnalysis}
           />
         );
       case 'export':
@@ -236,9 +239,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
           </button>
         )}
 
-        {activeStage === 'game_state' && onProcess && (
+        {activeStage === 'game_state' && onStartGameStateAnalysis && (
           <button
-            onClick={onProcess}
+            onClick={onStartGameStateAnalysis}
             disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
           >

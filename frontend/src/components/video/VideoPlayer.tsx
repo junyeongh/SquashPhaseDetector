@@ -183,23 +183,24 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           {/* This is where I want the overlay. */}
 
           {/* Play/Pause overlay button */}
-          {currentStage === 'segmentation' || currentStage === 'pose' && (
-            <div
-              className='absolute inset-0 z-10 flex items-center justify-center'
-            onClick={(e) => {
-              // Only toggle play if the click is directly on this div (not on overlay elements)
-              if (e.currentTarget === e.target) {
-                togglePlay();
-              }
-            }}
-          >
-            {!playing && (
-              <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
-                  <Play size={36} fill='white' />
-                </div>
-              )}
-            </div>
-          )}
+          {currentStage === 'segmentation' ||
+            (currentStage === 'pose' && (
+              <div
+                className='absolute inset-0 z-10 flex items-center justify-center'
+                onClick={(e) => {
+                  // Only toggle play if the click is directly on this div (not on overlay elements)
+                  if (e.currentTarget === e.target) {
+                    togglePlay();
+                  }
+                }}
+              >
+                {!playing && (
+                  <div className='bg-opacity-60 hover:bg-opacity-70 flex h-20 w-20 items-center justify-center rounded-full bg-black text-white transition-all'>
+                    <Play size={36} fill='white' />
+                  </div>
+                )}
+              </div>
+            ))}
         </div>
 
         {/* Progress bar section */}

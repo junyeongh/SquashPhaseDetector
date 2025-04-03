@@ -5,8 +5,6 @@ import ProcessingIndicator from '../ui/ProcessingIndicator';
 import { Point } from '@/services/api/segmentation';
 
 interface FrameData {
-  player1Points?: Point[];
-  player2Points?: Point[];
   player1PositivePoints?: Point[];
   player1NegativePoints?: Point[];
   player2PositivePoints?: Point[];
@@ -22,8 +20,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
   setSegmentationModel,
   activeMarkerType = 'positive',
   setActiveMarkerType,
-  player1Points = [],
-  player2Points = [],
   player1PositivePoints = [],
   player1NegativePoints = [],
   player2PositivePoints = [],
@@ -52,16 +48,12 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
   const countTotalMarkers = () => {
     // If markedFrames is provided, count markers from there
     if (markedFrames && markedFrames.size > 0) {
-      let totalP1Points = 0;
-      let totalP2Points = 0;
       let totalP1PositivePoints = 0;
       let totalP1NegativePoints = 0;
       let totalP2PositivePoints = 0;
       let totalP2NegativePoints = 0;
 
       markedFrames.forEach((data) => {
-        totalP1Points += data.player1Points?.length || 0;
-        totalP2Points += data.player2Points?.length || 0;
         totalP1PositivePoints += data.player1PositivePoints?.length || 0;
         totalP1NegativePoints += data.player1NegativePoints?.length || 0;
         totalP2PositivePoints += data.player2PositivePoints?.length || 0;
@@ -69,8 +61,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
       });
 
       return {
-        p1Points: totalP1Points,
-        p2Points: totalP2Points,
         p1PositivePoints: totalP1PositivePoints,
         p1NegativePoints: totalP1NegativePoints,
         p2PositivePoints: totalP2PositivePoints,
@@ -80,8 +70,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
 
     // If we only have the current frame's data
     return {
-      p1Points: player1Points.length,
-      p2Points: player2Points.length,
       p1PositivePoints: player1PositivePoints.length,
       p1NegativePoints: player1NegativePoints.length,
       p2PositivePoints: player2PositivePoints.length,
@@ -101,12 +89,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
     // Otherwise, use the current frame's data
     const frameData: FrameData = {};
 
-    if (player1Points.length > 0) {
-      frameData.player1Points = player1Points;
-    }
-    if (player2Points.length > 0) {
-      frameData.player2Points = player2Points;
-    }
     if (player1PositivePoints.length > 0) {
       frameData.player1PositivePoints = player1PositivePoints;
     }
@@ -208,8 +190,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
               }`}
             >
               <User className='h-3 w-3' />
-              Player 1 {totalMarkers.p1Points > 0 && `(${totalMarkers.p1Points})`}
-              {` (${totalMarkers.p1PositivePoints}+/${totalMarkers.p1NegativePoints}-)`}
+              Player 1{` (+${totalMarkers.p1PositivePoints} / -${totalMarkers.p1NegativePoints})`}
             </button>
 
             <button
@@ -221,8 +202,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
               }`}
             >
               <UserRound className='h-3 w-3' />
-              Player 2 {totalMarkers.p2Points > 0 && `(${totalMarkers.p2Points})`}
-              {` (${totalMarkers.p2PositivePoints}+/${totalMarkers.p2NegativePoints}-)`}
+              Player 2{` (+${totalMarkers.p2PositivePoints} / -${totalMarkers.p2NegativePoints})`}
             </button>
           </div>
         )}
@@ -231,9 +211,9 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         <div className='flex space-x-2'>
           <button
             onClick={() => handleClearPlayerAllPoints(1)}
-            disabled={!totalMarkers.p1Points && !totalMarkers.p1PositivePoints && !totalMarkers.p1NegativePoints}
+            disabled={!totalMarkers.p1PositivePoints && !totalMarkers.p1NegativePoints}
             className={`flex-1 rounded py-1 text-xs ${
-              totalMarkers.p1Points || totalMarkers.p1PositivePoints || totalMarkers.p1NegativePoints
+              totalMarkers.p1PositivePoints || totalMarkers.p1NegativePoints
                 ? 'text-blue-600 hover:bg-blue-50'
                 : 'cursor-not-allowed text-gray-400'
             }`}
@@ -243,9 +223,9 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
 
           <button
             onClick={() => handleClearPlayerAllPoints(2)}
-            disabled={!totalMarkers.p2Points && !totalMarkers.p2PositivePoints && !totalMarkers.p2NegativePoints}
+            disabled={!totalMarkers.p2PositivePoints && !totalMarkers.p2NegativePoints}
             className={`flex-1 rounded py-1 text-xs ${
-              totalMarkers.p2Points || totalMarkers.p2PositivePoints || totalMarkers.p2NegativePoints
+              totalMarkers.p2PositivePoints || totalMarkers.p2NegativePoints
                 ? 'text-yellow-600 hover:bg-yellow-50'
                 : 'cursor-not-allowed text-gray-400'
             }`}
@@ -278,24 +258,10 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
 
                   <div className='mt-1 flex gap-2'>
                     {/* Player 1 markers */}
-                    {((frameData.player1Points && frameData.player1Points.length > 0) ||
-                      (frameData.player1PositivePoints && frameData.player1PositivePoints.length > 0) ||
+                    {((frameData.player1PositivePoints && frameData.player1PositivePoints.length > 0) ||
                       (frameData.player1NegativePoints && frameData.player1NegativePoints.length > 0)) && (
                       <div className='flex-1 border-r border-gray-200 pr-2'>
                         <p className='text-xs font-medium text-blue-700'>Player 1</p>
-
-                        {frameData.player1Points && frameData.player1Points.length > 0 && (
-                          <div className='mt-1'>
-                            <p className='text-xs text-gray-600'>General Points:</p>
-                            <ul className='pl-2'>
-                              {frameData.player1Points.map((point: Point, idx: number) => (
-                                <li key={idx} className='text-xs text-gray-700'>
-                                  {point.x}, {point.y}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
 
                         {frameData.player1PositivePoints && frameData.player1PositivePoints.length > 0 && (
                           <div className='mt-1'>
@@ -326,24 +292,10 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                     )}
 
                     {/* Player 2 markers */}
-                    {((frameData.player2Points && frameData.player2Points.length > 0) ||
-                      (frameData.player2PositivePoints && frameData.player2PositivePoints.length > 0) ||
+                    {((frameData.player2PositivePoints && frameData.player2PositivePoints.length > 0) ||
                       (frameData.player2NegativePoints && frameData.player2NegativePoints.length > 0)) && (
                       <div className='flex-1 pl-2'>
                         <p className='text-xs font-medium text-yellow-700'>Player 2</p>
-
-                        {frameData.player2Points && frameData.player2Points.length > 0 && (
-                          <div className='mt-1'>
-                            <p className='text-xs text-gray-600'>General Points:</p>
-                            <ul className='pl-2'>
-                              {frameData.player2Points.map((point: Point, idx: number) => (
-                                <li key={idx} className='text-xs text-gray-700'>
-                                  {point.x}, {point.y}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
 
                         {frameData.player2PositivePoints && frameData.player2PositivePoints.length > 0 && (
                           <div className='mt-1'>
@@ -381,8 +333,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
           </div>
         )}
       </div>
-
-      {/* Button removed - will be placed above StageNavigator */}
     </div>
   );
 };

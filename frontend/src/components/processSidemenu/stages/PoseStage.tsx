@@ -41,8 +41,13 @@ const PoseStage: React.FC<PoseStageProps> = ({
               disabled={isProcessing}
               className='w-full rounded-md border border-gray-300 py-1 pr-10 pl-3 text-xs text-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none'
             >
-              <option value='YOLOv8'>YOLOv8 (Recommended)</option>
-              <option value='MediaPipe'>MediaPipe</option>
+              <option value='YOLOv11'>YOLOv11-Pose (Recommended)</option>
+              <option value='YOLOv8' disabled={true}>
+                YOLOv8-Pose
+              </option>
+              <option value='MediaPipe' disabled={true}>
+                MediaPipe
+              </option>
             </select>
           </div>
         )}
