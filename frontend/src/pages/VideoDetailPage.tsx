@@ -698,6 +698,65 @@ const VideoDetailPage: React.FC = () => {
     }
   };
 
+  // Create a combined map of all marked frames data
+  const createCombinedMarkedFramesMap = () => {
+    const allFrameIndices = new Set<number>([
+      ...player1Points.keys(),
+      ...player2Points.keys(),
+      ...player1PositivePoints.keys(),
+      ...player1NegativePoints.keys(),
+      ...player2PositivePoints.keys(),
+      ...player2NegativePoints.keys(),
+    ]);
+
+    const combinedMap = new Map();
+
+    allFrameIndices.forEach(frameIdx => {
+      const frameData: {
+        player1Points?: Point[];
+        player2Points?: Point[];
+        player1PositivePoints?: Point[];
+        player1NegativePoints?: Point[];
+        player2PositivePoints?: Point[];
+        player2NegativePoints?: Point[];
+      } = {};
+
+      const p1Points = player1Points.get(frameIdx);
+      if (p1Points && p1Points.length > 0) {
+        frameData.player1Points = p1Points;
+      }
+
+      const p2Points = player2Points.get(frameIdx);
+      if (p2Points && p2Points.length > 0) {
+        frameData.player2Points = p2Points;
+      }
+
+      const p1Positive = player1PositivePoints.get(frameIdx);
+      if (p1Positive && p1Positive.length > 0) {
+        frameData.player1PositivePoints = p1Positive;
+      }
+
+      const p1Negative = player1NegativePoints.get(frameIdx);
+      if (p1Negative && p1Negative.length > 0) {
+        frameData.player1NegativePoints = p1Negative;
+      }
+
+      const p2Positive = player2PositivePoints.get(frameIdx);
+      if (p2Positive && p2Positive.length > 0) {
+        frameData.player2PositivePoints = p2Positive;
+      }
+
+      const p2Negative = player2NegativePoints.get(frameIdx);
+      if (p2Negative && p2Negative.length > 0) {
+        frameData.player2NegativePoints = p2Negative;
+      }
+
+      combinedMap.set(frameIdx, frameData);
+    });
+
+    return combinedMap;
+  };
+
   return (
     <div className='flex h-full flex-col'>
       {/* New layout with content, video player and progress sidebar */}
@@ -827,6 +886,8 @@ const VideoDetailPage: React.FC = () => {
             setActivePlayer={setActivePlayer}
             onClearPlayerMarkerPoints={handleClearPlayerMarkerPoints}
             onClearPlayerPoints={handleClearPlayerPoints}
+            currentFrameIndex={frameIndex}
+            markedFrames={createCombinedMarkedFramesMap()}
           />
         </div>
       </div>

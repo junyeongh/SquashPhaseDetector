@@ -48,6 +48,49 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
     }
   };
 
+  // Count total markers for all frames
+  const countTotalMarkers = () => {
+    // If markedFrames is provided, count markers from there
+    if (markedFrames && markedFrames.size > 0) {
+      let totalP1Points = 0;
+      let totalP2Points = 0;
+      let totalP1PositivePoints = 0;
+      let totalP1NegativePoints = 0;
+      let totalP2PositivePoints = 0;
+      let totalP2NegativePoints = 0;
+
+      markedFrames.forEach((data) => {
+        totalP1Points += data.player1Points?.length || 0;
+        totalP2Points += data.player2Points?.length || 0;
+        totalP1PositivePoints += data.player1PositivePoints?.length || 0;
+        totalP1NegativePoints += data.player1NegativePoints?.length || 0;
+        totalP2PositivePoints += data.player2PositivePoints?.length || 0;
+        totalP2NegativePoints += data.player2NegativePoints?.length || 0;
+      });
+
+      return {
+        p1Points: totalP1Points,
+        p2Points: totalP2Points,
+        p1PositivePoints: totalP1PositivePoints,
+        p1NegativePoints: totalP1NegativePoints,
+        p2PositivePoints: totalP2PositivePoints,
+        p2NegativePoints: totalP2NegativePoints,
+      };
+    }
+
+    // If we only have the current frame's data
+    return {
+      p1Points: player1Points.length,
+      p2Points: player2Points.length,
+      p1PositivePoints: player1PositivePoints.length,
+      p1NegativePoints: player1NegativePoints.length,
+      p2PositivePoints: player2PositivePoints.length,
+      p2NegativePoints: player2NegativePoints.length,
+    };
+  };
+
+  const totalMarkers = countTotalMarkers();
+
   // Create a structure for frames that have markers
   const getMarkedFramesData = (): Array<[number, FrameData]> => {
     // If markedFrames is provided, use it directly
@@ -153,7 +196,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         )}
         <h4 className='mb-2 text-xs font-medium text-gray-700'>Player Selection</h4>
 
-        {/* Player selection toggle */}
+        {/* Player selection toggle - Now shows total markers across all frames */}
         {setActivePlayer && (
           <div className='mb-3 flex space-x-2'>
             <button
@@ -165,8 +208,8 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
               }`}
             >
               <User className='h-3 w-3' />
-              Player 1 {player1Points.length > 0 && `(${player1Points.length})`}
-              {` (${player1PositivePoints.length}+/${player1NegativePoints.length}-)`}
+              Player 1 {totalMarkers.p1Points > 0 && `(${totalMarkers.p1Points})`}
+              {` (${totalMarkers.p1PositivePoints}+/${totalMarkers.p1NegativePoints}-)`}
             </button>
 
             <button
@@ -178,8 +221,8 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
               }`}
             >
               <UserRound className='h-3 w-3' />
-              Player 2 {player2Points.length > 0 && `(${player2Points.length})`}
-              {` (${player2PositivePoints.length}+/${player2NegativePoints.length}-)`}
+              Player 2 {totalMarkers.p2Points > 0 && `(${totalMarkers.p2Points})`}
+              {` (${totalMarkers.p2PositivePoints}+/${totalMarkers.p2NegativePoints}-)`}
             </button>
           </div>
         )}
@@ -188,9 +231,9 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
         <div className='flex space-x-2'>
           <button
             onClick={() => handleClearPlayerAllPoints(1)}
-            disabled={!player1Points?.length && !player1PositivePoints?.length && !player1NegativePoints?.length}
+            disabled={!totalMarkers.p1Points && !totalMarkers.p1PositivePoints && !totalMarkers.p1NegativePoints}
             className={`flex-1 rounded py-1 text-xs ${
-              player1Points?.length || player1PositivePoints?.length || player1NegativePoints?.length
+              totalMarkers.p1Points || totalMarkers.p1PositivePoints || totalMarkers.p1NegativePoints
                 ? 'text-blue-600 hover:bg-blue-50'
                 : 'cursor-not-allowed text-gray-400'
             }`}
@@ -200,9 +243,9 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
 
           <button
             onClick={() => handleClearPlayerAllPoints(2)}
-            disabled={!player2Points?.length && !player2PositivePoints?.length && !player2NegativePoints?.length}
+            disabled={!totalMarkers.p2Points && !totalMarkers.p2PositivePoints && !totalMarkers.p2NegativePoints}
             className={`flex-1 rounded py-1 text-xs ${
-              player2Points?.length || player2PositivePoints?.length || player2NegativePoints?.length
+              totalMarkers.p2Points || totalMarkers.p2PositivePoints || totalMarkers.p2NegativePoints
                 ? 'text-yellow-600 hover:bg-yellow-50'
                 : 'cursor-not-allowed text-gray-400'
             }`}
@@ -231,7 +274,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             {hasMarkedFrames ? (
               markedFramesData.map(([frameIndex, frameData]) => (
                 <div key={frameIndex} className='mb-4'>
-                  <h5 className='text-xs font-semibold text-gray-800 sticky top-0 bg-gray-50 py-1'>Frame {frameIndex}</h5>
+                  <h5 className='text-xs font-semibold text-gray-800 bg-gray-50 py-1'>Frame {frameIndex}</h5>
 
                   <div className='mt-1 flex gap-2'>
                     {/* Player 1 markers */}

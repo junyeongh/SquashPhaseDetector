@@ -89,7 +89,7 @@ const StageHeader: React.FC<StageHeaderProps> = ({
       </div>
 
       {/* Current stage information */}
-      <div className='mb-4'>
+      <div className='mb-2'>
         <div className='mb-1 flex items-center gap-2'>
           <div className='flex h-6 w-6 items-center justify-center rounded-full bg-blue-100'>
             <span className='text-xs font-medium text-blue-700'>{currentStageIndex + 1}</span>
