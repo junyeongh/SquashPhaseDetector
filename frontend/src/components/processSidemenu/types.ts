@@ -48,6 +48,16 @@ export interface SegmentationStageProps extends BaseStageProps {
 
   onClearPlayerPoints?: (player: 1 | 2) => void;
   onClearPlayerMarkerPoints?: (player: 1 | 2, markerType: MarkerType) => void;
+
+  currentFrameIndex?: number;
+  markedFrames?: Map<number, {
+    player1Points?: Point[];
+    player2Points?: Point[];
+    player1PositivePoints?: Point[];
+    player1NegativePoints?: Point[];
+    player2PositivePoints?: Point[];
+    player2NegativePoints?: Point[];
+  }>;
 }
 
 // Pose detection stage specific props
@@ -114,6 +124,15 @@ export interface ProcessSidemenuProps {
   onClearPlayerPoints?: (player: 1 | 2) => void;
   onClearPlayerMarkerPoints?: (player: 1 | 2, markerType: MarkerType) => void;
   onStartSegmentation?: () => void;
+  currentFrameIndex?: number;
+  markedFrames?: Map<number, {
+    player1Points?: Point[];
+    player2Points?: Point[];
+    player1PositivePoints?: Point[];
+    player1NegativePoints?: Point[];
+    player2PositivePoints?: Point[];
+    player2NegativePoints?: Point[];
+  }>;
 
   // Pose props
   modelType?: string;
