@@ -9,7 +9,7 @@ interface ReactPlayerWrapperProps {
   fps?: number;
   overlay?: React.ReactNode;
   mainviewTimestamps?: MainviewTimestamp[];
-  onPlayerUpdates?: (currentTime: number, duration: number) => void;
+  onPlayerUpdates?: (currentTime: number, duration: number, playing: boolean) => void;
   onSeek?: (time: number) => void;
   stage?: string;
 }
@@ -151,9 +151,9 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     // Update time-related info
     useEffect(() => {
       if (onPlayerUpdates) {
-        onPlayerUpdates(played * duration, duration);
+        onPlayerUpdates(played * duration, duration, playing);
       }
-    }, [played, duration, onPlayerUpdates]);
+    }, [played, duration, onPlayerUpdates, playing]);
 
     // Check if we need to hide the play button for certain stages
     const shouldHidePlayButton = stage === 'segmentation' || stage === 'pose' || stage === 'game_state';

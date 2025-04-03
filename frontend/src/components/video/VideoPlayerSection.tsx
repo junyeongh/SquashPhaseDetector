@@ -9,7 +9,7 @@ interface VideoPlayerSectionProps {
   videoId: string;
   customOverlay?: React.ReactNode;
   // These props will be passed to the PreprocessContent
-  onFrameUpdate?: (frame: number, duration: number, currentTime: number) => void;
+  onFrameUpdate?: (frame: number, duration: number, currentTime: number, playing: boolean) => void;
 }
 
 export interface VideoPlayerSectionRef {
@@ -22,6 +22,7 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
     const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const [playing, setPlaying] = useState(false);
     const playerRef = useRef<ReactPlayer | null>(null);
 
     // Expose the seekToTime method to parent components
@@ -80,16 +81,17 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
     const handleFrameChange = (frame: number) => {
       setCurrentFrame(frame);
       if (onFrameUpdate) {
-        onFrameUpdate(frame, duration, currentTime);
+        onFrameUpdate(frame, duration, currentTime, playing);
       }
     };
 
     // Handle updates to duration and current time
-    const handlePlayerUpdates = (currentTime: number, duration: number) => {
+    const handlePlayerUpdates = (currentTime: number, duration: number, isPlaying: boolean) => {
       setCurrentTime(currentTime);
       setDuration(duration);
+      setPlaying(isPlaying);
       if (onFrameUpdate) {
-        onFrameUpdate(currentFrame, duration, currentTime);
+        onFrameUpdate(currentFrame, duration, currentTime, isPlaying);
       }
     };
 

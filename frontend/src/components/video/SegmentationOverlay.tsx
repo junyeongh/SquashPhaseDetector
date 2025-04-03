@@ -16,6 +16,8 @@ interface SegmentationOverlayProps {
   segmentationModel: string;
   onAddPoint: (point: Point) => void;
   onRemovePoint?: (player: 1 | 2, markerType: MarkerType, pointIndex: number) => void;
+  isPlaying?: boolean;
+  isInMainView?: boolean;
 }
 
 const SegmentationOverlay = ({
@@ -30,6 +32,8 @@ const SegmentationOverlay = ({
   segmentationModel,
   onAddPoint,
   onRemovePoint,
+  isPlaying = false,
+  isInMainView = true,
 }: SegmentationOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -75,6 +79,9 @@ const SegmentationOverlay = ({
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     // Stop event propagation to prevent clicks from reaching the video player
     e.stopPropagation();
+
+    // If video is playing or not in main view, don't add or remove markers
+    if (isPlaying || !isInMainView) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -182,7 +189,9 @@ const SegmentationOverlay = ({
       ref={canvasRef}
       width={width}
       height={height}
-      className='absolute top-0 left-0 z-20 cursor-crosshair hover:opacity-95'
+      className={`absolute top-0 left-0 z-20 ${
+        isPlaying || !isInMainView ? 'cursor-default' : 'cursor-crosshair hover:opacity-95'
+      }`}
       onClick={handleCanvasClick}
       aria-label='Interactive segmentation overlay'
       tabIndex={0}
