@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { SegmentationMask } from '@/services/api/segmentation';
 import { decodeRLE, createMaskImageData } from '@/utils/rleUtils';
 
-interface MaskLayerProps {
+interface SegmentationMaskOverlayProps {
   width: number;
   height: number;
   player1Mask: SegmentationMask | null;
@@ -11,14 +11,14 @@ interface MaskLayerProps {
   player2Color: [number, number, number, number];
 }
 
-const MaskLayer = ({
+const SegmentationMaskOverlay = ({
   width,
   height,
   player1Mask,
   player2Mask,
   player1Color = [255, 0, 0, 0.5], // Red with 50% opacity
   player2Color = [0, 0, 255, 0.5], // Blue with 50% opacity
-}: MaskLayerProps) => {
+}: SegmentationMaskOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Draw masks when they change
@@ -102,4 +102,4 @@ const MaskLayer = ({
   );
 };
 
-export default MaskLayer;
+export default SegmentationMaskOverlay;

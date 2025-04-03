@@ -2,7 +2,7 @@ import { useRef, useEffect, MouseEvent } from 'react';
 import { Point } from '@/services/api/segmentation';
 import { MarkerType } from '@/components/ProcessSidemenu';
 
-interface SegmentationOverlayProps {
+interface SegmentationMarkerOverlayProps {
   width: number;
   height: number;
   activePlayer: 1 | 2;
@@ -20,7 +20,7 @@ interface SegmentationOverlayProps {
   isInMainView?: boolean;
 }
 
-const SegmentationOverlay = ({
+const SegmentationMarkerOverlay = ({
   width,
   height,
   player1PositivePoints,
@@ -34,7 +34,7 @@ const SegmentationOverlay = ({
   onRemovePoint,
   isPlaying = false,
   isInMainView = true,
-}: SegmentationOverlayProps) => {
+}: SegmentationMarkerOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Check if a point is near another point (for click removal)
@@ -199,4 +199,4 @@ const SegmentationOverlay = ({
   );
 };
 
-export default SegmentationOverlay;
+export default SegmentationMarkerOverlay;

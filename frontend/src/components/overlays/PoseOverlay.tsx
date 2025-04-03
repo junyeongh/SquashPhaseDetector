@@ -25,6 +25,51 @@ const KEYPOINT_CONNECTIONS = [
   [14, 16], // left knee to left ankle
 ];
 
+// Draw a single keypoint with a colored dot
+const drawKeypoint = (ctx: CanvasRenderingContext2D, keypoint: PoseKeypoint, color: string) => {
+  const { x, y } = keypoint;
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, 2 * Math.PI);
+  ctx.stroke();
+};
+
+// Draw a complete pose with keypoints and connections
+const drawPose = (ctx: CanvasRenderingContext2D, pose: PlayerPose, color: string) => {
+  const keypoints = pose.keypoints;
+
+  // Draw connections (limbs)
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+
+  KEYPOINT_CONNECTIONS.forEach(([i, j]) => {
+    const kpt1 = keypoints.find((kp) => kp.id === i);
+    const kpt2 = keypoints.find((kp) => kp.id === j);
+
+    if (kpt1 && kpt2 && kpt1.score > 0.3 && kpt2.score > 0.3) {
+      ctx.beginPath();
+      ctx.moveTo(kpt1.x, kpt1.y);
+      ctx.lineTo(kpt2.x, kpt2.y);
+      ctx.stroke();
+    }
+  });
+
+  // Draw keypoints
+  keypoints.forEach((keypoint) => {
+    if (keypoint.score > 0.3) {
+      // Only draw high-confidence keypoints
+      drawKeypoint(ctx, keypoint, color);
+    }
+  });
+};
+
 const PoseOverlay = ({ width, height, player1Pose, player2Pose }: PoseOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -48,49 +93,6 @@ const PoseOverlay = ({ width, height, player1Pose, player2Pose }: PoseOverlayPro
       drawPose(ctx, player2Pose, 'blue');
     }
   }, [width, height, player1Pose, player2Pose]);
-
-  const drawPose = (ctx: CanvasRenderingContext2D, pose: PlayerPose, color: string) => {
-    const keypoints = pose.keypoints;
-
-    // Draw connections (limbs)
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-
-    KEYPOINT_CONNECTIONS.forEach(([i, j]) => {
-      const kpt1 = keypoints.find((kp) => kp.id === i);
-      const kpt2 = keypoints.find((kp) => kp.id === j);
-
-      if (kpt1 && kpt2 && kpt1.score > 0.3 && kpt2.score > 0.3) {
-        ctx.beginPath();
-        ctx.moveTo(kpt1.x, kpt1.y);
-        ctx.lineTo(kpt2.x, kpt2.y);
-        ctx.stroke();
-      }
-    });
-
-    // Draw keypoints
-    keypoints.forEach((keypoint) => {
-      if (keypoint.score > 0.3) {
-        // Only draw high-confidence keypoints
-        drawKeypoint(ctx, keypoint, color);
-      }
-    });
-  };
-
-  const drawKeypoint = (ctx: CanvasRenderingContext2D, keypoint: PoseKeypoint, color: string) => {
-    const { x, y } = keypoint;
-
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-    ctx.fill();
-
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(x, y, 4, 0, 2 * Math.PI);
-    ctx.stroke();
-  };
 
   return (
     <canvas ref={canvasRef} width={width} height={height} className='pointer-events-none absolute top-0 left-0 z-10' />
