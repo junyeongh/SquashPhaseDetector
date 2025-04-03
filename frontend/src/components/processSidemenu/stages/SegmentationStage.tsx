@@ -274,7 +274,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
             {hasMarkedFrames ? (
               markedFramesData.map(([frameIndex, frameData]) => (
                 <div key={frameIndex} className='mb-4'>
-                  <h5 className='text-xs font-semibold text-gray-800 bg-gray-50 py-1'>Frame {frameIndex}</h5>
+                  <h5 className='bg-gray-50 py-1 text-xs font-semibold text-gray-800'>Frame {frameIndex}</h5>
 
                   <div className='mt-1 flex gap-2'>
                     {/* Player 1 markers */}
@@ -376,7 +376,7 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
                 </div>
               ))
             ) : (
-              <p className='text-xs text-gray-500 py-2'>No markers added yet</p>
+              <p className='py-2 text-xs text-gray-500'>No markers added yet</p>
             )}
           </div>
         )}

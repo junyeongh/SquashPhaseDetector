@@ -83,7 +83,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   const nextStage = getNextStage();
 
   // Helper function to count total positive markers per player across all frames
-  const countTotalPositiveMarkers = (): { player1: number, player2: number } => {
+  const countTotalPositiveMarkers = (): { player1: number; player2: number } => {
     // If using markedFrames
     if (markedFrames && markedFrames.size > 0) {
       let player1Total = 0;
@@ -100,7 +100,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
     // Fallback to single frame data
     return {
       player1: player1PositivePoints?.length || 0,
-      player2: player2PositivePoints?.length || 0
+      player2: player2PositivePoints?.length || 0,
     };
   };
 
@@ -190,7 +190,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
     <div className='flex h-full flex-col bg-gray-50 shadow-md'>
       {/* Stage header */}
       <StageHeader
-        currentStage={stageConfig.find(stage => stage.id === activeStage) || stageConfig[0]}
+        currentStage={stageConfig.find((stage) => stage.id === activeStage) || stageConfig[0]}
         currentStageIndex={currentStageIndex}
         totalStages={totalStages}
         activeStage={activeStage}
@@ -201,9 +201,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
       />
 
       {/* Stage content - flex-1 to expand */}
-      <div className='flex-1 overflow-y-auto p-2'>
-        {renderStageComponent()}
-      </div>
+      <div className='flex-1 overflow-y-auto p-2'>{renderStageComponent()}</div>
 
       {/* Process button */}
       <div className='px-4 pb-2'>

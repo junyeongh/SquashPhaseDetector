@@ -130,6 +130,15 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
             original_path = os.path.join(temp_dir, frame_names[frame])
             new_path = os.path.join(frame_dir, frame_names[frame])
             os.rename(original_path, new_path)
+            # Remove destination file if it exists
+            try:
+                if os.path.exists(new_path):
+                    os.remove(new_path)
+            except Exception as e:
+                print(f"Error removing existing file: {e}")
+
+            # Create a symlink instead of moving the file
+            os.symlink(original_path, new_path)
 
     return mainview_file_path
 

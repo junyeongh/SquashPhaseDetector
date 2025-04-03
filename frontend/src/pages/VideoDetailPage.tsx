@@ -709,7 +709,7 @@ const VideoDetailPage: React.FC = () => {
 
     const combinedMap = new Map();
 
-    allFrameIndices.forEach(frameIdx => {
+    allFrameIndices.forEach((frameIdx) => {
       const frameData: {
         player1Points?: Point[];
         player2Points?: Point[];
@@ -783,65 +783,9 @@ const VideoDetailPage: React.FC = () => {
               videoId={urlUuid || ''}
               onFrameUpdate={handleFrameUpdate}
               ref={videoPlayerRef}
-            //   customOverlay={
-            //     activeStage === 'segmentation' ? (
-            //       <>
-            //         {/* Render masks first (lower z-index) */}
-            //         {(player1Mask || player2Mask) && (
-            //           <MaskLayer
-            //             width={1280}
-            //             height={720}
-            //             player1Mask={player1Mask}
-            //             player2Mask={player2Mask}
-            //             player1Color={[255, 0, 0, 0.4]} // Red with 40% opacity
-            //             player2Color={[0, 0, 255, 0.4]} // Blue with 40% opacity
-            //           />
-            //         )}
-
-            //         {/* Render interaction points on top (higher z-index) */}
-            //         <SegmentationOverlay
-            //           width={1280}
-            //           height={720}
-            //           activePlayer={activePlayer}
-            //           activeMarkerType={activeMarkerType}
-            //           player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
-            //           player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
-            //           player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
-            //           player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
-            //           player1Points={player1Points.get(frameIndex) || []}
-            //           player2Points={player2Points.get(frameIndex) || []}
-            //           segmentationModel={segmentationModel}
-            //           onAddPoint={handleAddMarkerPoint}
-            //           onRemovePoint={handleRemoveMarkerPoint}
-            //           isPlaying={isPlaying}
-            //           isInMainView={isCurrentFrameInMainView()}
-            //         />
-            //       </>
-            //     ) : null
-            //   }
             />
           </div>
         </div>
-        {/* Frame marker indicator */}
-        {/* {getFramesWithMarkers().length > 0 && (
-          <div className='mt-4 rounded-md bg-gray-100 p-3'>
-            <h3 className='mb-2 text-sm font-medium'>
-              Frames with markers: {getFramesWithMarkers().length}
-              {hasMarkersForCurrentFrame() && ' (Current frame has markers)'}
-            </h3>
-            <div className='flex flex-wrap gap-2'>
-              {getFramesWithMarkers().map((frameIdx) => (
-                <button
-                  key={frameIdx}
-                  className={`rounded-md px-2 py-1 text-xs ${frameIdx === frameIndex ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-                  onClick={() => setFrameIndex(frameIdx)}
-                >
-                  {frameIdx}
-                </button>
-              ))}
-            </div>
-          </div>
-        )} */}
         {/* Processing progress sidebar - now includes processing interfaces */}
         <div className='h-full w-[480px]'>
           <ProcessSidemenu
