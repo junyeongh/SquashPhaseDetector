@@ -158,23 +158,25 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
         {/* Video container */}
         <div className='relative aspect-video max-h-[calc(100vh-350px)] w-full overflow-hidden bg-black'>
           {/* ReactPlayer */}
-          <ReactPlayer
-            ref={playerRef}
-            url={src}
-            width='100%'
-            height='100%'
-            playing={playing}
-            volume={volume}
-            muted={muted}
-            controls={false}
-            playbackRate={playbackRate}
-            onDuration={handleDuration}
-            onProgress={handleProgress}
-            onPlay={() => setState((prev) => ({ ...prev, playing: true }))}
-            onPause={() => setState((prev) => ({ ...prev, playing: false }))}
-            progressInterval={100} // Update progress more frequently
-            className='absolute top-0 left-0 h-full w-full object-contain'
-          />
+          <div className='absolute inset-0 flex items-center justify-center'>
+            <ReactPlayer
+              ref={playerRef}
+              url={src}
+              width='auto'
+              height='100%'
+              playing={playing}
+              volume={volume}
+              muted={muted}
+              controls={false}
+              playbackRate={playbackRate}
+              onDuration={handleDuration}
+              onProgress={handleProgress}
+              onPlay={() => setState((prev) => ({ ...prev, playing: true }))}
+              onPause={() => setState((prev) => ({ ...prev, playing: false }))}
+              progressInterval={100}
+              className='object-contain'
+            />
+          </div>
 
           {/* Overlay content */}
           {/* This is where I want the overlay. */}
