@@ -7,7 +7,6 @@ interface ReactPlayerWrapperProps {
   src: string;
   onFrameChange?: (frameNumber: number) => void;
   fps?: number;
-  overlay?: React.ReactNode;
   mainviewTimestamps?: MainviewTimestamp[];
   onPlayerUpdates?: (currentTime: number, duration: number, playing: boolean) => void;
   onSeek?: (time: number) => void;
@@ -15,7 +14,7 @@ interface ReactPlayerWrapperProps {
 }
 
 const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  ({ src, onFrameChange, fps = 30, overlay, onPlayerUpdates, mainviewTimestamps, onSeek, stage }, ref) => {
+  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewTimestamps, onSeek, stage }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -181,7 +180,6 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           />
 
           {/* Overlay content */}
-          {overlay && <div className='absolute top-0 left-0 h-full w-full'>{overlay}</div>}
 
           {/* Play/Pause overlay button - conditionally rendered based on stage */}
           {!shouldHidePlayButton && (

@@ -20,8 +20,6 @@ import {
 } from '@/services/api/segmentation';
 import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
 import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/ProcessSidemenu';
-import SegmentationOverlay from '@/components/video/SegmentationOverlay';
-import MaskLayer from '@/components/video/MaskLayer';
 import { MarkerType } from '@/components/ProcessSidemenu';
 
 // Shared stage configuration
@@ -785,42 +783,42 @@ const VideoDetailPage: React.FC = () => {
               videoId={urlUuid || ''}
               onFrameUpdate={handleFrameUpdate}
               ref={videoPlayerRef}
-              customOverlay={
-                activeStage === 'segmentation' ? (
-                  <>
-                    {/* Render masks first (lower z-index) */}
-                    {(player1Mask || player2Mask) && (
-                      <MaskLayer
-                        width={1280}
-                        height={720}
-                        player1Mask={player1Mask}
-                        player2Mask={player2Mask}
-                        player1Color={[255, 0, 0, 0.4]} // Red with 40% opacity
-                        player2Color={[0, 0, 255, 0.4]} // Blue with 40% opacity
-                      />
-                    )}
+            //   customOverlay={
+            //     activeStage === 'segmentation' ? (
+            //       <>
+            //         {/* Render masks first (lower z-index) */}
+            //         {(player1Mask || player2Mask) && (
+            //           <MaskLayer
+            //             width={1280}
+            //             height={720}
+            //             player1Mask={player1Mask}
+            //             player2Mask={player2Mask}
+            //             player1Color={[255, 0, 0, 0.4]} // Red with 40% opacity
+            //             player2Color={[0, 0, 255, 0.4]} // Blue with 40% opacity
+            //           />
+            //         )}
 
-                    {/* Render interaction points on top (higher z-index) */}
-                    <SegmentationOverlay
-                      width={1280}
-                      height={720}
-                      activePlayer={activePlayer}
-                      activeMarkerType={activeMarkerType}
-                      player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
-                      player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
-                      player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
-                      player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
-                      player1Points={player1Points.get(frameIndex) || []}
-                      player2Points={player2Points.get(frameIndex) || []}
-                      segmentationModel={segmentationModel}
-                      onAddPoint={handleAddMarkerPoint}
-                      onRemovePoint={handleRemoveMarkerPoint}
-                      isPlaying={isPlaying}
-                      isInMainView={isCurrentFrameInMainView()}
-                    />
-                  </>
-                ) : null
-              }
+            //         {/* Render interaction points on top (higher z-index) */}
+            //         <SegmentationOverlay
+            //           width={1280}
+            //           height={720}
+            //           activePlayer={activePlayer}
+            //           activeMarkerType={activeMarkerType}
+            //           player1PositivePoints={player1PositivePoints.get(frameIndex) || []}
+            //           player1NegativePoints={player1NegativePoints.get(frameIndex) || []}
+            //           player2PositivePoints={player2PositivePoints.get(frameIndex) || []}
+            //           player2NegativePoints={player2NegativePoints.get(frameIndex) || []}
+            //           player1Points={player1Points.get(frameIndex) || []}
+            //           player2Points={player2Points.get(frameIndex) || []}
+            //           segmentationModel={segmentationModel}
+            //           onAddPoint={handleAddMarkerPoint}
+            //           onRemovePoint={handleRemoveMarkerPoint}
+            //           isPlaying={isPlaying}
+            //           isInMainView={isCurrentFrameInMainView()}
+            //         />
+            //       </>
+            //     ) : null
+            //   }
             />
           </div>
         </div>

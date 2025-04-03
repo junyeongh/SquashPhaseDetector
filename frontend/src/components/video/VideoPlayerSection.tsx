@@ -7,7 +7,6 @@ interface VideoPlayerSectionProps {
   videoUrl: string;
   stage: string;
   videoId: string;
-  customOverlay?: React.ReactNode;
   // These props will be passed to the PreprocessContent
   onFrameUpdate?: (frame: number, duration: number, currentTime: number, playing: boolean) => void;
 }
@@ -17,7 +16,7 @@ export interface VideoPlayerSectionRef {
 }
 
 const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionProps>(
-  ({ videoUrl, stage, videoId, customOverlay, onFrameUpdate }, ref) => {
+  ({ videoUrl, stage, videoId, onFrameUpdate }, ref) => {
     const [currentFrame, setCurrentFrame] = useState(0);
     const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
     const [duration, setDuration] = useState(0);
@@ -108,7 +107,6 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
             src={videoUrl}
             onFrameChange={handleFrameChange}
             mainviewTimestamps={mainviewTimestamps}
-            overlay={customOverlay}
             onPlayerUpdates={handlePlayerUpdates}
             ref={setPlayerRef}
             onSeek={handleSeek}
