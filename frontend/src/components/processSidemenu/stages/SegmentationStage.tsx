@@ -22,10 +22,6 @@ const SegmentationStage: React.FC<SegmentationStageProps> = ({
   setActivePlayer,
   onClearPlayerPoints,
   onClearPlayerMarkerPoints,
-  onMarkPlayers,
-  onStartSegmentation,
-  onPreviousFrame,
-  onNextFrame,
 }) => {
   // Handler to clear all points for a player (both regular and marker points)
   const handleClearPlayerAllPoints = (playerId: 1 | 2) => {

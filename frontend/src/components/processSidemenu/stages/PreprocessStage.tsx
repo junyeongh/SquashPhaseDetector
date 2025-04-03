@@ -7,7 +7,6 @@ const PreprocessStage: React.FC<PreprocessStageProps> = ({
   processingStatus,
   showSkipButton,
   onSkipStage,
-  onProcess,
 }) => {
   if (isProcessing) {
     return (

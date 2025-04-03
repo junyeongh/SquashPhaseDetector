@@ -11,9 +11,6 @@ const PoseStage: React.FC<PoseStageProps> = ({
   confidenceThreshold = 50,
   setModelType,
   setConfidenceThreshold,
-  onStartPoseDetection,
-  onPreviousFrame,
-  onNextFrame,
 }) => {
   if (isProcessing) {
     return (

@@ -42,7 +42,6 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   setActivePlayer,
   onClearPlayerPoints,
   onClearPlayerMarkerPoints,
-  onMarkPlayers,
   onStartSegmentation,
 
   // Pose props
@@ -117,10 +116,6 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             setActivePlayer={setActivePlayer}
             onClearPlayerPoints={onClearPlayerPoints}
             onClearPlayerMarkerPoints={onClearPlayerMarkerPoints}
-            onMarkPlayers={onMarkPlayers}
-            onStartSegmentation={onStartSegmentation}
-            onPreviousFrame={onPreviousFrame}
-            onNextFrame={onNextFrame}
           />
         );
 

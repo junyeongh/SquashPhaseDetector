@@ -7,7 +7,6 @@ const GameStateStage: React.FC<GameStateStageProps> = ({
   processingStatus,
   showSkipButton,
   onSkipStage,
-  onProcess,
 }) => {
   if (isProcessing) {
     return (
@@ -26,7 +25,6 @@ const GameStateStage: React.FC<GameStateStageProps> = ({
         <h4 className='mb-2 text-xs font-medium text-gray-700'>Game State Analysis</h4>
         <p className='text-xs text-gray-600'>Analyze game state based on detected poses and player movements.</p>
       </div>
-      {/* Button removed - will be placed above StageNavigator */}
     </div>
   );
 };

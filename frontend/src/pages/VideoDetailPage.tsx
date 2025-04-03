@@ -346,18 +346,6 @@ const VideoDetailPage: React.FC = () => {
     }
   };
 
-  // Handler for player marking
-  const handleMarkPlayers = async () => {
-    if (!uuid) return;
-
-    try {
-      await markPlayers(uuid, frameIndex, player1Points.get(frameIndex) || [], player2Points.get(frameIndex) || []);
-      console.log('Players marked successfully');
-    } catch (error) {
-      console.error('Error marking players:', error);
-    }
-  };
-
   // Handler for SAM2 marking and segmentation
   const handleStartSegmentation = async () => {
     if (!uuid) return;
@@ -788,7 +776,6 @@ const VideoDetailPage: React.FC = () => {
             onStageSelect={handleStageSelect}
             // Process buttons
             onProcess={handleProcessVideo}
-            onMarkPlayers={handleMarkPlayers}
             onStartSegmentation={handleStartSegmentation}
             onStartPoseDetection={handleStartPoseDetection}
             // Skip controls

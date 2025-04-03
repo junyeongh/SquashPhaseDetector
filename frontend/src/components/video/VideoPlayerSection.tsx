@@ -110,6 +110,7 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
             onPlayerUpdates={handlePlayerUpdates}
             ref={setPlayerRef}
             onSeek={handleSeek}
+            stage={stage}
           />
         </div>
       </div>
