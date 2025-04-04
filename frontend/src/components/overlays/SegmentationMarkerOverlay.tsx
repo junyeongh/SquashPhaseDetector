@@ -30,10 +30,6 @@ const SegmentationMarkerOverlay = ({
 
   const { player1PositivePoints, player1NegativePoints, player2PositivePoints, player2NegativePoints } = frameData;
 
-  // For backward compatibility with Basic segmentation model
-  const player1Points = player1PositivePoints || [];
-  const player2Points = player2PositivePoints || [];
-
   // Check if a point is near another point (for click removal)
   const isNearPoint = (x: number, y: number, point: Point, threshold = 10): boolean => {
     const dx = point.x - x;
@@ -43,31 +39,21 @@ const SegmentationMarkerOverlay = ({
 
   // Find if a point was clicked for removal
   const findClickedPoint = (x: number, y: number): { player: 1 | 2; type: MarkerType; index: number } | null => {
-    if (segmentationModel === 'SAM2') {
-      // Check player 1 positive points
-      const p1PosIndex = player1PositivePoints.findIndex((point) => isNearPoint(x, y, point));
-      if (p1PosIndex !== -1) return { player: 1, type: 'positive', index: p1PosIndex };
+    // Check player 1 positive points
+    const p1PosIndex = player1PositivePoints.findIndex((point) => isNearPoint(x, y, point));
+    if (p1PosIndex !== -1) return { player: 1, type: 'positive', index: p1PosIndex };
 
-      // Check player 1 negative points
-      const p1NegIndex = player1NegativePoints.findIndex((point) => isNearPoint(x, y, point));
-      if (p1NegIndex !== -1) return { player: 1, type: 'negative', index: p1NegIndex };
+    // Check player 1 negative points
+    const p1NegIndex = player1NegativePoints.findIndex((point) => isNearPoint(x, y, point));
+    if (p1NegIndex !== -1) return { player: 1, type: 'negative', index: p1NegIndex };
 
-      // Check player 2 positive points
-      const p2PosIndex = player2PositivePoints.findIndex((point) => isNearPoint(x, y, point));
-      if (p2PosIndex !== -1) return { player: 2, type: 'positive', index: p2PosIndex };
+    // Check player 2 positive points
+    const p2PosIndex = player2PositivePoints.findIndex((point) => isNearPoint(x, y, point));
+    if (p2PosIndex !== -1) return { player: 2, type: 'positive', index: p2PosIndex };
 
-      // Check player 2 negative points
-      const p2NegIndex = player2NegativePoints.findIndex((point) => isNearPoint(x, y, point));
-      if (p2NegIndex !== -1) return { player: 2, type: 'negative', index: p2NegIndex };
-    } else {
-      // Check player 1 points
-      const p1Index = player1Points.findIndex((point) => isNearPoint(x, y, point));
-      if (p1Index !== -1) return { player: 1, type: 'positive', index: p1Index };
-
-      // Check player 2 points
-      const p2Index = player2Points.findIndex((point) => isNearPoint(x, y, point));
-      if (p2Index !== -1) return { player: 2, type: 'positive', index: p2Index };
-    }
+    // Check player 2 negative points
+    const p2NegIndex = player2NegativePoints.findIndex((point) => isNearPoint(x, y, point));
+    if (p2NegIndex !== -1) return { player: 2, type: 'negative', index: p2NegIndex };
 
     return null;
   };
@@ -111,37 +97,25 @@ const SegmentationMarkerOverlay = ({
     // Clear the canvas
     ctx.clearRect(0, 0, width, height);
 
-    if (segmentationModel === 'SAM2') {
-      // Draw player 1 positive points (green)
-      player1PositivePoints.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+1');
-      });
+    // Draw player 1 positive points (green)
+    player1PositivePoints.forEach((point) => {
+      drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+1');
+    });
 
-      // Draw player 1 negative points (red)
-      player1NegativePoints.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-1');
-      });
+    // Draw player 1 negative points (red)
+    player1NegativePoints.forEach((point) => {
+      drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-1');
+    });
 
-      // Draw player 2 positive points (green)
-      player2PositivePoints.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+2');
-      });
+    // Draw player 2 positive points (green)
+    player2PositivePoints.forEach((point) => {
+      drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+2');
+    });
 
-      // Draw player 2 negative points (red)
-      player2NegativePoints.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-2');
-      });
-    } else {
-      // Draw player 1 points (red)
-      player1Points.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(255, 0, 0, 0.8)', '1');
-      });
-
-      // Draw player 2 points (blue)
-      player2Points.forEach((point) => {
-        drawPoint(ctx, point, 'rgba(0, 0, 255, 0.8)', '2');
-      });
-    }
+    // Draw player 2 negative points (red)
+    player2NegativePoints.forEach((point) => {
+      drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-2');
+    });
   }, [
     width,
     height,
@@ -149,8 +123,6 @@ const SegmentationMarkerOverlay = ({
     player1NegativePoints,
     player2PositivePoints,
     player2NegativePoints,
-    player1Points,
-    player2Points,
     segmentationModel,
   ]);
 

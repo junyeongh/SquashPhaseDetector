@@ -37,9 +37,11 @@ const useSegmentationStore = create<SegmentationState>((set) => ({
   // Initial state
   activePlayer: 1,
   activeMarkerType: 'positive',
+
   segmentationModel: 'SAM2',
   markedFrames: new Map(),
   currentFrameIndex: 0,
+
   player1Mask: null,
   player2Mask: null,
 
