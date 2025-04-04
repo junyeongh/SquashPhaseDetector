@@ -2,12 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { BASE_API_URL } from '@/services/api/config';
 import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/VideoPlayerSection';
-import {
-  getMainviewTimestamps,
-  MainviewTimestamp,
-  generateMainView,
-  createProcessingEventSource,
-} from '@/services/api/video';
+import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
 import {
   Point,
   SegmentationResult,
@@ -73,13 +68,11 @@ const VideoDetailPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // Maintained for UI display and future integration with ProcessSidemenu
-  const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
+  const [mainviewData, setMainviewData] = useState<MainviewResponse | null>(null);
 
   // State for segmentation
   // Used by the ProcessSidemenu component
   const [frameUrl, setFrameUrl] = useState<string>('');
-
-  const [segmentationResults, setSegmentationResults] = useState<SegmentationResult[] | null>(null);
 
   // SAM2 specific state
   const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
@@ -111,13 +104,13 @@ const VideoDetailPage: React.FC = () => {
   // Check if main view segments already exist and auto-advance if they do
   useEffect(() => {
     if (urlUuid && activeStage === 'preprocess') {
-      getMainviewTimestamps(urlUuid)
-        .then((timestamps) => {
-          setMainviewTimestamps(timestamps);
-          console.log('VideoDetail: Loaded timestamps for video:', urlUuid, timestamps.length);
+      getMainviewData(urlUuid)
+        .then((data) => {
+          setMainviewData(data);
+          console.log('VideoDetail: Loaded mainview data for video:', urlUuid, data);
 
           // If mainview segments already exist, mark preprocess as completed and advance to segmentation
-          if (timestamps && timestamps.length > 0) {
+          if (data.timestamps && data.timestamps.length > 0) {
             console.log('Main view segments already exist, advancing to segmentation stage');
 
             const updatedCompletedStages = new Set(completedStages);
@@ -131,7 +124,7 @@ const VideoDetailPage: React.FC = () => {
           }
         })
         .catch((error) => {
-          console.error('Failed to fetch mainview timestamps:', error);
+          console.error('Failed to fetch mainview data:', error);
         });
     }
   }, [urlUuid, activeStage]);
@@ -209,10 +202,10 @@ const VideoDetailPage: React.FC = () => {
         setProcessingStatus('Main view detection complete!');
 
         try {
-          // Fetch the timestamps after processing is complete
-          const timestamps = await getMainviewTimestamps(videoId);
-          setMainviewTimestamps(timestamps);
-          console.log('Fetched timestamps after completion:', timestamps.length);
+          // Fetch the complete mainview data after processing is complete
+          const data = await getMainviewData(videoId);
+          setMainviewData(data);
+          console.log('Fetched mainview data after completion:', data);
 
           // Mark current stage as completed
           const updatedCompletedStages = new Set(completedStages);
@@ -232,7 +225,7 @@ const VideoDetailPage: React.FC = () => {
             moveToNextStage();
           }, 1000);
         } catch (error) {
-          console.error('Error fetching timestamps after completion:', error);
+          console.error('Error fetching mainview data after completion:', error);
           setIsProcessing(false);
         }
       });
@@ -400,7 +393,6 @@ const VideoDetailPage: React.FC = () => {
 
           if (status.status === 'completed') {
             clearInterval(statusCheckInterval);
-            setSegmentationResults(status.results || []);
             setIsProcessing(false);
 
             // Mark stage as completed
@@ -651,14 +643,14 @@ const VideoDetailPage: React.FC = () => {
 
   // Check if current frame is in a main view segment
   const isCurrentFrameInMainView = (): boolean => {
-    // If no timestamps exist, default to true to allow marking
-    if (!mainviewTimestamps || mainviewTimestamps.length === 0) return true;
+    // If no mainview data exists, default to true to allow marking
+    if (!mainviewData?.timestamps || mainviewData.timestamps.length === 0) return true;
 
     // Calculate current time in seconds
     const currentTimeInSeconds = currentTime;
 
     // Check if current time is within any main view segment
-    return mainviewTimestamps.some(
+    return mainviewData.timestamps.some(
       (segment) => currentTimeInSeconds >= segment.start && currentTimeInSeconds <= segment.end
     );
   };

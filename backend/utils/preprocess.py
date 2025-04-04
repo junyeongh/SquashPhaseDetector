@@ -196,17 +196,9 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
         json_timestamps.append([onset, offset, onset_frame, offset_frame])
 
     # Create the final JSON structure
-    result = {"timestamp": json_timestamps, "chunks": json_chunks}
+    result = {"total_frames": total_frames, "timestamp": json_timestamps, "chunks": json_chunks}
     with open(mainview_file_path, "w") as f:
         json.dump(result, f, indent=2)
-
-    # TODO: update logics uses csv to json file
-    mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.csv")
-    with open(mainview_file_path, "w") as f:
-        f.write("Start,End,StartFrame,EndFrame\n")
-        for onset, offset, onset_frame, offset_frame in timestamps:
-            f.write(f"{onset:.2f},{offset:.2f},{onset_frame},{offset_frame}\n")
-    print(f"Timestamps saved to: {mainview_file_path}")
 
     # TODO: move frames to frames folder after segmentation markers
     # temp_dir = os.path.join(video_file_dir, "temp/")

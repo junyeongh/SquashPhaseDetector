@@ -251,7 +251,7 @@ async def get_mainview_processing_status(video_uuid: str):
     is_processing = video_uuid in processing_videos
 
     # Check if mainview timestamps exist
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
     has_mainview = os.path.exists(mainview_file_path)
 
     status = "idle"
@@ -334,27 +334,27 @@ async def get_main_view_timestamps(video_uuid: str):
     if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
         raise HTTPException(status_code=404, detail="Video not found")
 
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
     if not os.path.exists(mainview_file_path):
         raise HTTPException(status_code=404, detail="Main view timestamps not found")
 
-    # Read and parse the CSV file
-    timestamps = []
+    # Read and parse the JSON file
     with open(mainview_file_path, "r") as f:
-        # Skip header
-        next(f)
-        for line in f:
-            start, end, start_frame, end_frame = line.strip().split(",")
-            timestamps.append(
-                {
-                    "start": float(start),
-                    "end": float(end),
-                    "start_frame": int(start_frame),
-                    "end_frame": int(end_frame),
-                }
-            )
+        data = json.load(f)
 
-    return {"timestamps": timestamps}
+    # Convert the timestamp format to match the expected frontend structure
+    timestamps = []
+    for start, end, start_frame, end_frame in data["timestamp"]:
+        timestamps.append(
+            {
+                "start": float(start),
+                "end": float(end),
+                "start_frame": int(start_frame),
+                "end_frame": int(end_frame),
+            }
+        )
+
+    return {"timestamps": timestamps, "chunks": data["chunks"]}
 
 
 # @router.post("/session/start")

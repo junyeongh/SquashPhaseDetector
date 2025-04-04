@@ -3,31 +3,37 @@ import { BASE_API_URL } from './config';
 
 const API_URL = `${BASE_API_URL}/video`;
 
-export interface MainviewTimestamp {
+interface MainviewTimestamp {
   start: number;
   end: number;
   start_frame: number;
   end_frame: number;
 }
 
-export const getMainviewTimestamps = async (videoUuid: string): Promise<MainviewTimestamp[]> => {
+export interface MainviewResponse {
+  total_frames: number;
+  timestamps: MainviewTimestamp[];
+  chunks: number[][][];
+}
+
+export const getMainviewData = async (videoUuid: string): Promise<MainviewResponse> => {
   try {
-    const response = await axios.get(`${API_URL}/mainview/${videoUuid}`);
-    return response.data.timestamps || [];
+    const response = await axios.get<MainviewResponse>(`${API_URL}/mainview/${videoUuid}`);
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      console.error('Error fetching mainview timestamps:', error.response.data);
-      throw new Error(error.response.data.detail || 'Failed to fetch mainview timestamps');
+      console.error('Error fetching mainview data:', error.response.data);
+      throw new Error(error.response.data.detail || 'Failed to fetch mainview data');
     } else {
-      console.error('Error fetching mainview timestamps:', error);
+      console.error('Error fetching mainview data:', error);
       throw error;
     }
   }
 };
 
-export const generateMainView = async (videoUuid: string): Promise<{ status: string; video_uuid: string }> => {
+export const generateMainView = async (videoUUID: string): Promise<{ status: string; video_uuid: string }> => {
   try {
-    const response = await axios.post(`${API_URL}/mainview/${videoUuid}`);
+    const response = await axios.post(`${API_URL}/mainview/${videoUUID}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

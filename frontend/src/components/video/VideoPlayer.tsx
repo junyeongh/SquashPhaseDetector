@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import ReactPlayer from 'react-player';
-import { MainviewTimestamp } from '@/services/api/video';
+import { MainviewResponse } from '@/services/api/video';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, RotateCcw, RotateCw, Check } from 'lucide-react';
 import SegmentationMarkerOverlay from '@/components/overlays/SegmentationMarkerOverlay';
 
@@ -8,14 +8,14 @@ interface ReactPlayerWrapperProps {
   src: string;
   onFrameChange?: (frameNumber: number) => void;
   fps?: number;
-  mainviewTimestamps?: MainviewTimestamp[];
+  mainviewResponse?: MainviewResponse;
   onPlayerUpdates?: (currentTime: number, duration: number, playing: boolean) => void;
-  onSeek?: (time: number) => void;
+  onSeek?: (frame: number) => void;
   currentStage: string;
 }
 
 const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewTimestamps, onSeek, currentStage }, ref) => {
+  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewResponse, onSeek, currentStage }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -393,11 +393,12 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           <div className='mb-3 flex items-center justify-between'>
             <div className='text-sm font-medium text-gray-700'>Main View Segments</div>
             <div className='text-xs text-gray-500'>
-              {mainviewTimestamps && mainviewTimestamps.length > 0 ? (
+              {mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0 ? (
                 <span className='flex items-center gap-1'>
                   <Check className='h-3 w-3 text-green-500' />
                   <span>
-                    <span className='font-medium'>{mainviewTimestamps.length}</span> segments detected
+                    <span className='font-medium'>{mainviewResponse.timestamps.length}</span> segments and{' '}
+                    <span className='font-medium'>{mainviewResponse.chunks.length}</span> chunks detected
                   </span>
                 </span>
               ) : (
@@ -407,35 +408,101 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
           </div>
 
           <div className='relative h-8 w-full overflow-hidden rounded bg-gray-200'>
-            {/* Timeline segments */}
-            {mainviewTimestamps && mainviewTimestamps.length > 0
-              ? mainviewTimestamps.map((segment, index) => {
-                  const startPercent = (segment.start / duration) * 100;
-                  const widthPercent = ((segment.end - segment.start) / duration) * 100;
+            {/* Calculate total frames based on duration and fps */}
+            {(() => {
+              // Estimate total frames based on duration and fps or use the last frame if available
+              const totalFrames =
+                mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0
+                  ? Math.max(...mainviewResponse.timestamps.map((t) => t.end_frame))
+                  : Math.round(duration * fps);
 
-                  return (
+              return (
+                <>
+                  {/* Timeline segments */}
+                  {mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0
+                    ? mainviewResponse.timestamps.map((segment, index) => {
+                        // Calculate position based on frames instead of time
+                        const startPercent = (segment.start_frame / totalFrames) * 100;
+                        const widthPercent = ((segment.end_frame - segment.start_frame) / totalFrames) * 100;
+
+                        return (
+                          <div
+                            key={index}
+                            className='absolute h-full cursor-pointer bg-blue-300 transition-colors hover:bg-blue-400'
+                            style={{
+                              left: `${startPercent}%`,
+                              width: `${widthPercent}%`,
+                            }}
+                            onClick={() => onSeek && onSeek(segment.start_frame)}
+                            onDoubleClick={() => onSeek && onSeek(segment.end_frame)}
+                            title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s (${segment.start_frame}-${segment.end_frame})`}
+                          />
+                        );
+                      })
+                    : null}
+
+                  {/* Chunks visualization */}
+                  {mainviewResponse && mainviewResponse.chunks && mainviewResponse.chunks.length > 0
+                    ? mainviewResponse.chunks.map((chunk, chunkIndex) => {
+                        // chunk is an array of [start_frame, end_frame] pairs
+                        if (!Array.isArray(chunk) || chunk.length === 0) return null;
+
+                        // Get first frame of the first pair and last frame of the last pair in this chunk
+                        const firstPair = chunk[0];
+                        const lastPair = chunk[chunk.length - 1];
+
+                        if (
+                          !Array.isArray(firstPair) ||
+                          firstPair.length < 2 ||
+                          !Array.isArray(lastPair) ||
+                          lastPair.length < 2
+                        )
+                          return null;
+
+                        const startFrame = firstPair[0];
+                        const endFrame = lastPair[1];
+
+                        // Calculate position percentages based on frames
+                        const startPercent = (startFrame / totalFrames) * 100;
+                        const widthPercent = ((endFrame - startFrame) / totalFrames) * 100;
+
+                        // Only render if we have valid data
+                        if (widthPercent <= 0 || startPercent < 0) return null;
+
+                        return (
+                          <div
+                            key={`chunk-${chunkIndex}`}
+                            className='absolute bottom-0 h-4 rounded-full border border-blue-500 bg-blue-200 transition-colors hover:bg-blue-300'
+                            style={{
+                              left: `${startPercent}%`,
+                              width: `${widthPercent}%`,
+                            }}
+                            onClick={() => onSeek && onSeek(startFrame)}
+                            onDoubleClick={() => onSeek && onSeek(endFrame)}
+                            title={`Chunk ${chunkIndex + 1}: ${startFrame}-${endFrame}`}
+                          >
+                            <span className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[0.6rem] font-bold text-black'>
+                              {chunkIndex + 1}
+                            </span>
+                          </div>
+                        );
+                      })
+                    : null}
+
+                  {/* Playhead - calculate position based on current frame rather than played percentage */}
+                  {duration > 0 && (
                     <div
-                      key={index}
-                      className='absolute h-full cursor-pointer bg-blue-200 transition-colors hover:bg-blue-300'
-                      style={{
-                        left: `${startPercent}%`,
-                        width: `${widthPercent}%`,
-                      }}
-                      onClick={() => onSeek && onSeek(segment.start)}
-                      title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s`}
+                      className='absolute top-0 h-full w-1 bg-gray-600'
+                      style={{ left: `${(currentFrame / totalFrames) * 100}%` }}
                     />
-                  );
-                })
-              : null}
-
-            {/* Playhead - only show if we have a duration */}
-            {duration > 0 && (
-              <div className='absolute top-0 h-full w-1 bg-gray-600' style={{ left: `${played * 100}%` }} />
-            )}
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <div className='mt-2 text-xs text-gray-500'>
-            {mainviewTimestamps && mainviewTimestamps.length > 0
+            {mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0
               ? 'Click on a segment to jump to that position in the video'
               : 'Process the video to detect main view segments'}
           </div>
