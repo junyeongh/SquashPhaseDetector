@@ -116,6 +116,19 @@ const SegmentationMarkerOverlay = ({
     player2NegativePoints.forEach((point) => {
       drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-2');
     });
+
+    // If not in main view, draw warning overlay
+    if (!isInMainView && !isPlaying) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Draw warning message
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Cannot add markers: Not in main view', width/2, height/2);
+    }
   }, [
     width,
     height,
@@ -124,6 +137,8 @@ const SegmentationMarkerOverlay = ({
     player2PositivePoints,
     player2NegativePoints,
     segmentationModel,
+    isInMainView,
+    isPlaying
   ]);
 
   // Draw a point with label

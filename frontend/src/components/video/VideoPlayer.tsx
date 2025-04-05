@@ -50,6 +50,20 @@ const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
     // Calculate current frame based on played percentage and duration
     const currentFrame = Math.round(played * duration * fps);
 
+    // Calculate current time in seconds
+    const currentTimeInSeconds = played * duration;
+
+    // Check if current frame is in a main view segment
+    const isInMainView = (): boolean => {
+      // If no mainview data exists, default to true to allow marking
+      if (!mainviewResponse?.timestamps || mainviewResponse.timestamps.length === 0) return true;
+
+      // Check if current time is within any main view segment
+      return mainviewResponse.timestamps.some(
+        (segment) => currentTimeInSeconds >= segment[0] && currentTimeInSeconds <= segment[1]
+      );
+    };
+
     // Format time for display (mm:ss)
     const formatTime = (seconds: number) => {
       if (isNaN(seconds)) return '00:00';
@@ -188,7 +202,7 @@ const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
               width={playerRef.current?.getInternalPlayer()?.parentElement?.clientWidth || 0}
               height={playerRef.current?.getInternalPlayer()?.parentElement?.clientHeight || 0}
               isPlaying={playing}
-              isInMainView={true}
+              isInMainView={isInMainView()}
             />
           )}
 
