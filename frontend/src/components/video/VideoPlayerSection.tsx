@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import ReactPlayerWrapper from './VideoPlayer';
+import VideoPlayer from './VideoPlayer';
 import { getMainviewData, MainviewResponse } from '@/services/api/video';
 import ReactPlayer from 'react-player';
 
@@ -8,7 +8,6 @@ interface VideoPlayerSectionProps {
   videoId?: string;
   onFrameUpdate?: (frame: number, duration: number, currentTime: number, playing: boolean) => void;
   stage: string;
-  fps?: number; // Add fps prop with default value
 }
 
 export interface VideoPlayerSectionRef {
@@ -16,7 +15,7 @@ export interface VideoPlayerSectionRef {
 }
 
 const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionProps>(
-  ({ videoUrl, videoId, onFrameUpdate, stage, fps = 30 }, ref) => {
+  ({ videoUrl, videoId, onFrameUpdate, stage }, ref) => {
     const [currentFrame, setCurrentFrame] = useState(0);
     const [mainviewData, setMainviewData] = useState<MainviewResponse | null>(null);
     const [duration, setDuration] = useState(0);
@@ -37,9 +36,11 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
     // Handle seeking to specific frame (used by MainviewTimeline)
     const handleSeek = (frame: number) => {
       if (playerRef.current && duration > 0) {
-        // Convert frame to time based on fps
+        // Convert frame to time based on fps from mainviewData or fallback to default fps
+        const fps = mainviewData?.fps || 30;
         const timeInSeconds = frame / fps;
         playerRef.current.seekTo(timeInSeconds, 'seconds');
+        console.log(`Seeking to frame ${frame}, time ${timeInSeconds}s using fps ${fps}`);
       }
     };
 
@@ -105,7 +106,7 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Video Player Container */}
         <div className='overflow-hidden rounded-md border border-gray-200 bg-white'>
-          <ReactPlayerWrapper
+          <VideoPlayer
             src={videoUrl}
             onFrameChange={handleFrameChange}
             mainviewResponse={mainviewData || undefined}
@@ -113,7 +114,6 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
             ref={setPlayerRef}
             onSeek={handleSeek}
             currentStage={stage}
-            fps={fps}
           />
         </div>
       </div>

@@ -5,7 +5,7 @@ import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/Vi
 import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
 import {
   Point,
-  SegmentationResult,
+//   SegmentationResult,
   SegmentationMask,
   markPlayers,
   markPlayersSAM2,

@@ -11,6 +11,7 @@ interface MainviewTimestamp {
 }
 
 export interface MainviewResponse {
+  fps: number;
   total_frames: number;
   timestamps: MainviewTimestamp[];
   chunks: number[][][];

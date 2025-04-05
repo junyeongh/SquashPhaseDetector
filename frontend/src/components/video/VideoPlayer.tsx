@@ -7,17 +7,19 @@ import SegmentationMarkerOverlay from '@/components/overlays/SegmentationMarkerO
 interface ReactPlayerWrapperProps {
   src: string;
   onFrameChange?: (frameNumber: number) => void;
-  fps?: number;
   mainviewResponse?: MainviewResponse;
   onPlayerUpdates?: (currentTime: number, duration: number, playing: boolean) => void;
   onSeek?: (frame: number) => void;
   currentStage: string;
 }
 
-const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
-  ({ src, onFrameChange, fps = 30, onPlayerUpdates, mainviewResponse, onSeek, currentStage }, ref) => {
+const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
+  ({ src, onFrameChange, onPlayerUpdates, mainviewResponse, onSeek, currentStage }, ref) => {
     const playerRef = useRef<ReactPlayer>(null);
     const progressBarRef = useRef<HTMLDivElement>(null);
+
+    // Get fps from mainviewResponse or use a default value if not available
+    const fps = mainviewResponse?.fps || 30;
 
     // Expose inner ref to parent
     useEffect(() => {
@@ -433,8 +435,14 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                               left: `${startPercent}%`,
                               width: `${widthPercent}%`,
                             }}
-                            onClick={() => onSeek && onSeek(segment.start_frame)}
-                            onDoubleClick={() => onSeek && onSeek(segment.end_frame)}
+                            onClick={() => {
+                              console.log(`Clicked on segment ${index}, start_frame: ${segment.start_frame}`);
+                              if (onSeek) onSeek(segment.start_frame);
+                            }}
+                            onDoubleClick={() => {
+                              console.log(`Double-clicked on segment ${index}, end_frame: ${segment.end_frame}`);
+                              if (onSeek) onSeek(segment.end_frame);
+                            }}
                             title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s (${segment.start_frame}-${segment.end_frame})`}
                           />
                         );
@@ -477,8 +485,14 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                               left: `${startPercent}%`,
                               width: `${widthPercent}%`,
                             }}
-                            onClick={() => onSeek && onSeek(startFrame)}
-                            onDoubleClick={() => onSeek && onSeek(endFrame)}
+                            onClick={() => {
+                              console.log(`Clicked on chunk ${chunkIndex}, startFrame: ${startFrame}`);
+                              if (onSeek) onSeek(startFrame);
+                            }}
+                            onDoubleClick={() => {
+                              console.log(`Double-clicked on chunk ${chunkIndex}, endFrame: ${endFrame}`);
+                              if (onSeek) onSeek(endFrame);
+                            }}
                             title={`Chunk ${chunkIndex + 1}: ${startFrame}-${endFrame}`}
                           >
                             <span className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[0.6rem] font-bold text-black'>
@@ -512,6 +526,6 @@ const ReactPlayerWrapper = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
   }
 );
 
-ReactPlayerWrapper.displayName = 'ReactPlayerWrapper';
+VideoPlayer.displayName = 'VideoPlayer';
 
-export default ReactPlayerWrapper;
+export default VideoPlayer;
