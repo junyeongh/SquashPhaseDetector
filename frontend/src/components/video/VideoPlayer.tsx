@@ -415,7 +415,7 @@ const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
               // Estimate total frames based on duration and fps or use the last frame if available
               const totalFrames =
                 mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0
-                  ? Math.max(...mainviewResponse.timestamps.map((t) => t.end_frame))
+                  ? Math.max(...mainviewResponse.timestamps.map((t) => t[3]))
                   : Math.round(duration * fps);
 
               return (
@@ -424,8 +424,8 @@ const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                   {mainviewResponse && mainviewResponse.timestamps && mainviewResponse.timestamps.length > 0
                     ? mainviewResponse.timestamps.map((segment, index) => {
                         // Calculate position based on frames instead of time
-                        const startPercent = (segment.start_frame / totalFrames) * 100;
-                        const widthPercent = ((segment.end_frame - segment.start_frame) / totalFrames) * 100;
+                        const startPercent = (segment[2] / totalFrames) * 100;
+                        const widthPercent = ((segment[3] - segment[2]) / totalFrames) * 100;
 
                         return (
                           <div
@@ -436,14 +436,14 @@ const VideoPlayer = forwardRef<ReactPlayer, ReactPlayerWrapperProps>(
                               width: `${widthPercent}%`,
                             }}
                             onClick={() => {
-                              console.log(`Clicked on segment ${index}, start_frame: ${segment.start_frame}`);
-                              if (onSeek) onSeek(segment.start_frame);
+                              console.log(`Clicked on segment ${index}, start_frame: ${segment[2]}`);
+                              if (onSeek) onSeek(segment[2]);
                             }}
                             onDoubleClick={() => {
-                              console.log(`Double-clicked on segment ${index}, end_frame: ${segment.end_frame}`);
-                              if (onSeek) onSeek(segment.end_frame);
+                              console.log(`Double-clicked on segment ${index}, end_frame: ${segment[3]}`);
+                              if (onSeek) onSeek(segment[3]);
                             }}
-                            title={`Segment ${index + 1}: ${segment.start.toFixed(2)}s - ${segment.end.toFixed(2)}s (${segment.start_frame}-${segment.end_frame})`}
+                            title={`Segment ${index + 1}: ${segment[0].toFixed(2)}s - ${segment[1].toFixed(2)}s (${segment[2]}-${segment[3]})`}
                           />
                         );
                       })

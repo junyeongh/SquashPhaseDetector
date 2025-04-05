@@ -3,12 +3,9 @@ import { BASE_API_URL } from './config';
 
 const API_URL = `${BASE_API_URL}/video`;
 
-interface MainviewTimestamp {
-  start: number;
-  end: number;
-  start_frame: number;
-  end_frame: number;
-}
+// Update interface to match array structure in JSON
+// Each timestamp is [start, end, start_frame, end_frame]
+type MainviewTimestamp = [number, number, number, number];
 
 export interface MainviewResponse {
   fps: number;

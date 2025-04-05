@@ -196,7 +196,7 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
         json_timestamps.append([onset, offset, onset_frame, offset_frame])
 
     # Create the final JSON structure
-    result = {"fps": fps, "total_frames": total_frames, "timestamp": json_timestamps, "chunks": json_chunks}
+    result = {"fps": fps, "total_frames": total_frames, "timestamps": json_timestamps, "chunks": json_chunks}
     with open(mainview_file_path, "w") as f:
         json.dump(result, f, indent=2)
 

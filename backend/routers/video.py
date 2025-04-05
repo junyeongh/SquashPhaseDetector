@@ -342,19 +342,8 @@ async def get_main_view_timestamps(video_uuid: str):
     with open(mainview_file_path, "r") as f:
         data = json.load(f)
 
-    # Convert the timestamp format to match the expected frontend structure
-    timestamps = []
-    for start, end, start_frame, end_frame in data["timestamp"]:
-        timestamps.append(
-            {
-                "start": float(start),
-                "end": float(end),
-                "start_frame": int(start_frame),
-                "end_frame": int(end_frame),
-            }
-        )
 
-    return {"timestamps": timestamps, "chunks": data["chunks"]}
+    return data
 
 
 # @router.post("/session/start")
