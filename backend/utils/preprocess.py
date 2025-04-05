@@ -5,6 +5,7 @@ import imagehash
 from PIL import Image
 import random
 import gc
+import json
 
 
 def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
@@ -114,16 +115,111 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
         return None
 
     print(f"Main view timestamps: {timestamps}")
+    mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.json")
 
-    # Write timestamps incrementally instead of storing them all
-    mainview_file_path = os.path.join(video_file_dir, "mainview_timestamp.csv")
+    # Create chunks
+    chunk_size = 2500
+    json_chunks = []
+    current_chunk = []
+    current_chunk_size = 0
+
+    for timestamp in timestamps:
+        start_frame = timestamp[2]  # Get the start_frame from the timestamp
+        end_frame = timestamp[3]  # Get the end_frame from the timestamp
+        segment_size = end_frame - start_frame + 1
+
+        # If this segment fits in the current chunk
+        if current_chunk_size + segment_size <= chunk_size:
+            current_chunk.append((start_frame, end_frame))
+            current_chunk_size += segment_size
+
+        # If this segment doesn't fit entirely, we need to split it
+        else:
+            # Calculate how many frames can fit in the current chunk
+            frames_to_add = chunk_size - current_chunk_size
+
+            if frames_to_add > 0:
+                # Add the first part of the segment to the current chunk
+                split_end_frame = start_frame + frames_to_add - 1
+                current_chunk.append((start_frame, split_end_frame))
+                json_chunks.append(current_chunk)
+
+                # Start a new chunk with the remaining part of the segment
+                remaining_start = split_end_frame + 1
+
+                # Process the remaining part, potentially across multiple chunks
+                remaining_end = end_frame
+                while remaining_start <= remaining_end:
+                    new_chunk = []
+                    new_chunk_end = min(remaining_start + chunk_size - 1, remaining_end)
+                    new_chunk.append((remaining_start, new_chunk_end))
+
+                    if new_chunk_end == remaining_end:
+                        # If we've reached the end of the segment, we're done with this split
+                        current_chunk = new_chunk
+                        current_chunk_size = new_chunk_end - remaining_start + 1
+                        break
+                    else:
+                        # If there's still more to process, add this chunk and continue
+                        json_chunks.append(new_chunk)
+                        remaining_start = new_chunk_end + 1
+            else:
+                # If the current chunk is already full, start a new one
+                json_chunks.append(current_chunk)
+
+                # Process this segment with a fresh chunk
+                current_chunk = []
+                current_chunk_size = 0
+
+                # We need to recursively handle this segment as it might span multiple chunks
+                remaining_start = start_frame
+                remaining_end = end_frame
+
+                while remaining_start <= remaining_end:
+                    if remaining_end - remaining_start + 1 <= chunk_size:
+                        # If the remainder fits in one chunk
+                        current_chunk.append((remaining_start, remaining_end))
+                        current_chunk_size = remaining_end - remaining_start + 1
+                        break
+                    else:
+                        # If we need multiple chunks
+                        new_chunk = [(remaining_start, remaining_start + chunk_size - 1)]
+                        json_chunks.append(new_chunk)
+                        remaining_start += chunk_size
+
+    # Don't forget to add the last chunk if it's not empty
+    if current_chunk:
+        json_chunks.append(current_chunk)
+
+    json_timestamps = []
+    for onset, offset, onset_frame, offset_frame in timestamps:
+        json_timestamps.append([onset, offset, onset_frame, offset_frame])
+
+    # Create the final JSON structure
+    result = {"fps": fps, "total_frames": total_frames, "timestamps": json_timestamps, "chunks": json_chunks}
     with open(mainview_file_path, "w") as f:
-        f.write("Start,End,StartFrame,EndFrame\n")
-        # Write the already processed timestamps directly
-        for onset, offset, onset_frame, offset_frame in timestamps:
-            f.write(f"{onset:.2f},{offset:.2f},{onset_frame},{offset_frame}\n")
+        json.dump(result, f, indent=2)
 
-    print(f"Timestamps saved to: {mainview_file_path}")
+    # TODO: move frames to frames folder after segmentation markers
+    # temp_dir = os.path.join(video_file_dir, "temp/")
+    # frame_dir = os.path.join(video_file_dir, "frames/")
+
+    # frame_names = sorted([f for f in os.listdir(temp_dir) if f.endswith((".jpg", ".jpeg", ".png"))])
+    # for _, _, start_frame, end_frame in timestamps:
+    #     for frame in range(start_frame, end_frame + 1):
+    #         original_path = os.path.join(temp_dir, frame_names[frame])
+    #         new_path = os.path.join(frame_dir, frame_names[frame])
+    #         os.rename(original_path, new_path)
+    #         # Remove destination file if it exists
+    #         try:
+    #             if os.path.exists(new_path):
+    #                 os.remove(new_path)
+    #         except Exception as e:
+    #             print(f"Error removing existing file: {e}")
+
+    #         # Create a symlink instead of moving the file
+    #         os.symlink(original_path, new_path)
+
     return mainview_file_path
 
 

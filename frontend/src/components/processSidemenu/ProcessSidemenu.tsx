@@ -42,8 +42,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   setActivePlayer,
   onClearPlayerPoints,
   onClearPlayerMarkerPoints,
-  onMarkPlayers,
   onStartSegmentation,
+  currentFrameIndex,
+  markedFrames,
 
   // Pose props
   modelType,
@@ -52,35 +53,62 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   setConfidenceThreshold,
   onStartPoseDetection,
 
+  // Game state props
+  onStartGameStateAnalysis,
+
   // Export props
   onExportJson,
   onExportVideo,
   onExportReport,
 }) => {
-  // Get previous and next stage based on current stage
+  const availableStages = stageConfig.map((stage) => stage.id as ProcessingStage);
+  const currentStageIndex = availableStages.findIndex((stage) => stage === activeStage);
+  const totalStages = availableStages.length;
+
   const getPreviousStage = (): ProcessingStage | null => {
-    const stageIds = stageConfig.map((s) => s.id);
-    const currentIndex = stageIds.indexOf(activeStage);
-    return currentIndex > 0 ? (stageIds[currentIndex - 1] as ProcessingStage) : null;
+    if (currentStageIndex > 0) {
+      return availableStages[currentStageIndex - 1];
+    }
+    return null;
   };
 
   const getNextStage = (): ProcessingStage | null => {
-    const stageIds = stageConfig.map((s) => s.id);
-    const currentIndex = stageIds.indexOf(activeStage);
-    return currentIndex < stageIds.length - 1 ? (stageIds[currentIndex + 1] as ProcessingStage) : null;
+    if (currentStageIndex < availableStages.length - 1) {
+      return availableStages[currentStageIndex + 1];
+    }
+    return null;
   };
 
+  // Get the previous stage if available, accounting for stage completion
   const prevStage = getPreviousStage();
+
+  // Get the next stage if available, accounting for stage completion
   const nextStage = getNextStage();
 
-  // Get current stage details
-  const currentStage = stageConfig.find((stage) => stage.id === activeStage);
+  // Helper function to count total positive markers per player across all frames
+  const countTotalPositiveMarkers = (): { player1: number; player2: number } => {
+    // If using markedFrames
+    if (markedFrames && markedFrames.size > 0) {
+      let player1Total = 0;
+      let player2Total = 0;
 
-  // Find current stage index
-  const currentStageIndex = stageConfig.findIndex((stage) => stage.id === activeStage);
-  const totalStages = stageConfig.length;
+      markedFrames.forEach((data) => {
+        player1Total += data.player1PositivePoints?.length || 0;
+        player2Total += data.player2PositivePoints?.length || 0;
+      });
 
-  // Render the appropriate stage component based on the active stage
+      return { player1: player1Total, player2: player2Total };
+    }
+
+    // Fallback to single frame data
+    return {
+      player1: player1PositivePoints?.length || 0,
+      player2: player2PositivePoints?.length || 0,
+    };
+  };
+
+  const totalPositiveMarkers = countTotalPositiveMarkers();
+
   const renderStageComponent = () => {
     switch (activeStage) {
       case 'preprocess':
@@ -90,12 +118,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             processingStatus={processingStatus}
             showSkipButton={showSkipButton}
             onSkipStage={onSkipStage}
-            onProcess={onProcess!}
-            onPreviousFrame={onPreviousFrame}
-            onNextFrame={onNextFrame}
+            onProcess={onProcess}
           />
         );
-
       case 'segmentation':
         return (
           <SegmentationStage
@@ -117,13 +142,10 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             setActivePlayer={setActivePlayer}
             onClearPlayerPoints={onClearPlayerPoints}
             onClearPlayerMarkerPoints={onClearPlayerMarkerPoints}
-            onMarkPlayers={onMarkPlayers}
-            onStartSegmentation={onStartSegmentation}
-            onPreviousFrame={onPreviousFrame}
-            onNextFrame={onNextFrame}
+            currentFrameIndex={currentFrameIndex}
+            markedFrames={markedFrames}
           />
         );
-
       case 'pose':
         return (
           <PoseStage
@@ -135,12 +157,11 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             confidenceThreshold={confidenceThreshold}
             setModelType={setModelType}
             setConfidenceThreshold={setConfidenceThreshold}
-            onStartPoseDetection={onStartPoseDetection}
             onPreviousFrame={onPreviousFrame}
             onNextFrame={onNextFrame}
+            onStartPoseDetection={onStartPoseDetection}
           />
         );
-
       case 'game_state':
         return (
           <GameStateStage
@@ -148,10 +169,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             processingStatus={processingStatus}
             showSkipButton={showSkipButton}
             onSkipStage={onSkipStage}
-            onProcess={onProcess!}
+            onStartGameStateAnalysis={onStartGameStateAnalysis}
           />
         );
-
       case 'export':
         return (
           <ExportStage
@@ -164,35 +184,27 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             onExportReport={onExportReport}
           />
         );
-
       default:
         return null;
     }
   };
 
   return (
-    <div className='flex h-full w-full flex-col border-l border-gray-200'>
-      {/* Main content area with scrolling */}
-      <div className='flex flex-1 flex-col overflow-auto p-4'>
-        <h2 className='text-md mb-4 font-semibold'>Processing Progress</h2>
+    <div className='flex h-full flex-col bg-gray-50 shadow-md'>
+      {/* Stage header */}
+      <StageHeader
+        currentStage={stageConfig.find((stage) => stage.id === activeStage) || stageConfig[0]}
+        currentStageIndex={currentStageIndex}
+        totalStages={totalStages}
+        activeStage={activeStage}
+        completedStages={completedStages}
+        onStageSelect={onStageSelect}
+        allStages={stageConfig}
+        isProcessing={isProcessing}
+      />
 
-        {/* Stage header with overview and current stage info */}
-        {currentStage && (
-          <StageHeader
-            currentStage={currentStage}
-            currentStageIndex={currentStageIndex}
-            totalStages={totalStages}
-            activeStage={activeStage}
-            completedStages={completedStages}
-            isProcessing={isProcessing}
-            onStageSelect={onStageSelect}
-            allStages={stageConfig}
-          />
-        )}
-
-        {/* Stage-specific controls */}
-        <div className='flex-1'>{renderStageComponent()}</div>
-      </div>
+      {/* Stage content - flex-1 to expand */}
+      <div className='flex-1 overflow-y-auto p-2'>{renderStageComponent()}</div>
 
       {/* Process button */}
       <div className='px-4 pb-2'>
@@ -210,7 +222,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
         {activeStage === 'segmentation' && onStartSegmentation && (
           <button
             onClick={onStartSegmentation}
-            disabled={isProcessing || (player1PositivePoints?.length === 0 && player2PositivePoints?.length === 0)}
+            disabled={isProcessing || totalPositiveMarkers.player1 === 0 || totalPositiveMarkers.player2 === 0}
             className='flex w-full items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
           >
             Start Segmentation
@@ -227,9 +239,9 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
           </button>
         )}
 
-        {activeStage === 'game_state' && onProcess && (
+        {activeStage === 'game_state' && onStartGameStateAnalysis && (
           <button
-            onClick={onProcess}
+            onClick={onStartGameStateAnalysis}
             disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
           >

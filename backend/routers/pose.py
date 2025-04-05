@@ -29,9 +29,7 @@ async def detect_poses(request: DetectPosesRequest, background_tasks: Background
         raise HTTPException(status_code=400, detail="No player masks found in session")
 
     if session.get("segmentation_status") != "completed":
-        raise HTTPException(
-            status_code=400, detail="Segmentation must be completed first"
-        )
+        raise HTTPException(status_code=400, detail="Segmentation must be completed first")
 
     # Start pose detection as a background task
     background_tasks.add_task(run_pose_detection, session, request.session_id)

@@ -19,14 +19,13 @@ export interface BaseStageProps {
   processingStatus: string;
   showSkipButton?: boolean;
   onSkipStage?: () => void;
-  onProcess?: () => void;
-  onPreviousFrame?: () => void;
-  onNextFrame?: () => void;
 }
 
 // Preprocess stage specific props
-export interface PreprocessStageProps extends Omit<BaseStageProps, 'onProcess'> {
-  onProcess: () => void;
+export interface PreprocessStageProps extends BaseStageProps {
+  onProcess?: () => void;
+  onPreviousFrame?: () => void;
+  onNextFrame?: () => void;
 }
 
 // Segmentation stage specific props
@@ -50,8 +49,18 @@ export interface SegmentationStageProps extends BaseStageProps {
   onClearPlayerPoints?: (player: 1 | 2) => void;
   onClearPlayerMarkerPoints?: (player: 1 | 2, markerType: MarkerType) => void;
 
-  onMarkPlayers?: () => void;
-  onStartSegmentation?: () => void;
+  currentFrameIndex?: number;
+  markedFrames?: Map<
+    number,
+    {
+      player1Points?: Point[];
+      player2Points?: Point[];
+      player1PositivePoints?: Point[];
+      player1NegativePoints?: Point[];
+      player2PositivePoints?: Point[];
+      player2NegativePoints?: Point[];
+    }
+  >;
 }
 
 // Pose detection stage specific props
@@ -60,13 +69,14 @@ export interface PoseStageProps extends BaseStageProps {
   confidenceThreshold?: number;
   setModelType?: (type: string) => void;
   setConfidenceThreshold?: (threshold: number) => void;
-
   onStartPoseDetection?: () => void;
+  onPreviousFrame?: () => void;
+  onNextFrame?: () => void;
 }
 
 // Game state analysis stage specific props
-export interface GameStateStageProps extends Omit<BaseStageProps, 'onProcess'> {
-  onProcess: () => void;
+export interface GameStateStageProps extends BaseStageProps {
+  onStartGameStateAnalysis?: () => void;
 }
 
 // Export stage specific props
@@ -116,8 +126,19 @@ export interface ProcessSidemenuProps {
   setActivePlayer?: (player: 1 | 2) => void;
   onClearPlayerPoints?: (player: 1 | 2) => void;
   onClearPlayerMarkerPoints?: (player: 1 | 2, markerType: MarkerType) => void;
-  onMarkPlayers?: () => void;
   onStartSegmentation?: () => void;
+  currentFrameIndex?: number;
+  markedFrames?: Map<
+    number,
+    {
+      player1Points?: Point[];
+      player2Points?: Point[];
+      player1PositivePoints?: Point[];
+      player1NegativePoints?: Point[];
+      player2PositivePoints?: Point[];
+      player2NegativePoints?: Point[];
+    }
+  >;
 
   // Pose props
   modelType?: string;
@@ -125,6 +146,9 @@ export interface ProcessSidemenuProps {
   setModelType?: (type: string) => void;
   setConfidenceThreshold?: (threshold: number) => void;
   onStartPoseDetection?: () => void;
+
+  // Game state props
+  onStartGameStateAnalysis?: () => void;
 
   // Frame navigation
   onPreviousFrame?: () => void;

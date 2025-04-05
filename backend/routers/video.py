@@ -7,7 +7,7 @@ from pathlib import Path
 import json
 import re
 
-from utils.video import extract_frames
+from utils.video import extract_frames, get_video_info
 from utils.preprocess import generate_mainview_timestamp
 
 
@@ -18,8 +18,6 @@ router = APIRouter(
 )
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
-GALLERY_FOLDER = os.environ.get("GALLERY_FOLDER", "/data/gallery")
-
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
 
 # Add a dictionary to track videos being processed and their status
@@ -51,34 +49,33 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     with open(video_file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    video_info = get_video_info(video_file_path)
     # Save the metadata
     video_metadata_path = os.path.join(video_file_dir, "metadata.json")
-    with open(video_metadata_path, "w", encoding="UTF-8") as f:
-        json.dump(
-            {
-                "UUID": video_file_id,
-                "original_filename": original_video_filename,
-                "filename": video_filename,
-                "content_type": file.content_type,
-            },  # TODO information needed
-            f,
-            indent=2,
-        )
-
-    # Create subdirectory for each frames for future use
-    frame_dir = os.path.join(video_file_dir, "frames/")
-    os.makedirs(frame_dir, exist_ok=True)
-
-    # Add frame extraction and main view timestamp generation as background tasks
-    background_tasks.add_task(extract_frames, video_file_path, frame_dir)
-    # background_tasks.add_task(generate_mainview_timestamp, video_file_path, video_file_dir)
-
-    return {
+    metadata = {
         "UUID": video_file_id,
         "original_filename": original_video_filename,
         "filename": video_filename,
         "content_type": file.content_type,
+        # video info
+        "width": video_info["width"],
+        "height": video_info["height"],
+        "fps": video_info["fps"],
+        "total_frames": video_info["total_frames"],
+        "duration_seconds": video_info["duration_seconds"],
+        "codec": video_info["codec"],
     }
+    with open(video_metadata_path, "w", encoding="UTF-8") as f:
+        json.dump(
+            metadata,
+            f,
+            indent=2,
+        )
+
+    # Add frame extraction and main view timestamp generation as background tasks
+    background_tasks.add_task(extract_frames, video_file_path, video_file_dir)
+
+    return metadata
 
 
 @router.get("/upload")
@@ -256,7 +253,7 @@ async def get_mainview_processing_status(video_uuid: str):
     is_processing = video_uuid in processing_videos
 
     # Check if mainview timestamps exist
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
     has_mainview = os.path.exists(mainview_file_path)
 
     status = "idle"
@@ -339,27 +336,15 @@ async def get_main_view_timestamps(video_uuid: str):
     if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
         raise HTTPException(status_code=404, detail="Video not found")
 
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.csv")
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
     if not os.path.exists(mainview_file_path):
         raise HTTPException(status_code=404, detail="Main view timestamps not found")
 
-    # Read and parse the CSV file
-    timestamps = []
+    # Read and parse the JSON file
     with open(mainview_file_path, "r") as f:
-        # Skip header
-        next(f)
-        for line in f:
-            start, end, start_frame, end_frame = line.strip().split(",")
-            timestamps.append(
-                {
-                    "start": float(start),
-                    "end": float(end),
-                    "start_frame": int(start_frame),
-                    "end_frame": int(end_frame),
-                }
-            )
+        data = json.load(f)
 
-    return {"timestamps": timestamps}
+    return data
 
 
 # @router.post("/session/start")

@@ -30,9 +30,7 @@ EXPORT_FOLDER = os.environ.get("EXPORT_FOLDER", "./data/exports")
 
 
 @router.post("/detect-phases")
-async def detect_game_phases(
-    request: DetectPhasesRequest, background_tasks: BackgroundTasks
-):
+async def detect_game_phases(request: DetectPhasesRequest, background_tasks: BackgroundTasks):
     """
     Analyze pose data to detect game phases (rally vs rest)
     """
@@ -47,9 +45,7 @@ async def detect_game_phases(
         raise HTTPException(status_code=400, detail="No pose data found in session")
 
     if session.get("pose_status") != "completed":
-        raise HTTPException(
-            status_code=400, detail="Pose detection must be completed first"
-        )
+        raise HTTPException(status_code=400, detail="Pose detection must be completed first")
 
     # Start game state detection as a background task
     background_tasks.add_task(run_game_state_detection, session, request.session_id)
@@ -148,9 +144,7 @@ async def export_analysis(session_id: str):
     import shutil
 
     zip_path = os.path.join(EXPORT_FOLDER, f"{session_id}_exports.zip")
-    shutil.make_archive(
-        os.path.join(EXPORT_FOLDER, f"{session_id}_exports"), "zip", export_dir
-    )
+    shutil.make_archive(os.path.join(EXPORT_FOLDER, f"{session_id}_exports"), "zip", export_dir)
 
     # Return the zip file
     return FileResponse(

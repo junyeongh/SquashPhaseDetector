@@ -12,20 +12,17 @@ import numpy as np
 from typing import Dict, Any
 
 
-def extract_frames(video_file_path: str, frame_dir: str):
+def extract_frames(video_file_path: str, video_file_dir: str):
     """Extract frames from video using ffmpeg in background"""
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-i",
-            video_file_path,
-            "-q:v",
-            "2",
-            "-start_number",
-            "0",
-            f"{frame_dir}/%06d.jpg",
-        ]
-    )
+    # Create subdirectory for each frames for future use
+    frame_dir = os.path.join(video_file_dir, "frames/")
+    os.makedirs(frame_dir, exist_ok=True)
+    segmentation_dir = os.path.join(video_file_dir, "segmentation/")
+    os.makedirs(segmentation_dir, exist_ok=True)
+    pose_dir = os.path.join(video_file_dir, "pose/")
+    os.makedirs(pose_dir, exist_ok=True)
+
+    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{frame_dir}/%06d.jpg", ])  # fmt: skip
 
 
 #####

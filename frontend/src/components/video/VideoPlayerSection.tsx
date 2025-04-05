@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import ReactPlayerWrapper from './VideoPlayer';
-import { getMainviewTimestamps, MainviewTimestamp } from '@/services/api/video';
+import VideoPlayer from './VideoPlayer';
+import { getMainviewData, MainviewResponse } from '@/services/api/video';
 import ReactPlayer from 'react-player';
 
 interface VideoPlayerSectionProps {
   videoUrl: string;
+  videoId?: string;
+  onFrameUpdate?: (frame: number, duration: number, currentTime: number, playing: boolean) => void;
   stage: string;
-  videoId: string;
-  customOverlay?: React.ReactNode;
-  // These props will be passed to the PreprocessContent
-  onFrameUpdate?: (frame: number, duration: number, currentTime: number) => void;
 }
 
 export interface VideoPlayerSectionRef {
@@ -17,11 +15,12 @@ export interface VideoPlayerSectionRef {
 }
 
 const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionProps>(
-  ({ videoUrl, stage, videoId, customOverlay, onFrameUpdate }, ref) => {
+  ({ videoUrl, videoId, onFrameUpdate, stage }, ref) => {
     const [currentFrame, setCurrentFrame] = useState(0);
-    const [mainviewTimestamps, setMainviewTimestamps] = useState<MainviewTimestamp[]>([]);
+    const [mainviewData, setMainviewData] = useState<MainviewResponse | null>(null);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const [playing, setPlaying] = useState(false);
     const playerRef = useRef<ReactPlayer | null>(null);
 
     // Expose the seekToTime method to parent components
@@ -34,44 +33,48 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
       },
     }));
 
-    // Handle seeking to specific time (used by MainviewTimeline)
-    const handleSeek = (time: number) => {
-      if (playerRef.current) {
-        playerRef.current.seekTo(time, 'seconds');
+    // Handle seeking to specific frame (used by MainviewTimeline)
+    const handleSeek = (frame: number) => {
+      if (playerRef.current && duration > 0) {
+        // Convert frame to time based on fps from mainviewData or fallback to default fps
+        const fps = mainviewData?.fps || 30;
+        const timeInSeconds = frame / fps;
+        playerRef.current.seekTo(timeInSeconds, 'seconds');
+        console.log(`Seeking to frame ${frame}, time ${timeInSeconds}s using fps ${fps}`);
       }
     };
 
-    // Fetch mainview timestamps when component mounts or videoId changes
+    // Fetch mainview data when component mounts or videoId changes
     useEffect(() => {
-      // Reset timestamps immediately when videoId changes to prevent displaying wrong data
-      setMainviewTimestamps([]);
+      // Reset data immediately when videoId changes to prevent displaying wrong data
+      setMainviewData(null);
 
       if (videoId) {
-        getMainviewTimestamps(videoId)
-          .then((timestamps) => {
-            setMainviewTimestamps(timestamps);
-            console.log('Loaded main view timestamps for video:', videoId, timestamps);
+        getMainviewData(videoId)
+          .then((data) => {
+            setMainviewData(data);
+            console.log('Loaded main view data for video:', videoId, data);
           })
           .catch((error) => {
-            console.error('Failed to fetch mainview timestamps:', error);
+            console.error('Failed to fetch mainview data:', error);
           });
       }
     }, [videoId]);
 
-    // Refresh main view timestamps when stage changes to preprocess
+    // Refresh main view data when stage changes to preprocess
     useEffect(() => {
       // Only refresh if we're on the preprocess stage
       if (stage === 'preprocess' && videoId) {
-        console.log('Stage changed to preprocess, refreshing timestamps for video:', videoId);
+        console.log('Stage changed to preprocess, refreshing mainview data for video:', videoId);
 
-        getMainviewTimestamps(videoId)
-          .then((timestamps) => {
+        getMainviewData(videoId)
+          .then((data) => {
             // Only update if we get back data that belongs to the current video
-            setMainviewTimestamps(timestamps);
-            console.log('Refreshed timestamps on stage change:', timestamps.length);
+            setMainviewData(data);
+            console.log('Refreshed mainview data on stage change:', data);
           })
           .catch((error) => {
-            console.error('Failed to refresh mainview timestamps:', error);
+            console.error('Failed to refresh mainview data:', error);
           });
       }
     }, [stage, videoId]);
@@ -80,16 +83,17 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
     const handleFrameChange = (frame: number) => {
       setCurrentFrame(frame);
       if (onFrameUpdate) {
-        onFrameUpdate(frame, duration, currentTime);
+        onFrameUpdate(frame, duration, currentTime, playing);
       }
     };
 
     // Handle updates to duration and current time
-    const handlePlayerUpdates = (currentTime: number, duration: number) => {
+    const handlePlayerUpdates = (currentTime: number, duration: number, isPlaying: boolean) => {
       setCurrentTime(currentTime);
       setDuration(duration);
+      setPlaying(isPlaying);
       if (onFrameUpdate) {
-        onFrameUpdate(currentFrame, duration, currentTime);
+        onFrameUpdate(currentFrame, duration, currentTime, isPlaying);
       }
     };
 
@@ -102,14 +106,14 @@ const VideoPlayerSection = forwardRef<VideoPlayerSectionRef, VideoPlayerSectionP
       <div className='flex flex-1 flex-col overflow-hidden'>
         {/* Video Player Container */}
         <div className='overflow-hidden rounded-md border border-gray-200 bg-white'>
-          <ReactPlayerWrapper
+          <VideoPlayer
             src={videoUrl}
             onFrameChange={handleFrameChange}
-            mainviewTimestamps={mainviewTimestamps}
-            overlay={customOverlay}
+            mainviewResponse={mainviewData || undefined}
             onPlayerUpdates={handlePlayerUpdates}
             ref={setPlayerRef}
             onSeek={handleSeek}
+            currentStage={stage}
           />
         </div>
       </div>
