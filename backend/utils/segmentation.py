@@ -30,11 +30,11 @@ def get_bbox_from_mask(mask):
 
 
 def run_sam2_segmentation(video_dir: str, marker_input):
-    frame_dir = os.path.join(video_dir, "frames")
+    frames_dir = os.path.join(video_dir, "frames")
     segmentation_dir = os.path.join(video_dir, "segmentation")
 
     # scan all the JPEG frame names in this directory
-    frame_names = [p for p in os.listdir(frame_dir) if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]]
+    frame_names = [p for p in os.listdir(frames_dir) if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]]
     frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
 
     with open(os.path.join(video_dir, "metadata.json"), "r") as f_metadata:
@@ -55,14 +55,16 @@ def run_sam2_segmentation(video_dir: str, marker_input):
         # Create a new directory for each chunk
         chunk_dir = os.path.join(segmentation_dir, f"chunk_{chunk_idx}")
         os.makedirs(chunk_dir, exist_ok=True)
+        chunk_frames_dir = os.path.join(segmentation_dir, f"chunk_{chunk_idx}", "frames")
+        os.makedirs(chunk_frames_dir, exist_ok=True)
 
         # Create a symlink to the frames directory for each chunk
         for chunk_frame in chunk_frames:
             start_frame, end_frame = chunk_frame
             for frame_idx in range(start_frame, end_frame + 1):
                 frame_name = frame_names[frame_idx]
-                src_path = os.path.join(frame_dir, frame_name)
-                dst_path = os.path.join(chunk_dir, frame_name)
+                src_path = os.path.join(frames_dir, frame_name)
+                dst_path = os.path.join(chunk_frames_dir, frame_name)
                 os.symlink(src_path, dst_path)
         gc.collect()
 
@@ -146,3 +148,9 @@ def run_sam2_segmentation_chunk(chunk_dir: str, markers: list[dict], configs: di
 
     print(f"Saved all masks for {chunk_dir}")
     gc.collect()
+
+
+# f0_mask = np.load('segmentation/chunk_0/masks/1/0.npy')
+# f0_mask
+# def get_segmentation_masks(video_dir: str):
+#     segmentation_dir = os.path.join(video_dir, "segmentation")
