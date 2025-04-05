@@ -15,13 +15,10 @@ from typing import Dict, Any
 def extract_frames(video_file_path: str, video_file_dir: str):
     """Extract frames from video using ffmpeg in background"""
     # Create subdirectory for each frames for future use
-    temp_dir = os.path.join(video_file_dir, "temp/")
-    os.makedirs(temp_dir, exist_ok=True)
-    # Create subdirectory for each frames for future use
     frame_dir = os.path.join(video_file_dir, "frames/")
     os.makedirs(frame_dir, exist_ok=True)
 
-    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{temp_dir}/%06d.jpg", ])  # fmt: skip
+    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{frame_dir}/%06d.jpg", ])  # fmt: skip
 
 
 #####

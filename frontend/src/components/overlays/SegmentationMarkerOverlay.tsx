@@ -127,7 +127,7 @@ const SegmentationMarkerOverlay = ({
       ctx.font = 'bold 16px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Cannot add markers: Not in main view', width/2, height/2);
+      ctx.fillText('Cannot add markers: Not in main view', width / 2, height / 2);
     }
   }, [
     width,
@@ -138,7 +138,7 @@ const SegmentationMarkerOverlay = ({
     player2NegativePoints,
     segmentationModel,
     isInMainView,
-    isPlaying
+    isPlaying,
   ]);
 
   // Draw a point with label

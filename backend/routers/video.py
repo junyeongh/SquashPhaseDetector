@@ -7,7 +7,7 @@ from pathlib import Path
 import json
 import re
 
-from utils.video import extract_frames
+from utils.video import extract_frames, get_video_info
 from utils.preprocess import generate_mainview_timestamp
 
 
@@ -18,8 +18,6 @@ router = APIRouter(
 )
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
-GALLERY_FOLDER = os.environ.get("GALLERY_FOLDER", "/data/gallery")
-
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
 
 # Add a dictionary to track videos being processed and their status
@@ -51,16 +49,25 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     with open(video_file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    video_info = get_video_info(video_file_path)
     # Save the metadata
     video_metadata_path = os.path.join(video_file_dir, "metadata.json")
+    metadata = {
+        "UUID": video_file_id,
+        "original_filename": original_video_filename,
+        "filename": video_filename,
+        "content_type": file.content_type,
+        # video info
+        "width": video_info["width"],
+        "height": video_info["height"],
+        "fps": video_info["fps"],
+        "total_frames": video_info["total_frames"],
+        "duration_seconds": video_info["duration_seconds"],
+        "codec": video_info["codec"],
+    }
     with open(video_metadata_path, "w", encoding="UTF-8") as f:
         json.dump(
-            {
-                "UUID": video_file_id,
-                "original_filename": original_video_filename,
-                "filename": video_filename,
-                "content_type": file.content_type,
-            },  # TODO information needed
+            metadata,
             f,
             indent=2,
         )
@@ -68,12 +75,7 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     # Add frame extraction and main view timestamp generation as background tasks
     background_tasks.add_task(extract_frames, video_file_path, video_file_dir)
 
-    return {
-        "UUID": video_file_id,
-        "original_filename": original_video_filename,
-        "filename": video_filename,
-        "content_type": file.content_type,
-    }
+    return metadata
 
 
 @router.get("/upload")
@@ -341,7 +343,6 @@ async def get_main_view_timestamps(video_uuid: str):
     # Read and parse the JSON file
     with open(mainview_file_path, "r") as f:
         data = json.load(f)
-
 
     return data
 
