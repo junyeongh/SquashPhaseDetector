@@ -1,5 +1,4 @@
 from PIL import Image
-from sam2.build_sam import build_sam2_video_predictor
 import gc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +7,8 @@ import torch
 import json
 import shutil
 import time
+
+from sam2.build_sam import build_sam2_video_predictor
 
 
 # Get bounding box from binary mask
@@ -95,6 +96,7 @@ def run_sam2_segmentation(video_dir: str, marker_input):
     print(f"Completed segmentation for all chunks in {video_dir}")
     print(f"Total time taken: {time.time() - start_time:.2f} seconds")
 
+
 def run_sam2_segmentation_chunk(chunk_dir: str, markers: list[dict], configs: dict):
     # select the device for computation
     if torch.cuda.is_available():
@@ -138,10 +140,10 @@ def run_sam2_segmentation_chunk(chunk_dir: str, markers: list[dict], configs: di
     for marker in markers:
         frame_idx = frame_names.index(f"{marker['frame_idx']:06d}.jpg")
         player_id = marker["player_id"]
-        points = marker["points"]
-        labels = marker["labels"]
-        # points = (np.array(marker["points"], dtype=np.float32) * np.array([video_width, video_height])).astype(np.int32)
-        # labels = np.array(marker["labels"], dtype=np.int32)
+        # points = marker["points"]
+        # labels = marker["labels"]
+        points = (np.array(marker["points"], dtype=np.float32) * np.array([video_width, video_height])).astype(np.int32)
+        labels = np.array(marker["labels"], dtype=np.int32)
 
         _, out_obj_ids, out_mask_logits = predictor.add_new_points_or_box(
             inference_state=inference_state,
@@ -200,9 +202,10 @@ def merge_masks_and_boxes(segmentation_dir: str):
             for mask_file in os.listdir(mask_dir):
                 src_mask_path = os.path.join(mask_dir, mask_file)
                 dst_mask_path = os.path.join(segmentation_dir, "results", "masks", obj_id, mask_file)
-                # print(f"    {src_mask_path}, {dst_mask_path}")
-                os.symlink(src_mask_path, dst_mask_path)
                 src_box_path = os.path.join(box_dir, mask_file)
                 dst_box_path = os.path.join(segmentation_dir, "results", "boxes", obj_id, mask_file)
-                # print(f"    {src_box_path}, {dst_box_path}")
+
+                os.symlink(src_mask_path, dst_mask_path)
                 os.symlink(src_box_path, dst_box_path)
+                # shutil.copyfile(src_mask_path, dst_mask_path)
+                # shutil.copyfile(src_box_path, dst_box_path)

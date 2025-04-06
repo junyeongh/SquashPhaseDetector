@@ -37,10 +37,26 @@ export interface SegmentationResult {
 }
 
 export interface SegmentationStatus {
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  progress: number;
-  message: string;
-  results?: SegmentationResult[];
+  status: string; // 'not_started', 'starting', 'processing', 'completed', 'error: {message}'
+  video_uuid: string;
+}
+
+// New interfaces for updated backend API
+export interface MarkerPoint {
+  x: number;
+  y: number;
+}
+
+export interface MarkerInput {
+  frame_idx: number;
+  player_id: number; // 1 or 2
+  points: [number, number][]; // Array of [x, y] coordinates normalized to [0,1]
+  labels: number[]; // 1 for positive, 0 for negative
+}
+
+export interface RunSegmentationRequest {
+  video_uuid: string;
+  marker_input: MarkerInput[][];
 }
 
 /**
@@ -113,11 +129,31 @@ export const startSegmentation = async (
 };
 
 /**
- * Get segmentation status and results for a session
+ * NEW API: Run segmentation with the updated backend endpoint
+ * This uses the new /segmentation endpoint that accepts a video_uuid and marker_input
  */
-export const getSegmentationStatus = async (sessionId: string): Promise<SegmentationStatus> => {
+export const runSegmentation = async (
+  video_uuid: string,
+  marker_input: MarkerInput[][]
+): Promise<{ status: string; video_uuid: string }> => {
   try {
-    const response = await axios.get(`${API_URL}/status/${sessionId}`);
+    const response = await axios.post(`${API_URL}/`, {
+      video_uuid,
+      marker_input,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error running segmentation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get segmentation status for a video
+ */
+export const getSegmentationStatus = async (video_uuid: string): Promise<SegmentationStatus> => {
+  try {
+    const response = await axios.get(`${API_URL}/${video_uuid}/status`);
     return response.data;
   } catch (error) {
     console.error('Error fetching segmentation status:', error);

@@ -23,20 +23,59 @@ VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
 processing_videos = {}
 
 
-# MARK: router "/"
-@router.get("/{video_uuid}")
-async def root(video_uuid: str):
+# MARK: router "/upload"
+@router.get("/upload")
+async def list_uploads():
     """
-    Get the metadata of a video
+    List all video files in the upload folder
+    """
+    files = []
+    try:
+        for filename in os.listdir(UPLOAD_FOLDER):
+            full_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isdir(full_path):
+                metadata_path = os.path.join(full_path, "metadata.json")
+                print(metadata_path)
+                with open(metadata_path, "r", encoding="UTF-8") as f:
+                    metadata = json.load(f)
+                    video_file_path = os.path.join(full_path, metadata["filename"])
+                    data = {
+                        **metadata,
+                        "size": os.path.getsize(video_file_path),
+                        "created": os.path.getctime(video_file_path),
+                    }
+                    files.append(data)
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
+
+
+@router.get("/upload/{video_uuid}")
+async def get_upload_metadata(video_uuid: str):
+    """
+    Get the metadata of a specific uploaded video by UUID
     """
     video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
+
+    if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
+        raise HTTPException(status_code=404, detail="Video not found")
+
     metadata_path = os.path.join(video_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        raise HTTPException(status_code=404, detail="Video metadata not found")
+
     with open(metadata_path, "r", encoding="UTF-8") as f:
         metadata = json.load(f)
-    return metadata
+        video_file_path = os.path.join(video_dir, metadata["filename"])
+        data = {
+            **metadata,
+            "size": os.path.getsize(video_file_path),
+            "created": os.path.getctime(video_file_path),
+        }
+
+    return data
 
 
-# MARK: router "/upload"
 @router.post("/upload")
 async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     """
@@ -88,34 +127,6 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     background_tasks.add_task(extract_frames, video_file_path, video_file_dir)
 
     return metadata
-
-
-@router.get("/upload")
-async def list_uploads():
-    """
-    List all video files in the upload folder
-    """
-    files = []
-    try:
-        for filename in os.listdir(UPLOAD_FOLDER):
-            full_path = os.path.join(UPLOAD_FOLDER, filename)
-            if os.path.isdir(full_path):
-                metadata_path = os.path.join(full_path, "metadata.json")
-                if os.path.exists(metadata_path):
-                    with open(metadata_path, "r", encoding="UTF-8") as f:
-                        metadata = json.load(f)
-                        video_file_path = os.path.join(full_path, metadata["filename"])
-                        data = {
-                            "uuid": metadata["UUID"],
-                            "filename": metadata["filename"],
-                            "path": video_file_path,
-                            "size": os.path.getsize(video_file_path),
-                            "created": os.path.getctime(video_file_path),
-                        }
-                        files.append(data)
-        return {"files": files}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
 
 
 @router.delete("/upload/{video_uuid}")

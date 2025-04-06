@@ -75,9 +75,16 @@ export async function uploadVideo(file: File): Promise<UploadResponse> {
 }
 
 export interface FileInfo {
-  uuid: string;
+  UUID: string;
+  original_filename: string;
   filename: string;
-  path: string;
+  content_type: string;
+  width: number;
+  height: number;
+  fps: number;
+  total_frames: number;
+  duration_seconds: number;
+  codec: string;
   size: number;
   created: number; // Unix timestamp
 }
@@ -85,6 +92,7 @@ export interface FileInfo {
 export const getUploadedFiles = async (): Promise<FileInfo[]> => {
   try {
     const response = await axios.get(`${API_URL}/upload`);
+    console.log(response.data);
     return response.data.files || [];
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
