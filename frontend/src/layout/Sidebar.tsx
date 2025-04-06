@@ -80,8 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
                   {uploadedFiles.slice(0, 5).map((file, index) => (
                     <Link
                       key={index}
-                      to={`/${file.uuid}`}
-                      className={`flex w-full items-center gap-3 rounded p-2 text-left no-underline transition-colors ${location.pathname === `/${file.uuid}` ? 'bg-gray-200 text-gray-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                      to={`/${file.UUID}`}
+                      className={`flex w-full items-center gap-3 rounded p-2 text-left no-underline transition-colors ${location.pathname === `/${file.UUID}` ? 'bg-gray-200 text-gray-900' : 'text-gray-700 hover:bg-gray-100'}`}
                       style={{ textDecoration: 'none' }}
                     >
                       <span className='flex flex-shrink-0 items-center justify-center'>

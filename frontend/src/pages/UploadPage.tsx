@@ -133,7 +133,7 @@ export default function UploadPage({
                               setCompletedSteps(updatedCompletedSteps);
 
                               // Navigate to the video detail page with UUID
-                              navigate(`/${file.uuid}`);
+                              navigate(`/${file.UUID}`);
                             }}
                             className='rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50'
                           >

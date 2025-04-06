@@ -14,9 +14,9 @@ export interface MainviewResponse {
   chunks: number[][][];
 }
 
-export const getMainviewData = async (videoUuid: string): Promise<MainviewResponse> => {
+export const getMainviewData = async (videoUUID: string): Promise<MainviewResponse> => {
   try {
-    const response = await axios.get<MainviewResponse>(`${API_URL}/mainview/${videoUuid}`);
+    const response = await axios.get<MainviewResponse>(`${API_URL}/mainview/${videoUUID}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -112,9 +112,9 @@ export interface ProcessingStatus {
   video_uuid: string;
 }
 
-export const getProcessingStatus = async (videoUuid: string): Promise<ProcessingStatus> => {
+export const getProcessingStatus = async (videoUUID: string): Promise<ProcessingStatus> => {
   try {
-    const response = await axios.get(`${API_URL}/mainview/${videoUuid}/status`);
+    const response = await axios.get(`${API_URL}/mainview/${videoUUID}/status`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -128,8 +128,8 @@ export const getProcessingStatus = async (videoUuid: string): Promise<Processing
 };
 
 // Add an SSE function for live processing updates
-export const createProcessingEventSource = (videoUuid: string): EventSource => {
-  const eventSource = new EventSource(`${API_URL}/mainview/${videoUuid}/events`);
-  console.log(`Created SSE connection for video: ${videoUuid}`);
+export const createProcessingEventSource = (videoUUID: string): EventSource => {
+  const eventSource = new EventSource(`${API_URL}/mainview/${videoUUID}/events`);
+  console.log(`Created SSE connection for video: ${videoUUID}`);
   return eventSource;
 };
