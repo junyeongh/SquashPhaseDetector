@@ -36,7 +36,7 @@ const processingStages: StageConfig[] = [
   {
     id: 'game_state',
     label: 'Game State Analysis',
-    description: 'Analyze the game state based on player positions and movements.',
+    description: 'Generate Exploratory data analysis (EDA) Report for squash game analysis',
   },
   {
     id: 'export',

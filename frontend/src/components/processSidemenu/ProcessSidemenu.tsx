@@ -246,7 +246,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             className='flex w-full items-center justify-center gap-2 rounded border border-blue-300 bg-blue-100 px-4 py-2 text-sm text-blue-700 transition-colors hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <Play className='h-3.5 w-3.5' />
-            Run Game Analysis
+            Generate Exploratory data analysis (EDA) Report
           </button>
         )}
       </div>

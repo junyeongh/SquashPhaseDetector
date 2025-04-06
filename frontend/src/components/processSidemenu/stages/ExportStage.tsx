@@ -32,16 +32,16 @@ const ExportStage: React.FC<ExportStageProps> = ({
         <div className='space-y-2'>
           <button
             onClick={onExportJson}
-            disabled={isProcessing || !onExportJson}
+            disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <FileJson className='h-3.5 w-3.5' />
-            Export JSON
+            Export Data
           </button>
 
           <button
             onClick={onExportVideo}
-            disabled={isProcessing || !onExportVideo}
+            disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <Video className='h-3.5 w-3.5' />
@@ -50,20 +50,13 @@ const ExportStage: React.FC<ExportStageProps> = ({
 
           <button
             onClick={onExportReport}
-            disabled={isProcessing || !onExportReport}
+            disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <FileText className='h-3.5 w-3.5' />
             Generate Report
           </button>
         </div>
-      </div>
-
-      <div className='rounded-lg border border-blue-100 bg-blue-50 p-3'>
-        <p className='text-xs text-blue-700'>
-          <span className='font-medium'>Note:</span> Export functionality is currently in development and will be
-          available soon.
-        </p>
       </div>
     </div>
   );
