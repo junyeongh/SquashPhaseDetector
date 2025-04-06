@@ -200,26 +200,6 @@ def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):
     with open(mainview_file_path, "w") as f:
         json.dump(result, f, indent=2)
 
-    # TODO: move frames to frames folder after segmentation markers
-    # temp_dir = os.path.join(video_file_dir, "temp/")
-    # frame_dir = os.path.join(video_file_dir, "frames/")
-
-    # frame_names = sorted([f for f in os.listdir(temp_dir) if f.endswith((".jpg", ".jpeg", ".png"))])
-    # for _, _, start_frame, end_frame in timestamps:
-    #     for frame in range(start_frame, end_frame + 1):
-    #         original_path = os.path.join(temp_dir, frame_names[frame])
-    #         new_path = os.path.join(frame_dir, frame_names[frame])
-    #         os.rename(original_path, new_path)
-    #         # Remove destination file if it exists
-    #         try:
-    #             if os.path.exists(new_path):
-    #                 os.remove(new_path)
-    #         except Exception as e:
-    #             print(f"Error removing existing file: {e}")
-
-    #         # Create a symlink instead of moving the file
-    #         os.symlink(original_path, new_path)
-
     return mainview_file_path
 
 

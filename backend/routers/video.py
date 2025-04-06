@@ -1,11 +1,11 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
-import os
-import uuid
-import shutil
 from pathlib import Path
 import json
+import os
 import re
+import shutil
+import uuid
 
 from utils.video import extract_frames, get_video_info
 from utils.preprocess import generate_mainview_timestamp
@@ -19,10 +19,35 @@ router = APIRouter(
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
-
-# Add a dictionary to track videos being processed and their status
-# This is a simple in-memory storage - in production, use a database
+# in-memory storage (database in production - future improvement)
 processing_videos = {}
+
+
+# MARK: router "/upload"
+@router.get("/upload")
+async def list_uploads():
+    """
+    List all video files in the upload folder
+    """
+    files = []
+    try:
+        for filename in os.listdir(UPLOAD_FOLDER):
+            full_path = os.path.join(UPLOAD_FOLDER, filename)
+            if os.path.isdir(full_path):
+                metadata_path = os.path.join(full_path, "metadata.json")
+                print(metadata_path)
+                with open(metadata_path, "r", encoding="UTF-8") as f:
+                    metadata = json.load(f)
+                    video_file_path = os.path.join(full_path, metadata["filename"])
+                    data = {
+                        **metadata,
+                        "size": os.path.getsize(video_file_path),
+                        "created": os.path.getctime(video_file_path),
+                    }
+                    files.append(data)
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
 
 
 @router.post("/upload")
@@ -78,59 +103,43 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     return metadata
 
 
-@router.get("/upload")
-async def list_uploads():
+
+@router.get("/upload/{video_uuid}")
+async def get_upload_metadata(video_uuid: str):
     """
-    List all video files in the upload folder
+    Get the metadata of a specific uploaded video by UUID
     """
-    files = []
-    try:
-        for filename in os.listdir(UPLOAD_FOLDER):
-            full_path = os.path.join(UPLOAD_FOLDER, filename)
-            if os.path.isdir(full_path):
-                metadata_path = os.path.join(full_path, "metadata.json")
-                if os.path.exists(metadata_path):
-                    with open(metadata_path, "r", encoding="UTF-8") as f:
-                        metadata = json.load(f)
-                        video_file_path = os.path.join(full_path, metadata["filename"])
-                        data = {
-                            "uuid": metadata["UUID"],
-                            "filename": metadata["filename"],
-                            "path": video_file_path,
-                            "size": os.path.getsize(video_file_path),
-                            "created": os.path.getctime(video_file_path),
-                        }
-                        files.append(data)
-        return {"files": files}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing uploads: {str(e)}")
+    video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
+
+    if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    metadata_path = os.path.join(video_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        raise HTTPException(status_code=404, detail="Video metadata not found")
+
+    with open(metadata_path, "r", encoding="UTF-8") as f:
+        metadata = json.load(f)
+        video_file_path = os.path.join(video_dir, metadata["filename"])
+        data = {
+            **metadata,
+            "path": video_file_path,
+            "size": os.path.getsize(video_file_path),
+            "created": os.path.getctime(video_file_path),
+        }
+
+    return data
+
+@router.delete("/upload/{video_uuid}")
+async def delete_upload(video_uuid: str):
+    """
+    Delete a video file by UUID
+    """
+    video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
+    shutil.rmtree(video_dir)
 
 
-@router.get("/gallery")
-async def list_gallery():
-    """
-    List all files in the gallery folder
-    """
-    try:
-        files = []
-        for filename in os.listdir(GALLERY_FOLDER):
-            file_path = os.path.join(GALLERY_FOLDER, filename)
-            if os.path.isfile(file_path):
-                ext = os.path.splitext(filename)[1].lower()
-                if ext in VIDEO_EXTENSIONS:  # Filter only video files
-                    files.append(
-                        {
-                            "filename": filename,
-                            "path": file_path,
-                            "size": os.path.getsize(file_path),
-                            "created": os.path.getctime(file_path),
-                        }
-                    )
-        return {"files": files}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error listing gallery: {str(e)}")
-
-
+# MARK: router "/stream"
 @router.get("/stream/{video_uuid}")
 async def stream_video(request: Request, video_uuid: str):
     """
@@ -239,37 +248,7 @@ async def stream_video(request: Request, video_uuid: str):
         raise HTTPException(status_code=500, detail=f"Error streaming video: {str(e)}")
 
 
-@router.get("/mainview/{video_uuid}/status")
-async def get_mainview_processing_status(video_uuid: str):
-    """
-    Get the processing status of main view detection for a video
-    """
-    video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
-
-    if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
-        raise HTTPException(status_code=404, detail="Video not found")
-
-    # Check if the video is currently being processed
-    is_processing = video_uuid in processing_videos
-
-    # Check if mainview timestamps exist
-    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
-    has_mainview = os.path.exists(mainview_file_path)
-
-    status = "idle"
-    if is_processing:
-        status = processing_videos[video_uuid]
-    elif has_mainview:
-        status = "completed"
-
-    return {
-        "video_uuid": video_uuid,
-        "is_processing": is_processing,
-        "has_mainview": has_mainview,
-        "status": status,
-    }
-
-
+# MARK: router "/mainview"
 @router.post("/mainview/{video_uuid}")
 async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str):
     """
@@ -347,81 +326,32 @@ async def get_main_view_timestamps(video_uuid: str):
     return data
 
 
-# @router.post("/session/start")
-# async def start_session(video_path: str):
-#     """
-#     Initialize a new session for video processing
-#     """
-#     if not os.path.exists(video_path):
-#         raise HTTPException(status_code=404, detail="Video file not found")
+@router.get("/mainview/{video_uuid}/status")
+async def get_mainview_processing_status(video_uuid: str):
+    """
+    Get the processing status of main view detection for a video
+    """
+    video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
 
-#     session_id = str(uuid.uuid4())
+    if not os.path.exists(video_dir) or not os.path.isdir(video_dir):
+        raise HTTPException(status_code=404, detail="Video not found")
 
-#     # Store session information
-#     from app import sessions
+    # Check if the video is currently being processed
+    is_processing = video_uuid in processing_videos
 
-#     sessions[session_id] = {
-#         "id": session_id,
-#         "video_path": video_path,
-#         "creation_time": time.time(),
-#         "masks": {},
-#         "poses": {},
-#         "game_states": [],
-#         "main_view_timestamps": [],
-#     }
+    # Check if mainview timestamps exist
+    mainview_file_path = os.path.join(video_dir, "mainview_timestamp.json")
+    has_mainview = os.path.exists(mainview_file_path)
 
-#     return {"session_id": session_id}
+    status = "idle"
+    if is_processing:
+        status = processing_videos[video_uuid]
+    elif has_mainview:
+        status = "completed"
 
-
-# @router.get("/session/{session_id}")
-# async def get_session(session_id: str):
-#     """
-#     Get session information
-#     """
-#     from app import sessions
-
-#     if session_id not in sessions:
-#         raise HTTPException(status_code=404, detail="Session not found")
-
-#     return sessions[session_id]
-
-
-# @router.delete("/session/{session_id}")
-# async def close_session(session_id: str):
-#     """
-#     Close and cleanup a session
-#     """
-#     from app import sessions
-
-#     if session_id not in sessions:
-#         raise HTTPException(status_code=404, detail="Session not found")
-
-#     # Here you would add any cleanup code
-
-#     # Remove session
-#     del sessions[session_id]
-
-#     return {"success": True, "message": "Session closed"}
-
-
-# @router.post("/session/{session_id}/mainview")
-# async def update_session_mainview(session_id: str):
-#     """
-#     Update session with main view timestamps
-#     """
-#     from app import sessions
-
-#     if session_id not in sessions:
-#         raise HTTPException(status_code=404, detail="Session not found")
-
-#     video_path = sessions[session_id]["video_path"]
-#     video_dir = os.path.dirname(video_path)
-
-#     # Try to update the session with main view timestamps
-#     if update_session_with_mainview(session_id, video_dir):
-#         return {"success": True, "message": "Session updated with main view timestamps"}
-#     else:
-#         raise HTTPException(
-#             status_code=404,
-#             detail="Main view timestamps not found. Generate them first using the /mainview endpoint.",
-#         )
+    return {
+        "video_uuid": video_uuid,
+        "is_processing": is_processing,
+        "has_mainview": has_mainview,
+        "status": status,
+    }

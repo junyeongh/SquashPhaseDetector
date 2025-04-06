@@ -15,17 +15,14 @@ from typing import Dict, Any
 def extract_frames(video_file_path: str, video_file_dir: str):
     """Extract frames from video using ffmpeg in background"""
     # Create subdirectory for each frames for future use
-    frame_dir = os.path.join(video_file_dir, "frames/")
-    os.makedirs(frame_dir, exist_ok=True)
+    frames_dir = os.path.join(video_file_dir, "frames/")
+    os.makedirs(frames_dir, exist_ok=True)
     segmentation_dir = os.path.join(video_file_dir, "segmentation/")
     os.makedirs(segmentation_dir, exist_ok=True)
     pose_dir = os.path.join(video_file_dir, "pose/")
     os.makedirs(pose_dir, exist_ok=True)
 
-    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{frame_dir}/%06d.jpg", ])  # fmt: skip
-
-
-#####
+    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{frames_dir}/%06d.jpg", ])  # fmt: skip
 
 
 def get_video_info(video_path: str) -> Dict[str, Any]:
@@ -67,6 +64,9 @@ def get_video_info(video_path: str) -> Dict[str, Any]:
         "duration_seconds": duration,
         "codec": fourcc,
     }
+
+
+#####
 
 
 def apply_mask_to_frame(frame: np.ndarray, mask: Dict[str, Any]) -> np.ndarray:
