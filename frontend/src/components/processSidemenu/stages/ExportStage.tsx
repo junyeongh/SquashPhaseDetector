@@ -40,21 +40,12 @@ const ExportStage: React.FC<ExportStageProps> = ({
           </button>
 
           <button
-            onClick={onExportVideo}
-            disabled={isProcessing}
-            className='flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
-          >
-            <Video className='h-3.5 w-3.5' />
-            Generate Video
-          </button>
-
-          <button
             onClick={onExportReport}
             disabled={isProcessing}
             className='flex w-full items-center justify-center gap-2 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
           >
             <FileText className='h-3.5 w-3.5' />
-            Generate Report
+            Export Report
           </button>
         </div>
       </div>
