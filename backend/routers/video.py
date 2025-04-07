@@ -1,15 +1,15 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Request
-from fastapi.responses import StreamingResponse
-from pathlib import Path
 import json
 import os
 import re
 import shutil
 import uuid
+from pathlib import Path
 
-from utils.video import extract_frames, get_video_info
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
+from fastapi.responses import StreamingResponse
+
 from utils.preprocess import generate_mainview_timestamp
-
+from utils.video import extract_frames, get_video_info
 
 router = APIRouter(
     prefix="/video",
@@ -103,7 +103,6 @@ async def upload_video(background_tasks: BackgroundTasks, file: UploadFile = Fil
     return metadata
 
 
-
 @router.get("/upload/{video_uuid}")
 async def get_upload_metadata(video_uuid: str):
     """
@@ -129,6 +128,7 @@ async def get_upload_metadata(video_uuid: str):
         }
 
     return data
+
 
 @router.delete("/upload/{video_uuid}")
 async def delete_upload(video_uuid: str):

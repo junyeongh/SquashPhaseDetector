@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from typing import Dict, Any
-import os
 import csv
 import json
+import os
 import time
+from typing import Any, Dict
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/analysis",

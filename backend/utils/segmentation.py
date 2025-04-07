@@ -1,12 +1,13 @@
-from PIL import Image
 import gc
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-import torch
 import json
+import os
 import shutil
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from PIL import Image
 
 from sam2.build_sam import build_sam2_video_predictor
 

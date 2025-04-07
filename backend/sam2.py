@@ -1,7 +1,8 @@
-import numpy as np
 import os
 
-from utils.segmentation import run_sam2_segmentation, merge_masks_and_boxes
+import numpy as np
+
+from utils.segmentation import merge_masks_and_boxes, run_sam2_segmentation
 
 video_dir = "/data/uploads/f72f40ce-21ae-4770-b139-38ce346ab6d4"
 # >>> a[0].append([1,2])
@@ -101,4 +102,3 @@ marker_input = [
 ]
 # run_sam2_segmentation(video_dir, marker_input)
 # merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
-

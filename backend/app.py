@@ -1,10 +1,11 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import os
 from typing import Dict
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 # Import routers
-from routers import video, segmentation, pose, analysis
+from routers import analysis, pose, segmentation, video
 
 # Create FastAPI app
 app = FastAPI(

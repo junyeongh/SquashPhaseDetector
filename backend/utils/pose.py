@@ -1,10 +1,11 @@
-from PIL import Image
-from ultralytics import YOLO
+import os
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import torch
+from PIL import Image
+from ultralytics import YOLO
 
 
 def save_keypoints_results(frame_name, keypoints, box, output_path):

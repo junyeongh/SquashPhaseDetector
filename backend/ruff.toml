@@ -3,3 +3,6 @@ indent-width = 4
 
 [format]
 quote-style = "double"
+
+[lint]
+select = ["I"] # isort

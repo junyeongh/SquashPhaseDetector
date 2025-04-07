@@ -1,11 +1,12 @@
-from collections import Counter
+import gc
+import json
 import os
+import random
+from collections import Counter
+
 import cv2
 import imagehash
 from PIL import Image
-import random
-import gc
-import json
 
 
 def generate_mainview_timestamp(video_file_path: str, video_file_dir: str):

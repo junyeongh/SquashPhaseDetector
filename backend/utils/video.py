@@ -4,12 +4,12 @@ Video Utilities
 Utility functions for video processing.
 """
 
+import os
 import subprocess
+from typing import Any, Dict
 
 import cv2
-import os
 import numpy as np
-from typing import Dict, Any
 
 
 def extract_frames(video_file_path: str, video_file_dir: str):

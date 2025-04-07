@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import List, Dict, Any
+import json
 import logging
 import os
-import json
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+from pydantic import BaseModel
+
 from utils.segmentation import run_sam2_segmentation
 
 # Configure logging

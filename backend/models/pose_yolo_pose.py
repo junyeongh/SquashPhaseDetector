@@ -1,12 +1,15 @@
-from PIL import Image
-from ultralytics import YOLO
+import os
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import torch
+from PIL import Image
+from ultralytics import YOLO
 
 from utils.pose import save_keypoints_results
+
+
 def run_yolo_pose_estimation(video_dir: str):
     yolo_pose_model = YOLO("/opt/app/checkpoints/yolo11m-pose.pt")  # load an official model
 
