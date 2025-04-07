@@ -19,6 +19,7 @@ router = APIRouter(
 
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/data/uploads")
 VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".flv", ".wmv", ".webm"}
+
 # in-memory storage (database in production - future improvement)
 processing_videos = {}
 
@@ -136,7 +137,8 @@ async def delete_upload(video_uuid: str):
     Delete a video file by UUID
     """
     video_dir = os.path.join(UPLOAD_FOLDER, video_uuid)
-    shutil.rmtree(video_dir)
+    if os.path.exists(video_dir):
+        shutil.rmtree(video_dir)
 
 
 # MARK: router "/stream"

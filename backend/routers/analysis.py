@@ -14,6 +14,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+EXPORT_FOLDER = os.environ.get("EXPORT_FOLDER", "./data/exports")
+
 
 class DetectPhasesRequest(BaseModel):
     session_id: str
@@ -25,9 +27,6 @@ class GameState(BaseModel):
     end_frame: int
     start_time: float
     end_time: float
-
-
-EXPORT_FOLDER = os.environ.get("EXPORT_FOLDER", "./data/exports")
 
 
 @router.post("/detect-phases")
