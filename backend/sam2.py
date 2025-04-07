@@ -2,7 +2,8 @@ import os
 
 import numpy as np
 
-from utils.segmentation import merge_masks_and_boxes, run_sam2_segmentation
+from models.segmentation_sam2 import run_sam2_segmentation
+from utils.segmentation import merge_masks_and_boxes, write_segmentation_result
 
 video_dir = "/data/uploads/f72f40ce-21ae-4770-b139-38ce346ab6d4"
 # >>> a[0].append([1,2])
@@ -35,70 +36,71 @@ marker_input = [
         {
             "frame_idx": 111,
             "player_id": 1,
-            "points": np.array([[[650, 800], [650, 750], [650, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1, 1]], np.int32),
+            "points": [[[650, 800], [650, 750], [650, 700]]],
+            "labels": [[1, 1, 1]],
         },
         {
             "frame_idx": 111,
             "player_id": 2,
-            "points": np.array([[[1175, 800], [1200, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[1175, 800], [1200, 700]]],
+            "labels": [[1, 1]],
         },
     ],
     [
         {
             "frame_idx": 4621,
             "player_id": 1,
-            "points": np.array([[[700, 800], [700, 750], [700, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1, 1]], np.int32),
+            "points": [[[700, 800], [700, 750], [700, 700]]],
+            "labels": [[1, 1, 1]],
         },
         {
             "frame_idx": 4621,
             "player_id": 2,
-            "points": np.array([[[1175, 750], [1175, 650]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[1175, 750], [1175, 650]]],
+            "labels": [[1, 1]],
         },
         {
             "frame_idx": 4626,
             "player_id": 1,
-            "points": np.array([[[700, 800], [700, 750], [700, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1, 1]], np.int32),
+            "points": [[[700, 800], [700, 750], [700, 700]]],
+            "labels": [[1, 1, 1]],
         },
         {
             "frame_idx": 4626,
             "player_id": 2,
-            "points": np.array([[[1175, 750], [1175, 650]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[1175, 750], [1175, 650]]],
+            "labels": [[1, 1]],
         },
     ],
     [
         {
             "frame_idx": 7936,
             "player_id": 1,
-            "points": np.array([[[650, 800], [650, 750], [650, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1, 1]], np.int32),
+            "points": [[[650, 800], [650, 750], [650, 700]]],
+            "labels": [[1, 1, 1]],
         },
         {
             "frame_idx": 7936,
             "player_id": 2,
-            "points": np.array([[[1175, 800], [1175, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[1175, 800], [1175, 700]]],
+            "labels": [[1, 1]],
         },
     ],
     [
         {
             "frame_idx": 10051,
             "player_id": 1,
-            "points": np.array([[[1275, 800], [1275, 700]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[1275, 800], [1275, 700]]],
+            "labels": [[1, 1]],
         },
         {
             "frame_idx": 10051,
             "player_id": 2,
-            "points": np.array([[[800, 800], [800, 750]]], dtype=np.float32),
-            "labels": np.array([[1, 1]], np.int32),
+            "points": [[[800, 800], [800, 750]]],
+            "labels": [[1, 1]],
         },
     ],
 ]
-# run_sam2_segmentation(video_dir, marker_input)
-# merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
+
+# run_sam2_segmentation(video_dir, marker_input)  # merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
+write_segmentation_result(video_dir, marker_input)
