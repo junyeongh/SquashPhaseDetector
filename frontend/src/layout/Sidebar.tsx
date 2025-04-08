@@ -1,7 +1,7 @@
 import { useState, createContext, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen, Upload, Video } from 'lucide-react';
-import { FileInfo } from '@/services/api/video';
+import useFileUploadStore, { selectUploadedFiles } from '@/store/fileUploadStore';
 
 export type PipelineStep = 'upload' | 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';
 
@@ -19,13 +19,10 @@ const SidebarContext = createContext<SidebarContextType>({
 // Hook to use sidebar context
 export const useSidebar = () => useContext(SidebarContext);
 
-interface SidebarProps {
-  uploadedFiles?: FileInfo[];
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ uploadedFiles = [] }) => {
+const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const uploadedFiles = useFileUploadStore(selectUploadedFiles);
 
   // Toggle sidebar collapsed state
   const toggleCollapsed = () => {

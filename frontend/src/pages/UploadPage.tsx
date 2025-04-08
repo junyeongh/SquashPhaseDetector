@@ -2,27 +2,25 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
-import { uploadVideo, FileInfo } from '@/services/api/video';
+import { uploadVideo } from '@/services/api/video';
+import useFileUploadStore, { selectUploadedFiles } from '@/store/fileUploadStore';
 
 interface UploadPageProps {
-  uploadedFiles: FileInfo[];
   setCompletedSteps: (steps: Set<string>) => void;
   completedSteps: Set<string>;
-  fetchUploadedFiles: () => Promise<void>;
 }
 
-export default function UploadPage({
-  uploadedFiles,
-  setCompletedSteps,
-  completedSteps,
-  fetchUploadedFiles,
-}: UploadPageProps) {
+export default function UploadPage({ setCompletedSteps, completedSteps }: UploadPageProps) {
   // Router hooks
   const navigate = useNavigate();
 
   // File upload states
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Get state from store
+  const uploadedFiles = useFileUploadStore(selectUploadedFiles);
+  const fetchUploadedFiles = useFileUploadStore((state) => state.fetchUploadedFiles);
 
   // Handler for file upload
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
