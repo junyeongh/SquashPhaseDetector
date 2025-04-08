@@ -31,6 +31,8 @@ video_dir = "/data/uploads/f72f40ce-21ae-4770-b139-38ce346ab6d4"
 # "labels": np.array([[1, 1]], np.int32)
 # "points": np.array([[[800, 800], [800, 750]]], dtype=np.float32),
 # "labels": np.array([[1, 1]], np.int32)
+
+
 marker_input = [
     [
         {
@@ -103,4 +105,4 @@ marker_input = [
 ]
 
 # run_sam2_segmentation(video_dir, marker_input)  # merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
-write_segmentation_result(video_dir, marker_input)
+# write_segmentation_result(video_dir, marker_input)

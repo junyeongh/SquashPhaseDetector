@@ -3,12 +3,26 @@ import json
 import os
 import shutil
 import time
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
+from pydantic import BaseModel
 from tqdm import tqdm
+from typing_extensions import TypedDict
+
+
+class MarkerInput(TypedDict):
+    frame_idx: int
+    player_id: int
+    points: List[List[List[int]]]
+    labels: List[List[int]]
+
+
+class SegmentationRequest(BaseModel):
+    marker_input: List[List[MarkerInput]]
 
 
 # Get bounding box from binary mask
@@ -69,20 +83,20 @@ def write_segmentation_result(video_dir: str, marker_input: list):
     player1_frames = []
     for _, frame_name in tqdm(enumerate(os.listdir(player1_masks_dir))):
         frame_idx = frame_name.split(".")[0]
-        player1_frames.append(frame_idx)
+        player1_frames.append(int(frame_idx))
 
     player2_frames = []
     for _, frame_name in tqdm(enumerate(os.listdir(player2_masks_dir))):
         frame_idx = frame_name.split(".")[0]
-        player2_frames.append(frame_idx)
+        player2_frames.append(int(frame_idx))
 
     data = {
         "marker_input": marker_input,
         "player1": {
-            "frames": player1_frames,
+            "frames": sorted(player1_frames),
         },
         "player2": {
-            "frames": player2_frames,
+            "frames": sorted(player2_frames),
         },
     }
 
