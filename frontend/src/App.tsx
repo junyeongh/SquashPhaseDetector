@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from '@/layout/Sidebar';
 import MainContent from '@/layout/MainContent';
-import { getUploadedFiles, FileInfo } from '@/services/api/video';
 import VideoDetailPage from '@/pages/VideoDetailPage';
 import UploadPage from '@/pages/UploadPage';
 import './App.css';
+import useFileUploadStore from '@/store/fileUploadStore';
+import axios from 'axios';
+import { BASE_API_URL } from '@/services/api/config';
 
 function App() {
   // API connection state
@@ -15,35 +17,28 @@ function App() {
   // Pipeline state - needed for marking the upload step as completed
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
 
-  // File upload states
-  const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
+  // Get fetch function from store
+  const fetchUploadedFiles = useFileUploadStore((state) => state.fetchUploadedFiles);
 
-  useEffect(() => {
-    const getApiMessage = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-      } catch (err) {
-        setError('Failed to connect to the API server. Please ensure the backend is running.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getApiMessage();
-    fetchUploadedFiles();
-  }, []);
-
-  // Function to fetch both uploaded and gallery files
-  const fetchUploadedFiles = async () => {
+  // Check API connection
+  const checkApiConnection = async () => {
     try {
-      const uploads = await getUploadedFiles();
-      setUploadedFiles(uploads);
-    } catch (error) {
-      console.error('Error loading files:', error);
+      setLoading(true);
+      setError(null);
+      await axios.get(`${BASE_API_URL}/health`);
+    } catch (err) {
+      setError('Failed to connect to the API server. Please ensure the backend is running.');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Initial data loading
+  useEffect(() => {
+    checkApiConnection();
+    fetchUploadedFiles();
+  }, [fetchUploadedFiles]);
 
   // Show loading screen if checking API connection
   if (loading) {
@@ -90,19 +85,12 @@ function App() {
 
       {!error && (
         <div className='flex h-screen w-full flex-row overflow-hidden'>
-          <Sidebar uploadedFiles={uploadedFiles} />
+          <Sidebar />
           <MainContent>
             <Routes>
               <Route
                 path='/'
-                element={
-                  <UploadPage
-                    uploadedFiles={uploadedFiles}
-                    fetchUploadedFiles={fetchUploadedFiles}
-                    setCompletedSteps={setCompletedSteps}
-                    completedSteps={completedSteps}
-                  />
-                }
+                element={<UploadPage setCompletedSteps={setCompletedSteps} completedSteps={completedSteps} />}
               />
               <Route path='/:uuid' element={<VideoDetailPage />} />
             </Routes>
