@@ -1,11 +1,19 @@
-API end-points
+# API end-points
+
+API documentation is available at <http://localhost:8000/docs>
+
+## Root
 
 ```
 /
         - [x] GET : returns { "message": "Squash Game Phase Detection API" }
 /health
         - [x] GET : returns { "status" : "healthy" }
+```
 
+## Video
+
+```
 /video
         - [x] GET /upload
             : returns list of all video files in the upload folder
@@ -23,7 +31,11 @@ API end-points
             : generate mainview timestamps for the video
         - [x] GET /mainview/{video_uuid}/status
             : get the processing status of mainview detection for a video
+```
 
+## Segmentation
+
+```
 /segmentation
         - [x] GET /models
             : returns list of all models available
@@ -42,7 +54,11 @@ API end-points
             : get the processing result for the video by UUID
         - [ ] GET /sam2/{video_uuid}/status
             : get the processing status for the video by UUID
+```
 
+## Pose
+
+```
 /pose
         - [ ] GET /models
             : returns list of all models available

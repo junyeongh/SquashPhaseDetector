@@ -98,9 +98,9 @@ function App() {
                 element={
                   <UploadPage
                     uploadedFiles={uploadedFiles}
+                    fetchUploadedFiles={fetchUploadedFiles}
                     setCompletedSteps={setCompletedSteps}
                     completedSteps={completedSteps}
-                    fetchUploadedFiles={fetchUploadedFiles}
                   />
                 }
               />
