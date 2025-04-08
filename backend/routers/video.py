@@ -252,7 +252,7 @@ async def stream_video(request: Request, video_uuid: str):
 
 # MARK: router "/mainview"
 @router.post("/mainview/{video_uuid}")
-async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str):
+async def generate_main_view(video_uuid: str, background_tasks: BackgroundTasks):
     """
     Generate main view timestamps for a video
     """
@@ -286,7 +286,7 @@ async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str)
     async def process_with_status_updates():
         try:
             # Update status
-            processing_videos[video_uuid] = "extracting frames"
+            processing_videos[video_uuid] = "processing"
 
             # Add main view timestamp generation as a background task
             await generate_mainview_timestamp(video_path, video_dir)
@@ -304,7 +304,7 @@ async def generate_main_view(background_tasks: BackgroundTasks, video_uuid: str)
     # Add the wrapped task to background tasks
     background_tasks.add_task(process_with_status_updates)
 
-    return {"status": "Processing started", "video_uuid": video_uuid}
+    return {"status": "started", "video_uuid": video_uuid}
 
 
 @router.get("/mainview/{video_uuid}")

@@ -8,10 +8,10 @@ import numpy as np
 import torch
 
 from sam2.build_sam import build_sam2_video_predictor
-from utils.segmentation import get_bbox_from_mask, merge_masks_and_boxes
+from utils.segmentation import MarkerInput, get_bbox_from_mask, merge_masks_and_boxes, write_segmentation_result
 
 
-def run_sam2_segmentation(video_dir: str, marker_input):
+def run_sam2_segmentation(video_dir: str, marker_input: list[list[MarkerInput]]):
     start_time = time.time()
     frames_dir = os.path.join(video_dir, "frames")
     segmentation_dir = os.path.join(video_dir, "segmentation")
@@ -72,6 +72,8 @@ def run_sam2_segmentation(video_dir: str, marker_input):
 
     # merge all the masks and boxes
     merge_masks_and_boxes(segmentation_dir)
+    # write the segmentation result
+    write_segmentation_result(video_dir, marker_input)
     print(f"Completed segmentation for all chunks in {video_dir}")
     print(f"Total time taken: {time.time() - start_time:.2f} seconds")
 

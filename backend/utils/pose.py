@@ -1,3 +1,4 @@
+import json
 import os
 
 import cv2
@@ -5,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
+from tqdm import tqdm
 from ultralytics import YOLO
 
 
@@ -40,3 +42,32 @@ def save_keypoints_results(frame_name, keypoints, box, output_path):
     np.save(output_file, result_dict)
 
     return output_file
+
+
+def write_pose_results(video_dir: str):
+    pose_result_dir = os.path.join(video_dir, "pose", "results")
+    player1_pose_dir = os.path.join(pose_result_dir, "1")
+    player2_pose_dir = os.path.join(pose_result_dir, "2")
+
+    player1_frames = []
+    for _, frame_name in tqdm(enumerate(os.listdir(player1_pose_dir))):
+        frame_idx = frame_name.split(".")[0]
+        player1_frames.append(int(frame_idx))
+
+    player2_frames = []
+    for _, frame_name in tqdm(enumerate(os.listdir(player2_pose_dir))):
+        frame_idx = frame_name.split(".")[0]
+        player2_frames.append(int(frame_idx))
+
+    data = {
+        "player1": {
+            "frames": sorted(player1_frames),
+        },
+        "player2": {
+            "frames": sorted(player2_frames),
+        },
+    }
+
+    # write the pose results
+    with open(os.path.join(video_dir, "pose.json"), "w") as f:
+        json.dump(data, f)
