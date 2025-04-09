@@ -5,16 +5,15 @@ import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/Vi
 import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
 import {
   SegmentationMask,
-  markPlayers,
-  markPlayersSAM2,
-  startSegmentation,
-  getSegmentationStatus,
   getSegmentationMask,
+  get_sam2_model_result,
+  getSegmentationStatus,
+  runSegmentation,
 } from '@/services/api/segmentation';
-import { Point } from '@/store/segmentationStore';
+import useSegmentationStore, { Point } from '@/store/segmentationStore';
 import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
-import ProcessSidemenu, { ProcessingStage, StageConfig, MarkerType } from '@/components/processSidemenu';
-
+import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/processSidemenu';
+import { convertMarkedFramesToMarkerInput } from '@/utils/segmentation';
 // Shared stage configuration
 const processingStages: StageConfig[] = [
   {
@@ -100,30 +99,31 @@ const VideoDetailPage: React.FC = () => {
     }
   }, [urlUUID, frameIndex]);
 
-  // Check if main view segments already exist and auto-advance if they do
+  // Check if stages already completed
   useEffect(() => {
-    if (urlUUID && activeStage === 'preprocess') {
+    if (urlUUID) {
+      // Fetch mainview data
       getMainviewData(urlUUID)
-        .then((data) => {
-          setMainviewData(data);
-          console.log('VideoDetail: Loaded mainview data for video:', urlUUID, data);
+        .then((mainview_data) => {
+          setMainviewData(mainview_data);
+          console.log('VideoDetail: Loaded mainview data for video:', urlUUID, mainview_data);
 
           // If mainview segments already exist, mark preprocess as completed and advance to segmentation
-          if (data.timestamps && data.timestamps.length > 0) {
+          if (mainview_data.timestamps && mainview_data.timestamps.length > 0) {
             console.log('Main view segments already exist, advancing to segmentation stage');
+            setCompletedStages(new Set(['preprocess']));
+          }
 
-            const updatedCompletedStages = new Set(completedStages);
-            updatedCompletedStages.add('preprocess');
-            setCompletedStages(updatedCompletedStages);
-
-            // Auto-advance to next stage
-            if (activeStage === 'preprocess') {
-              setActiveStage('segmentation');
-            }
+          // Chain the get_sam2_model_result call after getMainviewData completes
+          return get_sam2_model_result(urlUUID);
+        })
+        .then((sam_data) => {
+          if (sam_data) {
+            setCompletedStages((prev) => new Set([...prev, 'segmentation']));
           }
         })
         .catch((error) => {
-          console.error('Failed to fetch mainview data:', error);
+          console.error('Failed to fetch data:', error);
         });
     }
   }, [urlUUID, activeStage]);
@@ -346,83 +346,58 @@ const VideoDetailPage: React.FC = () => {
     setIsProcessing(true);
     setProcessingStatus('Starting segmentation...');
 
-    try {
-      // If using SAM2 model, send SAM2 markers
-      if (segmentationModel === 'SAM2') {
-        try {
-          // Get the points for the current frame
-          const p1Positive = player1PositivePoints.get(frameIndex) || [];
-          const p1Negative = player1NegativePoints.get(frameIndex) || [];
-          const p2Positive = player2PositivePoints.get(frameIndex) || [];
-          const p2Negative = player2NegativePoints.get(frameIndex) || [];
-
-          // First mark the players with SAM2 points
-          await markPlayersSAM2(urlUUID, frameIndex, p1Positive, p1Negative, p2Positive, p2Negative);
-          console.log('SAM2 markers set successfully');
-        } catch (error) {
-          console.error('Error setting SAM2 markers:', error);
-          setProcessingStatus('Error setting SAM2 markers');
-          setIsProcessing(false);
-          return;
-        }
-      } else {
-        // Handle legacy model
-        try {
-          const p1Points = player1Points.get(frameIndex) || [];
-          const p2Points = player2Points.get(frameIndex) || [];
-
-          await markPlayers(urlUUID, frameIndex, p1Points, p2Points);
-          console.log('Players marked successfully');
-        } catch (error) {
-          console.error('Error marking players:', error);
-          setProcessingStatus('Error marking players');
-          setIsProcessing(false);
-          return;
-        }
-      }
-
-      // Start segmentation with selected model
-      await startSegmentation(urlUUID, segmentationModel);
-
-      // Poll for status updates
-      const statusCheckInterval = setInterval(async () => {
-        try {
-          const status = await getSegmentationStatus(urlUUID);
-          setProcessingStatus(`Segmentation: ${status.message} (${Math.round(status.progress)}%)`);
-
-          if (status.status === 'completed') {
-            clearInterval(statusCheckInterval);
-            setIsProcessing(false);
-
-            // Mark stage as completed
-            const updatedCompletedStages = new Set(completedStages);
-            updatedCompletedStages.add('segmentation');
-            setCompletedStages(updatedCompletedStages);
-
-            // Fetch masks for the current frame
-            await fetchFrameMasks();
-
-            // Move to next stage after a delay
-            setTimeout(() => moveToNextStage(), 1000);
-          } else if (status.status === 'failed') {
-            clearInterval(statusCheckInterval);
-            setProcessingStatus(`Segmentation failed: ${status.message}`);
-            setIsProcessing(false);
-            setShowSkipButton(true);
-          }
-        } catch (error) {
-          console.error('Error checking segmentation status:', error);
-        }
-      }, 2000);
-
-      // Clean up interval if component unmounts
-      return () => clearInterval(statusCheckInterval);
-    } catch (error) {
-      console.error('Error starting segmentation:', error);
-      setProcessingStatus(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const marked_frames = useSegmentationStore.getState().markedFrames;
+    const { markerResult, isValidMarkerInput } = convertMarkedFramesToMarkerInput(
+      marked_frames,
+      mainviewData?.chunks || []
+    );
+    // console.log(urlUUID, markerResult, isValidMarkerInput);
+    console.log(marked_frames);
+    console.log(markerResult);
+    if (!isValidMarkerInput) {
+      alert('Please add markers for each players before starting segmentation');
       setIsProcessing(false);
-      setShowSkipButton(true);
+      return;
     }
+
+    // try {
+    //   await runSegmentation(urlUUID, markerResult);
+
+    //   // Poll for status updates
+    //   const statusCheckInterval = setInterval(async () => {
+    //     try {
+    //       const status = await getSegmentationStatus(urlUUID);
+
+    //       if (status.status === 'completed') {
+    //         clearInterval(statusCheckInterval);
+    //         setIsProcessing(false);
+
+    //         // Mark stage as completed
+    //         const updatedCompletedStages = new Set(completedStages);
+    //         updatedCompletedStages.add('segmentation');
+    //         setCompletedStages(updatedCompletedStages);
+
+    //         // Move to next stage after a delay
+    //         setTimeout(() => moveToNextStage(), 1000);
+    //       } else if (status.status === 'failed') {
+    //         clearInterval(statusCheckInterval);
+    //         setProcessingStatus(`Segmentation failed: ${status.status}`);
+    //         setIsProcessing(false);
+    //         setShowSkipButton(true);
+    //       }
+    //     } catch (error) {
+    //       console.error('Error checking segmentation status:', error);
+    //     }
+    //   }, 2000);
+
+    //   // Clean up interval if component unmounts
+    //   return () => clearInterval(statusCheckInterval);
+    // } catch (error) {
+    //   console.error('Error running segmentation:', error);
+    //   setProcessingStatus('Error running segmentation');
+    //   setIsProcessing(false);
+    // }
+    // handleStartSegmentation
   };
 
   // Handler for pose detection
@@ -483,111 +458,6 @@ const VideoDetailPage: React.FC = () => {
     setFrameIndex((prev) => Math.max(0, prev - 1));
   };
 
-  // Add marker points based on active player and marker type
-  const handleAddMarkerPoint = (point: Point) => {
-    if (segmentationModel === 'SAM2') {
-      if (activePlayer === 1) {
-        if (activeMarkerType === 'positive') {
-          setPlayer1PositivePoints((prev) => {
-            const newMap = new Map(prev);
-            const currentPoints = prev.get(frameIndex) || [];
-            newMap.set(frameIndex, [...currentPoints, point]);
-            return newMap;
-          });
-        } else {
-          setPlayer1NegativePoints((prev) => {
-            const newMap = new Map(prev);
-            const currentPoints = prev.get(frameIndex) || [];
-            newMap.set(frameIndex, [...currentPoints, point]);
-            return newMap;
-          });
-        }
-      } else {
-        if (activeMarkerType === 'positive') {
-          setPlayer2PositivePoints((prev) => {
-            const newMap = new Map(prev);
-            const currentPoints = prev.get(frameIndex) || [];
-            newMap.set(frameIndex, [...currentPoints, point]);
-            return newMap;
-          });
-        } else {
-          setPlayer2NegativePoints((prev) => {
-            const newMap = new Map(prev);
-            const currentPoints = prev.get(frameIndex) || [];
-            newMap.set(frameIndex, [...currentPoints, point]);
-            return newMap;
-          });
-        }
-      }
-    } else {
-      // Legacy player point handling
-      if (activePlayer === 1) {
-        setPlayer1Points((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(frameIndex, [...currentPoints, point]);
-          return newMap;
-        });
-      } else {
-        setPlayer2Points((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(frameIndex, [...currentPoints, point]);
-          return newMap;
-        });
-      }
-    }
-  };
-
-  // Remove marker point at a specific index
-  const handleRemoveMarkerPoint = (player: 1 | 2, markerType: MarkerType, index: number) => {
-    if (player === 1) {
-      if (markerType === 'positive') {
-        setPlayer1PositivePoints((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(
-            frameIndex,
-            currentPoints.filter((_, i) => i !== index)
-          );
-          return newMap;
-        });
-      } else {
-        setPlayer1NegativePoints((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(
-            frameIndex,
-            currentPoints.filter((_, i) => i !== index)
-          );
-          return newMap;
-        });
-      }
-    } else {
-      if (markerType === 'positive') {
-        setPlayer2PositivePoints((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(
-            frameIndex,
-            currentPoints.filter((_, i) => i !== index)
-          );
-          return newMap;
-        });
-      } else {
-        setPlayer2NegativePoints((prev) => {
-          const newMap = new Map(prev);
-          const currentPoints = prev.get(frameIndex) || [];
-          newMap.set(
-            frameIndex,
-            currentPoints.filter((_, i) => i !== index)
-          );
-          return newMap;
-        });
-      }
-    }
-  };
-
   // Clear marker points for a specific player and marker type
   const handleClearPlayerMarkerPoints = (player: 1 | 2, markerType: 'positive' | 'negative') => {
     if (player === 1) {
@@ -619,54 +489,6 @@ const VideoDetailPage: React.FC = () => {
         });
       }
     }
-  };
-
-  // Check if the current frame has any markers
-  const hasMarkersForCurrentFrame = (): boolean => {
-    const hasPlayer1Positive = (player1PositivePoints.get(frameIndex)?.length || 0) > 0;
-    const hasPlayer1Negative = (player1NegativePoints.get(frameIndex)?.length || 0) > 0;
-    const hasPlayer2Positive = (player2PositivePoints.get(frameIndex)?.length || 0) > 0;
-    const hasPlayer2Negative = (player2NegativePoints.get(frameIndex)?.length || 0) > 0;
-    const hasLegacyPlayer1 = (player1Points.get(frameIndex)?.length || 0) > 0;
-    const hasLegacyPlayer2 = (player2Points.get(frameIndex)?.length || 0) > 0;
-
-    return (
-      hasPlayer1Positive ||
-      hasPlayer1Negative ||
-      hasPlayer2Positive ||
-      hasPlayer2Negative ||
-      hasLegacyPlayer1 ||
-      hasLegacyPlayer2
-    );
-  };
-
-  // Check if current frame is in a main view segment
-  const isCurrentFrameInMainView = (): boolean => {
-    // If no mainview data exists, default to true to allow marking
-    if (!mainviewData?.timestamps || mainviewData.timestamps.length === 0) return true;
-
-    // Calculate current time in seconds
-    const currentTimeInSeconds = currentTime;
-
-    // Check if current time is within any main view segment
-    return mainviewData.timestamps.some(
-      (segment) => currentTimeInSeconds >= segment.start && currentTimeInSeconds <= segment.end
-    );
-  };
-
-  // Get all frames that have markers
-  const getFramesWithMarkers = (): number[] => {
-    const frames = new Set<number>();
-
-    // Add frames from all marker collections
-    for (const frameIdx of player1PositivePoints.keys()) frames.add(frameIdx);
-    for (const frameIdx of player1NegativePoints.keys()) frames.add(frameIdx);
-    for (const frameIdx of player2PositivePoints.keys()) frames.add(frameIdx);
-    for (const frameIdx of player2NegativePoints.keys()) frames.add(frameIdx);
-    for (const frameIdx of player1Points.keys()) frames.add(frameIdx);
-    for (const frameIdx of player2Points.keys()) frames.add(frameIdx);
-
-    return Array.from(frames).sort((a, b) => a - b);
   };
 
   // Clear all points for a specific player

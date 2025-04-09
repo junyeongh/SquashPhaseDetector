@@ -14,7 +14,10 @@ export const get_models = async (): Promise<{ models: string[] }> => {
   }
 };
 
-export const run_sam2_model = async (video_uuid: string, request: MarkerInput): Promise<{ status: string; video_uuid: string }> => {
+export const run_sam2_model = async (
+  video_uuid: string,
+  request: MarkerInput
+): Promise<{ status: string; video_uuid: string }> => {
   try {
     const response = await axios.post(`${API_URL}/sam2/${video_uuid}`, {
       marker_input: request.marker_input,
@@ -27,7 +30,7 @@ export const run_sam2_model = async (video_uuid: string, request: MarkerInput): 
 };
 
 interface SAM2ModelResult {
-    marker_input: MarkerInput;
+  marker_input: MarkerInput;
 }
 
 interface SAM2ModelStatus {
@@ -137,6 +140,15 @@ export const markPlayersSAM2 = async (
   player2NegativePoints: Point[]
 ): Promise<{ success: boolean; markersCount: number }> => {
   try {
+    console.log(
+      'markPlayersSAM2',
+      sessionId,
+      frameIndex,
+      player1PositivePoints,
+      player1NegativePoints,
+      player2PositivePoints,
+      player2NegativePoints
+    );
     const response = await axios.post(`${API_URL}/mark-players-sam2`, {
       sessionId,
       frameIndex,
@@ -177,11 +189,10 @@ export const startSegmentation = async (
  */
 export const runSegmentation = async (
   video_uuid: string,
-  marker_input: MarkerInput[][]
+  marker_input: MarkerInput
 ): Promise<{ status: string; video_uuid: string }> => {
   try {
-    const response = await axios.post(`${API_URL}/`, {
-      video_uuid,
+    const response = await axios.post(`${API_URL}/sam2/${video_uuid}`, {
       marker_input,
     });
     return response.data;
