@@ -114,12 +114,12 @@ const StageHeader: React.FC<StageHeaderProps> = ({
                 <Loader className='h-3.5 w-3.5 animate-spin text-blue-500' />
                 <span className='text-blue-600'>Processing</span>
               </>
-            ) : (
+            ) : activeStage !== 'game_state' && activeStage !== 'export' ? (
               <>
                 <Circle className='h-3.5 w-3.5 text-gray-400' />
                 <span>Ready to process</span>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

@@ -29,8 +29,8 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
     setActiveMarkerType,
     activePlayer,
     setActivePlayer,
-    markedFrames,
-    clearPlayerPoints,
+    markers,
+    clearPlayerMarkers,
     setCurrentFrameIndex,
   } = useSegmentationStore();
 
@@ -39,25 +39,28 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
     setCurrentFrameIndex(currentFrameIndex);
   }, [currentFrameIndex, setCurrentFrameIndex]);
 
-  // Handler to clear all points for a player (both regular and marker points)
+  // Handler to clear all points for a player using the new method
   const handleClearPlayerAllPoints = (playerId: 1 | 2) => {
-    clearPlayerPoints(playerId);
+    clearPlayerMarkers(playerId);
   };
 
   // Count total markers for all frames
   const countTotalMarkers = () => {
-    // If markedFrames is provided, count markers from there
-    if (markedFrames && markedFrames.size > 0) {
+    // Count markers from the new markers Map
+    if (markers && markers.size > 0) {
       let totalP1PositivePoints = 0;
       let totalP1NegativePoints = 0;
       let totalP2PositivePoints = 0;
       let totalP2NegativePoints = 0;
 
-      markedFrames.forEach((data) => {
-        totalP1PositivePoints += data.player1PositivePoints?.length || 0;
-        totalP1NegativePoints += data.player1NegativePoints?.length || 0;
-        totalP2PositivePoints += data.player2PositivePoints?.length || 0;
-        totalP2NegativePoints += data.player2NegativePoints?.length || 0;
+      markers.forEach((marker) => {
+        if (marker.playerId === 1) {
+          if (marker.markerType === 'positive') totalP1PositivePoints++;
+          else totalP1NegativePoints++;
+        } else {
+          if (marker.markerType === 'positive') totalP2PositivePoints++;
+          else totalP2NegativePoints++;
+        }
       });
 
       return {
@@ -81,8 +84,46 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
 
   // Create a structure for frames that have markers
   const getMarkedFramesData = () => {
+    // Group markers by frame index
+    const frameMap = new Map<
+      number,
+      {
+        player1PositivePoints: Point[];
+        player1NegativePoints: Point[];
+        player2PositivePoints: Point[];
+        player2NegativePoints: Point[];
+      }
+    >();
+
+    // Populate the map from markers
+    Array.from(markers.values()).forEach((marker) => {
+      if (!frameMap.has(marker.frameIdx)) {
+        frameMap.set(marker.frameIdx, {
+          player1PositivePoints: [],
+          player1NegativePoints: [],
+          player2PositivePoints: [],
+          player2NegativePoints: [],
+        });
+      }
+
+      const frameData = frameMap.get(marker.frameIdx)!;
+      if (marker.playerId === 1) {
+        if (marker.markerType === 'positive') {
+          frameData.player1PositivePoints.push(marker.point);
+        } else {
+          frameData.player1NegativePoints.push(marker.point);
+        }
+      } else {
+        if (marker.markerType === 'positive') {
+          frameData.player2PositivePoints.push(marker.point);
+        } else {
+          frameData.player2NegativePoints.push(marker.point);
+        }
+      }
+    });
+
     // Convert Map to sorted array
-    return Array.from(markedFrames.entries()).sort(([frameA], [frameB]) => frameA - frameB);
+    return Array.from(frameMap.entries()).sort(([frameA], [frameB]) => frameA - frameB);
   };
 
   const markedFramesData = getMarkedFramesData();
@@ -104,7 +145,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
       {/* Segmentation Model Selection */}
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
         <h4 className='mb-2 text-xs font-medium text-gray-700'>Segmentation Model</h4>
-        {/* GET /segmentatino/models */}
+        {/* GET /segmentation/models */}
         <select
           id='segmentation-model'
           value={segmentationModel}
@@ -115,7 +156,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
           <option value='SAM2'>SAM2 (Recommended)</option>
           <option value='Basic'>Basic Segmentation</option>
         </select>
-        {/* GET /segmentatino/models */}
+        {/* GET /segmentation/models */}
       </div>
 
       {/* Marker Interface Selection */}
@@ -244,7 +285,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
                             <ul className='pl-2'>
                               {frameData.player1PositivePoints.map((point: Point, idx: number) => (
                                 <li key={idx} className='text-xs text-gray-700'>
-                                  + {point.x}, {point.y}
+                                  + {point.x.toFixed(3)}, {point.y.toFixed(3)}
                                 </li>
                               ))}
                             </ul>
@@ -257,7 +298,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
                             <ul className='pl-2'>
                               {frameData.player1NegativePoints.map((point: Point, idx: number) => (
                                 <li key={idx} className='text-xs text-gray-700'>
-                                  - {point.x}, {point.y}
+                                  - {point.x.toFixed(3)}, {point.y.toFixed(3)}
                                 </li>
                               ))}
                             </ul>
@@ -278,7 +319,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
                             <ul className='pl-2'>
                               {frameData.player2PositivePoints.map((point: Point, idx: number) => (
                                 <li key={idx} className='text-xs text-gray-700'>
-                                  + {point.x}, {point.y}
+                                  + {point.x.toFixed(3)}, {point.y.toFixed(3)}
                                 </li>
                               ))}
                             </ul>
@@ -291,7 +332,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
                             <ul className='pl-2'>
                               {frameData.player2NegativePoints.map((point: Point, idx: number) => (
                                 <li key={idx} className='text-xs text-gray-700'>
-                                  - {point.x}, {point.y}
+                                  - {point.x.toFixed(3)}, {point.y.toFixed(3)}
                                 </li>
                               ))}
                             </ul>

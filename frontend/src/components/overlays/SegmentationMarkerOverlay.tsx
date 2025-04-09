@@ -1,5 +1,5 @@
 import { useRef, useEffect, MouseEvent } from 'react';
-import useSegmentationStore, { Point, MarkerType } from '@/store/segmentationStore';
+import useSegmentationStore, { Point } from '@/store/segmentationStore';
 
 interface SegmentationMarkerOverlayProps {
   width: number;
@@ -16,45 +16,28 @@ const SegmentationMarkerOverlay = ({
 }: SegmentationMarkerOverlayProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Get state and actions from the store
-  const { segmentationModel, markedFrames, currentFrameIndex, addPoint, removePoint } = useSegmentationStore();
+  // Get state and actions from the store using new implementation
+  const { segmentationModel, currentFrameIndex, markers, addMarker, removeMarker } = useSegmentationStore();
 
-  // Get current frame data from marked frames
-  const frameData = markedFrames.get(currentFrameIndex) || {
-    player1PositivePoints: [],
-    player1NegativePoints: [],
-    player2PositivePoints: [],
-    player2NegativePoints: [],
-  };
-
-  const { player1PositivePoints, player1NegativePoints, player2PositivePoints, player2NegativePoints } = frameData;
+  // Filter markers for current frame
+  const currentFrameMarkers = Array.from(markers.values()).filter((marker) => marker.frameIdx === currentFrameIndex);
 
   // Check if a point is near another point (for click removal)
   const isNearPoint = (x: number, y: number, point: Point, threshold = 10): boolean => {
-    const dx = point.x - x;
-    const dy = point.y - y;
+    // Convert relative coordinates (ratios) to absolute pixel values for comparison
+    const pointX = point.x * width;
+    const pointY = point.y * height;
+
+    const dx = pointX - x;
+    const dy = pointY - y;
     return Math.sqrt(dx * dx + dy * dy) <= threshold;
   };
 
   // Find if a point was clicked for removal
-  const findClickedPoint = (x: number, y: number): { player: 1 | 2; type: MarkerType; index: number } | null => {
-    // Check player 1 positive points
-    const p1PosIndex = player1PositivePoints.findIndex((point) => isNearPoint(x, y, point));
-    if (p1PosIndex !== -1) return { player: 1, type: 'positive', index: p1PosIndex };
+  const findClickedPointId = (x: number, y: number): string | null => {
+    const clickedMarker = currentFrameMarkers.find((marker) => isNearPoint(x, y, marker.point));
 
-    // Check player 1 negative points
-    const p1NegIndex = player1NegativePoints.findIndex((point) => isNearPoint(x, y, point));
-    if (p1NegIndex !== -1) return { player: 1, type: 'negative', index: p1NegIndex };
-
-    // Check player 2 positive points
-    const p2PosIndex = player2PositivePoints.findIndex((point) => isNearPoint(x, y, point));
-    if (p2PosIndex !== -1) return { player: 2, type: 'positive', index: p2PosIndex };
-
-    // Check player 2 negative points
-    const p2NegIndex = player2NegativePoints.findIndex((point) => isNearPoint(x, y, point));
-    if (p2NegIndex !== -1) return { player: 2, type: 'negative', index: p2NegIndex };
-
-    return null;
+    return clickedMarker?.id || null;
   };
 
   // Handle canvas click to add or remove points
@@ -74,14 +57,14 @@ const SegmentationMarkerOverlay = ({
     const y = e.clientY - rect.top;
 
     // Check if user clicked on an existing point
-    const clickedPoint = findClickedPoint(x, y);
+    const clickedPointId = findClickedPointId(x, y);
 
-    if (clickedPoint) {
-      // Remove the clicked point
-      removePoint(clickedPoint.player, clickedPoint.type, clickedPoint.index);
+    if (clickedPointId) {
+      // Remove the clicked point using the new method
+      removeMarker(clickedPointId);
     } else {
-      // Add a new point
-      addPoint({ x, y });
+      // Add a new point using relative coordinates (ratios)
+      addMarker({ x: x / width, y: y / height });
     }
   };
 
@@ -96,24 +79,11 @@ const SegmentationMarkerOverlay = ({
     // Clear the canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Draw player 1 positive points (green)
-    player1PositivePoints.forEach((point) => {
-      drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+1');
-    });
-
-    // Draw player 1 negative points (red)
-    player1NegativePoints.forEach((point) => {
-      drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-1');
-    });
-
-    // Draw player 2 positive points (green)
-    player2PositivePoints.forEach((point) => {
-      drawPoint(ctx, point, 'rgba(0, 200, 0, 0.8)', '+2');
-    });
-
-    // Draw player 2 negative points (red)
-    player2NegativePoints.forEach((point) => {
-      drawPoint(ctx, point, 'rgba(200, 0, 0, 0.8)', '-2');
+    // Draw all markers for the current frame
+    currentFrameMarkers.forEach((marker) => {
+      const color = marker.markerType === 'positive' ? 'rgba(0, 200, 0, 0.8)' : 'rgba(200, 0, 0, 0.8)';
+      const label = `${marker.markerType === 'positive' ? '+' : '-'}${marker.playerId}`;
+      drawPoint(ctx, marker.point, color, label);
     });
 
     // If not in main view, draw warning overlay
@@ -128,21 +98,13 @@ const SegmentationMarkerOverlay = ({
       ctx.textBaseline = 'middle';
       ctx.fillText('Cannot add markers: Not in main view', width / 2, height / 2);
     }
-  }, [
-    width,
-    height,
-    player1PositivePoints,
-    player1NegativePoints,
-    player2PositivePoints,
-    player2NegativePoints,
-    segmentationModel,
-    isInMainView,
-    isPlaying,
-  ]);
+  }, [width, height, currentFrameMarkers, segmentationModel, isInMainView, isPlaying]);
 
   // Draw a point with label
   const drawPoint = (ctx: CanvasRenderingContext2D, point: Point, color: string, label?: string) => {
-    const { x, y } = point;
+    // Convert relative coordinates (ratios) back to absolute pixel values
+    const x = point.x * width;
+    const y = point.y * height;
 
     // Draw circle
     ctx.fillStyle = color;
