@@ -38,35 +38,33 @@ export interface FrameData {
 
 // Define store state type
 interface SegmentationState {
+  // Current frame index
+  currentFrameIndex: number;
   // Active selections
   activePlayer: 1 | 2;
   activeMarkerType: MarkerType;
   segmentationModel: string;
-
-  // Marker data by frame
-  markedFrames: Map<number, FrameData>;
-
-  // Current frame index
-  currentFrameIndex: number;
-
-  // Mask data
-  player1Mask: string | null;
-  player2Mask: string | null;
-
   // Actions
   setActivePlayer: (player: 1 | 2) => void;
   setActiveMarkerType: (markerType: MarkerType) => void;
   setSegmentationModel: (model: string) => void;
   setCurrentFrameIndex: (frameIndex: number) => void; // need to be moved to video related store
 
+  // new marker state
+  // addMarker: (marker: MarkerData) => void;
+  // removeMarker: (marker: MarkerData) => void;
+  // clearPlayerMarkers: (player: 1 | 2) => void;
+
+  // legacy: Marker data by frame
+  markedFrames: Map<number, FrameData>;
   addPoint: (point: Point) => void; // legacy
   removePoint: (player: 1 | 2, markerType: MarkerType, pointIndex: number) => void; // legacy
   clearPlayerPoints: (player: 1 | 2) => void; // legacy
   clearPlayerMarkerPoints: (player: 1 | 2, markerType: MarkerType) => void; // legacy
 
-  // addMarker: (marker: MarkerData) => void;
-  // removeMarker: (marker: MarkerData) => void;
-
+  // Mask data
+  player1Mask: string | null;
+  player2Mask: string | null;
   setPlayerMask: (player: 1 | 2, maskData: string | null) => void;
 }
 
@@ -85,11 +83,8 @@ const useSegmentationStore = create<SegmentationState>((set) => ({
 
   // Actions
   setActivePlayer: (player) => set({ activePlayer: player }),
-
   setActiveMarkerType: (markerType) => set({ activeMarkerType: markerType }),
-
   setSegmentationModel: (model) => set({ segmentationModel: model }),
-
   setCurrentFrameIndex: (frameIndex) => set({ currentFrameIndex: frameIndex }),
 
   addPoint: (point) =>
@@ -240,7 +235,6 @@ const useSegmentationStore = create<SegmentationState>((set) => ({
 
       return { markedFrames: newMarkedFrames };
     }),
-
   setPlayerMask: (player, maskData) =>
     set(() => ({
       ...(player === 1 ? { player1Mask: maskData } : { player2Mask: maskData }),
