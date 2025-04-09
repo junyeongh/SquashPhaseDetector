@@ -1,4 +1,4 @@
-import { Point } from '@/services/api/segmentation';
+import { Point } from '@/store/segmentationStore';
 
 // Define the types of processing stages
 export type ProcessingStage = 'preprocess' | 'segmentation' | 'pose' | 'game_state' | 'export';

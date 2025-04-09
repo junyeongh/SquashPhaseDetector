@@ -1,5 +1,40 @@
 import { create } from 'zustand';
-import { Point, MarkerType, FrameData } from '@/types/segmentation';
+
+// Timestamp + Chunks
+// Marker data
+
+// Define types for segmentation functionality
+export interface Coordinates {
+  x: number;
+  y: number;
+}
+export type Label = 0 | 1;
+
+export interface MarkerData {
+  frame_idx: number;
+  player_id: number;
+  points: Coordinates[][];
+  labels: Label[][];
+}
+
+export interface MarkerInput {
+  marker_input: MarkerData[][];
+}
+
+// legacy
+export type MarkerType = 'positive' | 'negative';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface FrameData {
+  player1PositivePoints: Point[];
+  player1NegativePoints: Point[];
+  player2PositivePoints: Point[];
+  player2NegativePoints: Point[];
+}
 
 // Define store state type
 interface SegmentationState {
@@ -22,12 +57,15 @@ interface SegmentationState {
   setActivePlayer: (player: 1 | 2) => void;
   setActiveMarkerType: (markerType: MarkerType) => void;
   setSegmentationModel: (model: string) => void;
-  setCurrentFrameIndex: (frameIndex: number) => void;
+  setCurrentFrameIndex: (frameIndex: number) => void; // need to be moved to video related store
 
-  addPoint: (point: Point) => void;
-  removePoint: (player: 1 | 2, markerType: MarkerType, pointIndex: number) => void;
-  clearPlayerPoints: (player: 1 | 2) => void;
-  clearPlayerMarkerPoints: (player: 1 | 2, markerType: MarkerType) => void;
+  addPoint: (point: Point) => void; // legacy
+  removePoint: (player: 1 | 2, markerType: MarkerType, pointIndex: number) => void; // legacy
+  clearPlayerPoints: (player: 1 | 2) => void; // legacy
+  clearPlayerMarkerPoints: (player: 1 | 2, markerType: MarkerType) => void; // legacy
+
+  // addMarker: (marker: MarkerData) => void;
+  // removeMarker: (marker: MarkerData) => void;
 
   setPlayerMask: (player: 1 | 2, maskData: string | null) => void;
 }

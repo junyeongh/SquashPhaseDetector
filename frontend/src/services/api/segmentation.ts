@@ -1,13 +1,63 @@
 import axios from 'axios';
 import { BASE_API_URL } from './config';
-
+import { MarkerInput, Point } from '@/store/segmentationStore';
 // Derive API URL for segmentation endpoints
 const API_URL = `${BASE_API_URL}/segmentation`;
 
-export interface Point {
-  x: number;
-  y: number;
+export const get_models = async (): Promise<{ models: string[] }> => {
+  try {
+    const response = await axios.get(`${API_URL}/models`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    throw error;
+  }
+};
+
+export const run_sam2_model = async (video_uuid: string, request: MarkerInput): Promise<{ status: string; video_uuid: string }> => {
+  try {
+    const response = await axios.post(`${API_URL}/sam2/${video_uuid}`, {
+      marker_input: request.marker_input,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error running SAM2 model:', error);
+    throw error;
+  }
+};
+
+interface SAM2ModelResult {
+    marker_input: MarkerInput;
 }
+
+interface SAM2ModelStatus {
+  video_uuid: string;
+  is_processing: boolean;
+  has_segmentation: boolean;
+  status: string;
+}
+
+export const get_sam2_model_result = async (video_uuid: string): Promise<SAM2ModelResult> => {
+  try {
+    const response = await axios.get(`${API_URL}/sam2/${video_uuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching SAM2 model result:', error);
+    throw error;
+  }
+};
+
+export const get_sam2_model_status = async (video_uuid: string): Promise<SAM2ModelStatus> => {
+  try {
+    const response = await axios.get(`${API_URL}/sam2/${video_uuid}/status`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching SAM2 model status:', error);
+    throw error;
+  }
+};
+
+// LEGACY //
 
 export interface MarkPlayersRequest {
   sessionId: string;
@@ -45,13 +95,6 @@ export interface SegmentationStatus {
 export interface MarkerPoint {
   x: number;
   y: number;
-}
-
-export interface MarkerInput {
-  frame_idx: number;
-  player_id: number; // 1 or 2
-  points: [number, number][]; // Array of [x, y] coordinates normalized to [0,1]
-  labels: number[]; // 1 for positive, 0 for negative
 }
 
 export interface RunSegmentationRequest {

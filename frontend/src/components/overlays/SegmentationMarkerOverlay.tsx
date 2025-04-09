@@ -1,6 +1,5 @@
 import { useRef, useEffect, MouseEvent } from 'react';
-import { Point, MarkerType } from '@/types/segmentation';
-import useSegmentationStore from '@/store/segmentationStore';
+import useSegmentationStore, { Point, MarkerType } from '@/store/segmentationStore';
 
 interface SegmentationMarkerOverlayProps {
   width: number;
