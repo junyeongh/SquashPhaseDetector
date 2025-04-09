@@ -53,7 +53,7 @@ async def run_sam2_model(video_uuid: str, request: SegmentationRequest, backgrou
         try:
             processing_videos[video_uuid] = "processing"
 
-            await run_sam2_segmentation(video_dir, request.marker_input)
+            await run_sam2_segmentation(video_dir, request.marker_input["marker_input"])
 
             if video_uuid in processing_videos:
                 del processing_videos[video_uuid]

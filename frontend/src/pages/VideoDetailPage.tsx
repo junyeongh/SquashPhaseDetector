@@ -5,15 +5,15 @@ import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/Vi
 import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
 import {
   SegmentationMask,
-  getSegmentationMask,
   get_sam2_model_result,
   getSegmentationStatus,
   runSegmentation,
 } from '@/services/api/segmentation';
 import useSegmentationStore, { Point } from '@/store/segmentationStore';
-import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
+import { run_yolo_pose_v11, get_yolo_pose_v11, get_yolo_pose_v11_status } from '@/services/api/pose';
 import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/processSidemenu';
-import { convertMarkedFramesToMarkerInput } from '@/utils/segmentation';
+import { relocateMarkerDataToCorrectChunk, isValidMarkerInput } from '@/utils/segmentation';
+
 // Shared stage configuration
 const processingStages: StageConfig[] = [
   {
@@ -88,7 +88,6 @@ const VideoDetailPage: React.FC = () => {
   const [player2Mask, setPlayer2Mask] = useState<SegmentationMask | null>(null);
 
   // State for pose detection
-  const [poseResults, setPoseResults] = useState<FramePoseResult[] | null>(null);
 
   // Set a default frame URL for the current video
   useEffect(() => {
@@ -106,11 +105,18 @@ const VideoDetailPage: React.FC = () => {
       getMainviewData(urlUUID)
         .then((mainview_data) => {
           setMainviewData(mainview_data);
-          console.log('VideoDetail: Loaded mainview data for video:', urlUUID, mainview_data);
 
-          // If mainview segments already exist, mark preprocess as completed and advance to segmentation
+          // Save chunks data to sessionStorage for use in segmentationStore
+          if (mainview_data.chunks && mainview_data.chunks.length > 0) {
+            try {
+              sessionStorage.setItem('mainviewChunks', JSON.stringify(mainview_data.chunks));
+            } catch (error) {
+              console.error('Error saving chunks data to sessionStorage:', error);
+            }
+          }
+
+          // If mainview segments already exist, mark preprocess as completed
           if (mainview_data.timestamps && mainview_data.timestamps.length > 0) {
-            console.log('Main view segments already exist, advancing to segmentation stage');
             setCompletedStages(new Set(['preprocess']));
           }
 
@@ -121,6 +127,12 @@ const VideoDetailPage: React.FC = () => {
           if (sam_data) {
             setCompletedStages((prev) => new Set([...prev, 'segmentation']));
           }
+          return get_yolo_pose_v11(urlUUID);
+        })
+        .then((yolo_data) => {
+          if (yolo_data) {
+            setCompletedStages((prev) => new Set([...prev, 'pose']));
+          }
         })
         .catch((error) => {
           console.error('Failed to fetch data:', error);
@@ -128,50 +140,12 @@ const VideoDetailPage: React.FC = () => {
     }
   }, [urlUUID, activeStage]);
 
-  // Fetch segmentation masks when frame changes
-  useEffect(() => {
-    if (urlUUID && activeStage === 'segmentation' && completedStages.has('segmentation')) {
-      // Try to fetch masks for the current frame
-      fetchFrameMasks();
-    } else {
-      // Clear masks when changing frames before segmentation is completed
-      setPlayer1Mask(null);
-      setPlayer2Mask(null);
-    }
-  }, [urlUUID, frameIndex, activeStage, completedStages]);
-
-  // Fetch masks for the current frame
-  const fetchFrameMasks = async () => {
-    if (!urlUUID) return;
-
-    try {
-      const result = await getSegmentationMask(urlUUID, frameIndex);
-      console.log('Fetched masks for frame:', frameIndex, result);
-      setPlayer1Mask(result.player1Mask);
-      setPlayer2Mask(result.player2Mask);
-    } catch (error) {
-      console.error('Error fetching segmentation masks:', error);
-      setPlayer1Mask(null);
-      setPlayer2Mask(null);
-    }
-  };
-
-  // Log frame updates for debugging purposes
-  useEffect(() => {
-    console.debug(`Current frame updated: ${frameIndex}`);
-  }, [frameIndex]);
-
   // Handle frame updates from the video player
   const handleFrameUpdate = (frame: number, newDuration: number, newCurrentTime: number, playing: boolean) => {
     setFrameIndex(frame);
     setDuration(newDuration);
     setCurrentTime(newCurrentTime);
     setIsPlaying(playing);
-
-    // If we're on the segmentation stage, fetch masks for the current frame
-    if (activeStage === 'segmentation' && urlUUID) {
-      fetchFrameMasks();
-    }
   };
 
   // Replace polling with SSE for processing updates
@@ -346,58 +320,59 @@ const VideoDetailPage: React.FC = () => {
     setIsProcessing(true);
     setProcessingStatus('Starting segmentation...');
 
-    const marked_frames = useSegmentationStore.getState().markedFrames;
-    const { markerResult, isValidMarkerInput } = convertMarkedFramesToMarkerInput(
-      marked_frames,
-      mainviewData?.chunks || []
-    );
-    // console.log(urlUUID, markerResult, isValidMarkerInput);
-    console.log(marked_frames);
-    console.log(markerResult);
-    if (!isValidMarkerInput) {
-      alert('Please add markers for each players before starting segmentation');
+    // Use the getMarkerInput method from the store
+    const markerInput = useSegmentationStore.getState().getMarkerInput();
+    console.log('Marker input:', relocateMarkerDataToCorrectChunk(markerInput, mainviewData?.chunks || []));
+
+    // Check if the marker input is valid
+    const isValid = isValidMarkerInput(relocateMarkerDataToCorrectChunk(markerInput, mainviewData?.chunks || []));
+
+    if (!isValid) {
+      alert('Please add at least one positive marker for each main view segment before starting segmentation');
       setIsProcessing(false);
       return;
     }
 
-    // try {
-    //   await runSegmentation(urlUUID, markerResult);
+    try {
+      // Use the relocated marker input
+      const inputToSend = relocateMarkerDataToCorrectChunk(markerInput, mainviewData?.chunks || []);
+      console.log('Input:', inputToSend);
+      await runSegmentation(urlUUID, inputToSend);
 
-    //   // Poll for status updates
-    //   const statusCheckInterval = setInterval(async () => {
-    //     try {
-    //       const status = await getSegmentationStatus(urlUUID);
+      // Poll for status updates
+      const statusCheckInterval = setInterval(async () => {
+        try {
+          const status = await getSegmentationStatus(urlUUID);
 
-    //       if (status.status === 'completed') {
-    //         clearInterval(statusCheckInterval);
-    //         setIsProcessing(false);
+          if (status.status === 'completed') {
+            clearInterval(statusCheckInterval);
+            setIsProcessing(false);
 
-    //         // Mark stage as completed
-    //         const updatedCompletedStages = new Set(completedStages);
-    //         updatedCompletedStages.add('segmentation');
-    //         setCompletedStages(updatedCompletedStages);
+            // Mark stage as completed
+            const updatedCompletedStages = new Set(completedStages);
+            updatedCompletedStages.add('segmentation');
+            setCompletedStages(updatedCompletedStages);
 
-    //         // Move to next stage after a delay
-    //         setTimeout(() => moveToNextStage(), 1000);
-    //       } else if (status.status === 'failed') {
-    //         clearInterval(statusCheckInterval);
-    //         setProcessingStatus(`Segmentation failed: ${status.status}`);
-    //         setIsProcessing(false);
-    //         setShowSkipButton(true);
-    //       }
-    //     } catch (error) {
-    //       console.error('Error checking segmentation status:', error);
-    //     }
-    //   }, 2000);
+            // Move to next stage after a delay
+            setTimeout(() => moveToNextStage(), 1000);
+          } else if (status.status === 'failed') {
+            clearInterval(statusCheckInterval);
+            setProcessingStatus(`Segmentation failed: ${status.status}`);
+            setIsProcessing(false);
+            setShowSkipButton(true);
+          }
+        } catch (error) {
+          console.error('Error checking segmentation status:', error);
+        }
+      }, 2000);
 
-    //   // Clean up interval if component unmounts
-    //   return () => clearInterval(statusCheckInterval);
-    // } catch (error) {
-    //   console.error('Error running segmentation:', error);
-    //   setProcessingStatus('Error running segmentation');
-    //   setIsProcessing(false);
-    // }
-    // handleStartSegmentation
+      // Clean up interval if component unmounts
+      return () => clearInterval(statusCheckInterval);
+    } catch (error) {
+      console.error('Error running segmentation:', error);
+      setProcessingStatus('Error running segmentation');
+      setIsProcessing(false);
+    }
   };
 
   // Handler for pose detection
@@ -408,17 +383,16 @@ const VideoDetailPage: React.FC = () => {
     setProcessingStatus('Starting pose detection...');
 
     try {
-      await startPoseDetection(urlUUID);
+      await run_yolo_pose_v11(urlUUID);
 
       // Poll for status updates
       const statusCheckInterval = setInterval(async () => {
         try {
-          const status = await getPoseDetectionStatus(urlUUID);
+          const status = await get_yolo_pose_v11_status(urlUUID);
           setProcessingStatus(`Pose detection: ${status.message}`);
 
           if (status.status === 'completed') {
             clearInterval(statusCheckInterval);
-            setPoseResults(status.results || []);
             setIsProcessing(false);
 
             // Mark stage as completed

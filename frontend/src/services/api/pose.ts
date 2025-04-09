@@ -32,6 +32,46 @@ export interface PoseDetectionStatus {
   results?: FramePoseResult[];
 }
 
+export const get_models = async (): Promise<{ models: string[] }> => {
+  try {
+    const response = await axios.get(`${API_URL}/models`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    throw error;
+  }
+};
+
+export const run_yolo_pose_v11 = async (video_uuid: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await axios.post(`${API_URL}/yolo_pose_v11/${video_uuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error running YOLO pose v11:', error);
+    throw error;
+  }
+};
+
+export const get_yolo_pose_v11 = async (video_uuid: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await axios.get(`${API_URL}/yolo_pose_v11/${video_uuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching YOLO pose v11:', error);
+    throw error;
+  }
+};
+
+export const get_yolo_pose_v11_status = async (video_uuid: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await axios.get(`${API_URL}/yolo_pose_v11/${video_uuid}/status`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching YOLO pose v11 status:', error);
+    throw error;
+  }
+};
+
 /**
  * Start pose detection for a session
  * This will use the segmentation masks to focus on the players

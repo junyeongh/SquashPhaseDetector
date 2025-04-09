@@ -192,9 +192,8 @@ export const runSegmentation = async (
   marker_input: MarkerInput
 ): Promise<{ status: string; video_uuid: string }> => {
   try {
-    const response = await axios.post(`${API_URL}/sam2/${video_uuid}`, {
-      marker_input,
-    });
+    console.log(marker_input);
+    const response = await axios.post(`${API_URL}/sam2/${video_uuid}`, marker_input);
     return response.data;
   } catch (error) {
     console.error('Error running segmentation:', error);
@@ -211,19 +210,6 @@ export const getSegmentationStatus = async (video_uuid: string): Promise<Segment
     return response.data;
   } catch (error) {
     console.error('Error fetching segmentation status:', error);
-    throw error;
-  }
-};
-
-/**
- * Get segmentation mask for a specific frame
- */
-export const getSegmentationMask = async (sessionId: string, frameIndex: number): Promise<SegmentationResult> => {
-  try {
-    const response = await axios.get(`${API_URL}/mask/${sessionId}/${frameIndex}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching segmentation mask:', error);
     throw error;
   }
 };
