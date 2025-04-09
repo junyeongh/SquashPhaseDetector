@@ -3,12 +3,7 @@ import { useParams } from 'react-router-dom';
 import { BASE_API_URL } from '@/services/api/config';
 import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/VideoPlayerSection';
 import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
-import {
-  SegmentationMask,
-  get_sam2_model_result,
-  getSegmentationStatus,
-  runSegmentation,
-} from '@/services/api/segmentation';
+import { get_sam2_model_result, getSegmentationStatus, runSegmentation } from '@/services/api/segmentation';
 import useSegmentationStore, { Point } from '@/store/segmentationStore';
 import { run_yolo_pose_v11, get_yolo_pose_v11, get_yolo_pose_v11_status } from '@/services/api/pose';
 import ProcessSidemenu, { ProcessingStage, StageConfig } from '@/components/processSidemenu';
@@ -53,24 +48,14 @@ const VideoDetailPage: React.FC = () => {
   const videoPlayerRef = useRef<VideoPlayerSectionRef>(null);
 
   // Video info
-  const [uuid, setUUID] = useState<string | null>(null);
   const [modelType, setModelType] = useState<string>('efficientpose'); // Default to efficientpose
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(50);
 
   // Frame state
   const [frameIndex, setFrameIndex] = useState<number>(0);
 
-  // State for current video duration, time and frame
-  const [duration, setDuration] = useState<number>(0);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-
   // Maintained for UI display and future integration with ProcessSidemenu
   const [mainviewData, setMainviewData] = useState<MainviewResponse | null>(null);
-
-  // State for segmentation
-  // Used by the ProcessSidemenu component
-  const [frameUrl, setFrameUrl] = useState<string>('');
 
   // SAM2 specific state
   const [segmentationModel, setSegmentationModel] = useState<string>('SAM2');
@@ -83,20 +68,7 @@ const VideoDetailPage: React.FC = () => {
   const [player2Points, setPlayer2Points] = useState<Map<number, Point[]>>(new Map());
   const [activePlayer, setActivePlayer] = useState<1 | 2>(1);
 
-  // Mask state for current frame
-  const [player1Mask, setPlayer1Mask] = useState<SegmentationMask | null>(null);
-  const [player2Mask, setPlayer2Mask] = useState<SegmentationMask | null>(null);
-
   // State for pose detection
-
-  // Set a default frame URL for the current video
-  useEffect(() => {
-    if (urlUUID) {
-      // Generate a URL to fetch a frame from the current video
-      setUUID(urlUUID);
-      setFrameUrl(`${BASE_API_URL}/video/${urlUUID}/frame/${frameIndex}`);
-    }
-  }, [urlUUID, frameIndex]);
 
   // Check if stages already completed
   useEffect(() => {
@@ -141,11 +113,8 @@ const VideoDetailPage: React.FC = () => {
   }, [urlUUID, activeStage]);
 
   // Handle frame updates from the video player
-  const handleFrameUpdate = (frame: number, newDuration: number, newCurrentTime: number, playing: boolean) => {
+  const handleFrameUpdate = (frame: number) => {
     setFrameIndex(frame);
-    setDuration(newDuration);
-    setCurrentTime(newCurrentTime);
-    setIsPlaying(playing);
   };
 
   // Replace polling with SSE for processing updates
@@ -355,7 +324,7 @@ const VideoDetailPage: React.FC = () => {
 
             // Move to next stage after a delay
             setTimeout(() => moveToNextStage(), 1000);
-          } else if (status.status === 'failed') {
+          } else if (status.status.startsWith('error') || status.status === 'failed') {
             clearInterval(statusCheckInterval);
             setProcessingStatus(`Segmentation failed: ${status.status}`);
             setIsProcessing(false);
@@ -391,7 +360,7 @@ const VideoDetailPage: React.FC = () => {
           const status = await get_yolo_pose_v11_status(urlUUID);
           setProcessingStatus(`Pose detection: ${status.message}`);
 
-          if (status.status === 'completed') {
+          if (status.success && status.message === 'completed') {
             clearInterval(statusCheckInterval);
             setIsProcessing(false);
 
@@ -402,7 +371,7 @@ const VideoDetailPage: React.FC = () => {
 
             // Move to next stage after a delay
             setTimeout(() => moveToNextStage(), 1000);
-          } else if (status.status === 'failed') {
+          } else if (!status.success || status.message === 'failed') {
             clearInterval(statusCheckInterval);
             setProcessingStatus(`Pose detection failed: ${status.message}`);
             setIsProcessing(false);
