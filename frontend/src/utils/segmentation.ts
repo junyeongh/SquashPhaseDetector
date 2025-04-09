@@ -1,11 +1,4 @@
-import { Point, MarkerInput, MarkerData } from '@/store/segmentationStore';
-
-type FrameData = {
-  player1PositivePoints: Point[];
-  player1NegativePoints: Point[];
-  player2PositivePoints: Point[];
-  player2NegativePoints: Point[];
-};
+import { MarkerInput, MarkerData } from '@/store/segmentationStore';
 
 const key_to_chunk_idx = (key: number, chunks: number[][][]): number => {
   for (let i = 0; i < chunks.length; i++) {

@@ -34,7 +34,7 @@ const Sidebar: React.FC = () => {
       <aside
         className='flex h-screen flex-col bg-white shadow-sm transition-all'
         style={{
-          width: collapsed ? 'var(--spacing-sidebar-collasped)' : 'var(--spacing-sidebar)',
+          width: collapsed ? 'var(--spacing-sidebar-collapsed)' : 'var(--spacing-sidebar)',
         }}
       >
         {/* Collapse button */}

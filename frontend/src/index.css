@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-  --spacing-sidebar-collasped: 120px;
+  --spacing-sidebar-collapsed: 120px;
   --spacing-sidebar: 240px;
 }
 

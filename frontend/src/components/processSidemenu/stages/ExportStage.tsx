@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileJson, Video, FileText } from 'lucide-react';
+import { FileJson, FileText } from 'lucide-react';
 import { ExportStageProps } from '../types';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
 
@@ -9,7 +9,6 @@ const ExportStage: React.FC<ExportStageProps> = ({
   showSkipButton,
   onSkipStage,
   onExportJson,
-  onExportVideo,
   onExportReport,
 }) => {
   if (isProcessing) {

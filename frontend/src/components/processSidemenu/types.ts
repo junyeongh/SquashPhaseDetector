@@ -100,8 +100,8 @@ export interface ProcessSidemenuProps {
   onStageSelect?: (stage: ProcessingStage) => void;
 
   // Skip button props
-  showSkipButton?: boolean;
-  onSkipStage?: () => void;
+  showSkipButton: boolean;
+  onSkipStage: () => void;
 
   // Navigation controls
   onPreviousStage?: (stage?: ProcessingStage) => void;

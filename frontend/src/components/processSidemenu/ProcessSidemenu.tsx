@@ -28,23 +28,8 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   onProcess,
 
   // Segmentation props
-  segmentationModel,
-  setSegmentationModel,
-  activeMarkerType,
-  setActiveMarkerType,
-  player1Points,
-  player2Points,
-  player1PositivePoints,
-  player1NegativePoints,
-  player2PositivePoints,
-  player2NegativePoints,
-  activePlayer,
-  setActivePlayer,
-  onClearPlayerPoints,
-  onClearPlayerMarkerPoints,
   onStartSegmentation,
   currentFrameIndex,
-  markedFrames,
 
   // Pose props
   modelType,
@@ -85,30 +70,6 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
   // Get the next stage if available, accounting for stage completion
   const nextStage = getNextStage();
 
-  // Helper function to count total positive markers per player across all frames
-  const countTotalPositiveMarkers = (): { player1: number; player2: number } => {
-    // If using markedFrames
-    if (markedFrames && markedFrames.size > 0) {
-      let player1Total = 0;
-      let player2Total = 0;
-
-      markedFrames.forEach((data) => {
-        player1Total += data.player1PositivePoints?.length || 0;
-        player2Total += data.player2PositivePoints?.length || 0;
-      });
-
-      return { player1: player1Total, player2: player2Total };
-    }
-
-    // Fallback to single frame data
-    return {
-      player1: player1PositivePoints?.length || 0,
-      player2: player2PositivePoints?.length || 0,
-    };
-  };
-
-  const totalPositiveMarkers = countTotalPositiveMarkers();
-
   const renderStageComponent = () => {
     switch (activeStage) {
       case 'preprocess':
@@ -128,22 +89,7 @@ const ProcessSidemenu: React.FC<ProcessSidemenuProps> = ({
             processingStatus={processingStatus}
             showSkipButton={showSkipButton}
             onSkipStage={onSkipStage}
-            segmentationModel={segmentationModel}
-            setSegmentationModel={setSegmentationModel}
-            activeMarkerType={activeMarkerType}
-            setActiveMarkerType={setActiveMarkerType}
-            player1Points={player1Points}
-            player2Points={player2Points}
-            player1PositivePoints={player1PositivePoints}
-            player1NegativePoints={player1NegativePoints}
-            player2PositivePoints={player2PositivePoints}
-            player2NegativePoints={player2NegativePoints}
-            activePlayer={activePlayer}
-            setActivePlayer={setActivePlayer}
-            onClearPlayerPoints={onClearPlayerPoints}
-            onClearPlayerMarkerPoints={onClearPlayerMarkerPoints}
             currentFrameIndex={currentFrameIndex}
-            markedFrames={markedFrames}
           />
         );
       case 'pose':

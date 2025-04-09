@@ -76,6 +76,35 @@ const SegmentationMarkerOverlay = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Draw a point with label
+    const drawPoint = (ctx: CanvasRenderingContext2D, point: Point, color: string, label?: string) => {
+      // Convert relative coordinates (ratios) back to absolute pixel values
+      const x = point.x * width;
+      const y = point.y * height;
+
+      // Draw circle
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Draw border
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Draw label if provided
+      if (label) {
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x, y);
+      }
+    };
+
     // Clear the canvas
     ctx.clearRect(0, 0, width, height);
 
@@ -99,35 +128,6 @@ const SegmentationMarkerOverlay = ({
       ctx.fillText('Cannot add markers: Not in main view', width / 2, height / 2);
     }
   }, [width, height, currentFrameMarkers, segmentationModel, isInMainView, isPlaying]);
-
-  // Draw a point with label
-  const drawPoint = (ctx: CanvasRenderingContext2D, point: Point, color: string, label?: string) => {
-    // Convert relative coordinates (ratios) back to absolute pixel values
-    const x = point.x * width;
-    const y = point.y * height;
-
-    // Draw circle
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Draw border
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, 2 * Math.PI);
-    ctx.stroke();
-
-    // Draw label if provided
-    if (label) {
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(label, x, y);
-    }
-  };
 
   return (
     <div className='absolute inset-0 z-20 flex items-center justify-center'>
