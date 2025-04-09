@@ -4,8 +4,6 @@ import { BASE_API_URL } from '@/services/api/config';
 import VideoPlayerSection, { VideoPlayerSectionRef } from '@/components/video/VideoPlayerSection';
 import { getMainviewData, MainviewResponse, generateMainView, createProcessingEventSource } from '@/services/api/video';
 import {
-  Point,
-  //   SegmentationResult,
   SegmentationMask,
   markPlayers,
   markPlayersSAM2,
@@ -13,6 +11,7 @@ import {
   getSegmentationStatus,
   getSegmentationMask,
 } from '@/services/api/segmentation';
+import { Point } from '@/store/segmentationStore';
 import { FramePoseResult, startPoseDetection, getPoseDetectionStatus } from '@/services/api/pose';
 import ProcessSidemenu, { ProcessingStage, StageConfig, MarkerType } from '@/components/processSidemenu';
 

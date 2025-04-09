@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { User, UserRound, Plus, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 import ProcessingIndicator from '../ui/ProcessingIndicator';
-import { Point } from '@/types/segmentation';
-import useSegmentationStore from '@/store/segmentationStore';
+import useSegmentationStore, { Point } from '@/store/segmentationStore';
 
 // Simplified props interface - remove state-related props
 interface SimplifiedSegmentationStageProps {
@@ -105,6 +104,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
       {/* Segmentation Model Selection */}
       <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
         <h4 className='mb-2 text-xs font-medium text-gray-700'>Segmentation Model</h4>
+        {/* GET /segmentatino/models */}
         <select
           id='segmentation-model'
           value={segmentationModel}
@@ -115,6 +115,7 @@ const SegmentationStage: React.FC<SimplifiedSegmentationStageProps> = ({
           <option value='SAM2'>SAM2 (Recommended)</option>
           <option value='Basic'>Basic Segmentation</option>
         </select>
+        {/* GET /segmentatino/models */}
       </div>
 
       {/* Marker Interface Selection */}
