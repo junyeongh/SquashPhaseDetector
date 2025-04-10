@@ -333,7 +333,7 @@ const VideoDetailPage: React.FC = () => {
         } catch (error) {
           console.error('Error checking segmentation status:', error);
         }
-      }, 2000);
+      }, 60000); // takes a while so every 1 minute
 
       // Clean up interval if component unmounts
       return () => clearInterval(statusCheckInterval);

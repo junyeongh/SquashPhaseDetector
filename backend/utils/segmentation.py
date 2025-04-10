@@ -17,7 +17,7 @@ from typing_extensions import TypedDict
 class MarkerInput(TypedDict):
     frame_idx: int
     player_id: int
-    points: List[List[List[int]]]
+    points: List[List[List[float]]]
     labels: List[List[int]]
 
 
