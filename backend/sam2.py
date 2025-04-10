@@ -5,7 +5,9 @@ import numpy as np
 from models.segmentation_sam2 import run_sam2_segmentation
 from utils.segmentation import merge_masks_and_boxes, write_segmentation_result
 
-video_dir = "/data/uploads/f72f40ce-21ae-4770-b139-38ce346ab6d4"
+# video_dir = "/data/uploads/f72f40ce-21ae-4770-b139-38ce346ab6d4"
+video_dir = "/data/uploads/2a7f9c3b-5d85-46a6-8b45-63f3649866ef"
+
 # >>> a[0].append([1,2])
 # >>> a
 # [[[650, 800], [650, 750], [650, 700], [1, 2]]]
@@ -104,5 +106,5 @@ marker_input = [
     ],
 ]
 
-# run_sam2_segmentation(video_dir, marker_input)  # merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
-# write_segmentation_result(video_dir, marker_input)
+run_sam2_segmentation(video_dir, marker_input)  # merge_masks_and_boxes(os.path.join(video_dir, "segmentation"))
+write_segmentation_result(video_dir, marker_input)
