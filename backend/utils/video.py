@@ -23,6 +23,8 @@ def extract_frames(video_file_path: str, video_file_dir: str):
     os.makedirs(pose_dir, exist_ok=True)
 
     subprocess.run(["ffmpeg", "-i", video_file_path, "-q:v", "10", "-start_number", "0", f"{frames_dir}/%06d.jpg", ])  # fmt: skip
+    subprocess.run(["ffmpeg", "-i", video_file_path, "-q:a", "10", "-map", "a", f"{video_file_dir}.mp4", ])  # fmt: skip
+
 
 
 def get_video_info(video_path: str) -> Dict[str, Any]:
