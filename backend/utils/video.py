@@ -26,7 +26,6 @@ def extract_frames(video_file_path: str, video_file_dir: str):
     subprocess.run(["ffmpeg", "-i", video_file_path, "-q:a", "10", "-map", "a", f"{video_file_dir}.mp4", ])  # fmt: skip
 
 
-
 def get_video_info(video_path: str) -> Dict[str, Any]:
     """
     Get video metadata (duration, dimensions, fps, etc.)

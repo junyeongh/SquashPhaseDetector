@@ -3,18 +3,20 @@
 Exploratory Data Analysis script for Squash Game Phase Detection data
 """
 
-import os
-import json
 import csv
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import json
+import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
 # Configure plot styles
-plt.style.use('ggplot')
+plt.style.use("ggplot")
 sns.set_theme(style="whitegrid")
+
 
 class SquashEDA:
     def __init__(self, data_dir="/data/uploads"):
@@ -37,7 +39,7 @@ class SquashEDA:
 
         print(f"Found {len(self.sessions)} video sessions")
         for i, session in enumerate(self.sessions):
-            print(f"{i+1}. {session}")
+            print(f"{i + 1}. {session}")
 
     def load_metadata(self, session_id):
         """Load video metadata for a given session"""
@@ -47,7 +49,7 @@ class SquashEDA:
             print(f"Metadata not found for session: {session_id}")
             return None
 
-        with open(metadata_path, 'r') as f:
+        with open(metadata_path, "r") as f:
             metadata = json.load(f)
 
         return metadata
@@ -76,7 +78,7 @@ class SquashEDA:
             print(f"Segmentation data not found for session: {session_id}")
             return None
 
-        with open(segmentation_path, 'r') as f:
+        with open(segmentation_path, "r") as f:
             segmentation_data = json.load(f)
 
         return segmentation_data
@@ -89,7 +91,7 @@ class SquashEDA:
             print(f"Pose data not found for session: {session_id}")
             return None
 
-        with open(pose_path, 'r') as f:
+        with open(pose_path, "r") as f:
             pose_data = json.load(f)
 
         return pose_data
@@ -145,23 +147,23 @@ class SquashEDA:
         plt.figure(figsize=(12, 6))
 
         # Calculate segment durations
-        if 'frame_idx' in mainview_df.columns:
-            mainview_df['segment_duration'] = mainview_df['frame_idx'].diff().fillna(0)
+        if "frame_idx" in mainview_df.columns:
+            mainview_df["segment_duration"] = mainview_df["frame_idx"].diff().fillna(0)
 
             plt.subplot(2, 1, 1)
-            plt.hist(mainview_df['segment_duration'], bins=30)
-            plt.title('Distribution of Mainview Segment Durations (frames)')
-            plt.xlabel('Duration (frames)')
-            plt.ylabel('Frequency')
+            plt.hist(mainview_df["segment_duration"], bins=30)
+            plt.title("Distribution of Mainview Segment Durations (frames)")
+            plt.xlabel("Duration (frames)")
+            plt.ylabel("Frequency")
 
             plt.subplot(2, 1, 2)
-            plt.plot(mainview_df.index, mainview_df['frame_idx'], marker='o', alpha=0.5)
-            plt.title('Mainview Frame Indices')
-            plt.xlabel('Segment Index')
-            plt.ylabel('Frame Index')
+            plt.plot(mainview_df.index, mainview_df["frame_idx"], marker="o", alpha=0.5)
+            plt.title("Mainview Frame Indices")
+            plt.xlabel("Segment Index")
+            plt.ylabel("Frame Index")
 
         plt.tight_layout()
-        plt.savefig('mainview_distribution.png')
+        plt.savefig("mainview_distribution.png")
         plt.show()
 
     def analyze_segmentation(self, segmentation_data):
@@ -169,15 +171,15 @@ class SquashEDA:
         if not segmentation_data:
             return
 
-        if 'marker_input' in segmentation_data:
+        if "marker_input" in segmentation_data:
             # Extract data from marker inputs
             frames_with_markers = set()
             markers_by_player = {1: 0, 2: 0}
 
-            for chunk in segmentation_data['marker_input']:
+            for chunk in segmentation_data["marker_input"]:
                 for marker in chunk:
-                    frames_with_markers.add(marker['frame_idx'])
-                    markers_by_player[marker['player_id']] += 1
+                    frames_with_markers.add(marker["frame_idx"])
+                    markers_by_player[marker["player_id"]] += 1
 
             print(f"- Total marked frames: {len(frames_with_markers)}")
             print(f"- Player 1 markers: {markers_by_player[1]}")
@@ -201,8 +203,8 @@ class SquashEDA:
             player2_dir = pose_results_dir / "2"
 
             # Count results files for each player
-            player1_files = list(player1_dir.glob('*.json')) if player1_dir.exists() else []
-            player2_files = list(player2_dir.glob('*.json')) if player2_dir.exists() else []
+            player1_files = list(player1_dir.glob("*.json")) if player1_dir.exists() else []
+            player2_files = list(player2_dir.glob("*.json")) if player2_dir.exists() else []
 
             print(f"- Player 1 pose results: {len(pose_data['player1']['frames'])} frames")
             print(f"- Player 2 pose results: {len(pose_data['player2']['frames'])} frames")
@@ -215,19 +217,19 @@ class SquashEDA:
         else:
             print("- No detailed pose results found in directory structure")
 
-        if 'frames' in pose_data:
+        if "frames" in pose_data:
             print(f"- Frames with pose data: {len(pose_data['frames'])}")
 
     def analyze_player_pose_sample(self, pose_file, player_id):
         """Analyze a sample pose file for a player"""
         try:
-            with open(pose_file, 'r') as f:
+            with open(pose_file, "r") as f:
                 pose = json.load(f)
 
-            if 'keypoints_data' in pose:
+            if "keypoints_data" in pose:
                 # Extract and analyze keypoint data
-                keypoints = np.array(pose['keypoints_data'])
-                confidence = np.array(pose['keypoints_conf']) if 'keypoints_conf' in pose else None
+                keypoints = np.array(pose["keypoints_data"])
+                confidence = np.array(pose["keypoints_conf"]) if "keypoints_conf" in pose else None
 
                 print(f"  Player {player_id} sample pose:")
                 print(f"  - Keypoints shape: {keypoints.shape}")
@@ -254,37 +256,48 @@ class SquashEDA:
         # Use confidence as marker size if available
         size = 50 + confidence * 100 if confidence is not None else 100
 
-        plt.scatter(x, y, s=size, alpha=0.7, c=range(len(x)), cmap='viridis')
+        plt.scatter(x, y, s=size, alpha=0.7, c=range(len(x)), cmap="viridis")
 
         # Connect keypoints that represent body parts (simplified)
         # This is a simplified version - you'll need to adjust based on your keypoint format
         connections = [
-            (0, 1), (1, 2), (2, 3), (1, 3),  # head
-            (0, 4), (4, 5), (5, 6),          # right arm
-            (0, 7), (7, 8), (8, 9),          # left arm
-            (0, 10), (10, 11), (11, 12),     # right leg
-            (0, 13), (13, 14), (14, 15),     # left leg
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (1, 3),  # head
+            (0, 4),
+            (4, 5),
+            (5, 6),  # right arm
+            (0, 7),
+            (7, 8),
+            (8, 9),  # left arm
+            (0, 10),
+            (10, 11),
+            (11, 12),  # right leg
+            (0, 13),
+            (13, 14),
+            (14, 15),  # left leg
         ]
 
         # Only connect if we have enough keypoints
         min_keypoints = max([max(c) for c in connections]) + 1
         if len(keypoints) >= min_keypoints:
             for i, j in connections:
-                plt.plot([x[i], x[j]], [y[i], y[j]], 'gray', linestyle='-', alpha=0.4)
+                plt.plot([x[i], x[j]], [y[i], y[j]], "gray", linestyle="-", alpha=0.4)
 
-        plt.title(f'Player {player_id} Pose Keypoints')
-        plt.xlabel('X Coordinate')
-        plt.ylabel('Y Coordinate')
-        plt.axis('equal')
+        plt.title(f"Player {player_id} Pose Keypoints")
+        plt.xlabel("X Coordinate")
+        plt.ylabel("Y Coordinate")
+        plt.axis("equal")
         plt.grid(True)
 
-        plt.savefig(f'pose_player{player_id}.png')
+        plt.savefig(f"pose_player{player_id}.png")
         plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     session_id = "f72f40ce-21ae-4770-b139-38ce346ab6d4"
-    s = SquashEDA() # s.scan_sessions()
+    s = SquashEDA()  # s.scan_sessions()
     s.analyze_session(session_id)
 
     # Temporal Analysis: Study how player positions change over time
