@@ -19,7 +19,7 @@ const PreprocessStage: React.FC<PreprocessStageProps> = ({
     );
   }
 
-  return <div className='space-y-3'>{/* Button removed - will be placed above StageNavigator */}</div>;
+  return null;
 };
 
 export default PreprocessStage;

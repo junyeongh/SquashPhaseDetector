@@ -59,8 +59,8 @@ SquashPhaseDetector/
 docker-compose up --build
 ```
 
-3. Access the frontend at <http://localhost:3000>
-4. API documentation is available at <http://localhost:8000/docs>
+- Access the API at `http://localhost:8000`
+- API documentation at `http://localhost:8000/docs`
 
 ## Processing Pipeline
 

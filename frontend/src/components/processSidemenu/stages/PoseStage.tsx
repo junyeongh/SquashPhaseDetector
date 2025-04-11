@@ -73,8 +73,6 @@ const PoseStage: React.FC<PoseStageProps> = ({
           </div>
         )}
       </div>
-
-      {/* Button removed - will be placed above StageNavigator */}
     </div>
   );
 };

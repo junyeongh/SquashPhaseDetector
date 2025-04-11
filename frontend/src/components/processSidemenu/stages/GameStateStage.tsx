@@ -19,14 +19,7 @@ const GameStateStage: React.FC<GameStateStageProps> = ({
     );
   }
 
-  return (
-    // <div className='space-y-3'>
-    //   <div className='rounded-md border border-gray-200 bg-gray-50 p-3'>
-    //     <h4 className='mb-2 text-xs font-medium text-gray-700'>Game State Analysis</h4>
-    //   </div>
-    // </div>
-    null
-  );
+  return null;
 };
 
 export default GameStateStage;
